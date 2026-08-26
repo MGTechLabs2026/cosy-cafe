@@ -1,0 +1,526 @@
+{
+  "title": {
+    "gameName": "Moonleaf Café",
+    "pressAnyKey": "Press any key to begin",
+    "continueLabel": "Continue — Day {day}",
+    "newGameLabel": "New Game",
+    "newGameConfirm": "This will replace your Day {day} save. Start over anyway?"
+  },
+  "hud": {
+    "dayTemplate": "Day {day}",
+    "coinsTemplate": "¤{amount}",
+    "starsFull": "★",
+    "starsEmpty": "☆",
+    "settingsLabel": "Settings",
+    "journalLabel": "Journal"
+  },
+  "dialogue": {
+    "auntLetterTitle": "A Letter from Aunt Marigold",
+    "auntLetterBody": "Dear one,\n\nThe café keys are yours now. The kettle remembers every hand that stirred it. Trust your nose, trust the regulars, and don't worry about perfection — the best cups come from caring.\n\nI'll write when the moon turns.\n\nWith love,\nAunt Marigold",
+    "letterSkip": "Skip"
+  },
+  "tutorial": {
+    "journalPulse": "Your journal is waiting",
+    "kettleGlint": "The kettle is ready",
+    "firstCustomer": "Someone is coming in...",
+    "wrenUsual": "I'll have my usual.",
+    "wrenReaction": "Close enough, dear. You'll find it."
+  },
+  "settings": {
+    "title": "Settings",
+    "close": "Close",
+    "relaxedMode": "Relaxed mode (patience drains at half rate)",
+    "reducedMotion": "Reduced motion",
+    "masterVol": "Master volume",
+    "textSpeed": "Text speed",
+    "textSize": "Text size",
+    "creditsTitle": "Credits",
+    "versionLabel": "Version"
+  },
+  "credits": {
+    "madeWith": "Made with care — no engine, just TypeScript, Canvas2D and a kettle's worth of DOM.",
+    "assetsLine": "All pixel art generated with PixelLab. Sounds synthesized in-house.",
+    "licenseNote": "Moonleaf Café © 2026. All rights reserved. Font: system stack.",
+    "thanks": "Thank you for playing."
+  },
+  "morning": {
+    "prepTitle": "Morning — Day {day}",
+    "openDoors": "Open the door",
+    "sleepIn": "Sleep in",
+    "deliveryArrived": "The weekly delivery is on the shelf.",
+    "shelfLineLabel": "Shelf"
+  },
+  "kettle": {
+    "title": "The Kettle",
+    "base": "Base",
+    "ingredients": "Ingredients (up to 3)",
+    "finish": "Finish",
+    "hot": "Hot",
+    "iced": "Iced",
+    "foamed": "Foamed",
+    "brew": "Brew",
+    "clear": "Clear",
+    "murkyTitle": "Murky Brew",
+    "murkyLine": "Oh… how inventive.",
+    "murkyNote": "It isn't a recipe you know. The cat sniffs it and walks away. Pour it out and try again — nothing lost but the ingredients.",
+    "outOfStock": "Out of stock: {items}. Recipes need what's on your shelf.",
+    "restockNote": "The shelf looks bare. Restock at the evening market, or wait for the weekly delivery."
+  },
+  "service": {
+    "fenwickArrives": "Fenwick Mossbeard walks in, snow on his coat.",
+    "fenwickFirstLine": "\"Whatever's fastest. No— whatever's warmest. Actually… surprise me.\"",
+    "fenwickOrderLine": "\"{drink}\" again, if you've got it.",
+    "arrivalTemplate": "{name} steps in.",
+    "travelerArrives": "A hooded traveler ducks in from the mist.",
+    "chatButton": "Chat",
+    "chatted": "You talk about the mountain road. They almost smile.",
+    "serveButton": "Serve",
+    "servedHappy": "They wrap both hands around the cup. \"That's the one.\"",
+    "servedFavorite": "Their favorite. \"Didn't know I was that easy to read.\" (+2¤)",
+    "patienceOut": "I'll catch you tomorrow!",
+    "tipEarned": "+1¤ tip for the chat.",
+    "closeHint": "The street is quiet now…",
+    "closeDoor": "Close the door",
+    "taughtTemplate": "Recipe learned: {drink}. It's written in your journal now.",
+    "taughtR003Title": "Recipe learned: Moonleaf Tea",
+    "taughtR003Body": "Between sips, Fenwick mentions something bitter to survive mornings: water + moonleaf, served hot. It's written in your journal now.",
+    "taughtR004Body": "Bram grumbles that cocoa is for children — while ordering it with ember chili, served hot. Written down.",
+    "taughtR005Body": "Sela laughs: milk whipped with cloud sugar, foamed tall. \"Tastes like morning,\" she promises. Written down.",
+    "taughtR006Body": "Nia wants something effervescent — frostberries over water, iced. \"Bubbles adjacent!\" Written down.",
+    "taughtR007Body": "Wren goes quiet, then: \"There she is.\" Ginger root and sage over water, hot. Marigold's recipe lives again. Written down.",
+    "wrenMysteryLine": "\"I'll have my usual.\" You don't know their usual yet.",
+    "wrenRevealToast": "Wren's usual, found at last: Root & Remedy Broth.",
+    "starUpToast": "The café's reputation grows — {stars} stars.",
+    "heartPuff": "{name} warms to you."
+  },
+  "recap": {
+    "title": "Evening — Day {day}",
+    "coinsEarned": "Coins earned today",
+    "drinksServed": "{count} drink(s) served",
+    "discoveries": "New recipes learned",
+    "noDiscoveries": "No new recipes today.",
+    "continueButton": "Continue",
+    "savedNote": "Progress saved.",
+    "shopButton": "Shop",
+    "heartsGained": "{name} warmed up to you today."
+  },
+  "recipes": {
+    "r001": { "name": "Black Tea" },
+    "r002": { "name": "Honey Milk" },
+    "r003": { "name": "Moonleaf Tea" },
+    "r004": { "name": "Ember Cocoa" },
+    "r005": { "name": "Cloud Foam" },
+    "r006": { "name": "Iced Berry Tisane" },
+    "r007": { "name": "Root & Remedy Broth" },
+    "r008": { "name": "Honey Milk (Wren's Usual)" }
+  },
+  "ingredients": {
+    "water": "Water",
+    "milk": "Milk",
+    "oat_milk": "Oat milk",
+    "coffee": "Coffee",
+    "tea_leaves": "Tea leaves",
+    "honey": "Honey",
+    "moonleaf": "Moonleaf",
+    "cocoa": "Cocoa",
+    "ember_chili": "Ember chili",
+    "cloud_sugar": "Cloud sugar",
+    "frostberries": "Frostberries",
+    "ginger_root": "Ginger root",
+    "sage": "Sage"
+  },
+  "cast": {
+    "fenwick": {
+      "name": "Fenwick Mossbeard",
+      "firstLine": "Whatever's fastest. No— whatever's warmest. Actually… surprise me.",
+      "desc": "Dwarf courier on the mountain-road loop. Perpetually exhausted, secretly sentimental."
+    },
+    "sela": {
+      "name": "Sela of Vessany",
+      "firstLine": "Something with flowers in it? No— something that tastes like morning.",
+      "desc": "Elf trader whose hand-cart smells of herbs and rain. Jokes about every town being temporary."
+    },
+    "bram": {
+      "name": "Bram Holt",
+      "firstLine": "Hot. Strong. Don't care what.",
+      "desc": "Village blacksmith. Gruff, economical with words, stays long. Will deny liking sweet things."
+    },
+    "nia": {
+      "name": "Nia Quicksprocket",
+      "firstLine": "Do you have anything effervescent? Failing that, anything flammable? …Failing THAT, tea's fine.",
+      "desc": "Gnome tinkerer between commissions. Talks fast, thinks faster, breaks things enthusiastically."
+    },
+    "wren": {
+      "name": "Old Wren",
+      "firstLine": "I'll have my usual.",
+      "desc": "Retired ferry-keeper who orders the same thing every day. Knew Aunt Marigold well."
+    }
+  },
+  "shop": {
+    "title": "Evening Market",
+    "upgradesHeading": "Upgrades",
+    "ingredientsHeading": "Ingredients",
+    "buyButton": "Buy",
+    "owned": "Owned",
+    "priceTemplate": "¤{price}",
+    "countTemplate": "×{count}",
+    "insufficientFunds": "Earn ¤{deficit} more.",
+    "unavailable": "Already owned.",
+    "shelfFull": "Shelf holds {capacity} kinds. A bigger shelf would make room.",
+    "cartClosed": "Sela's cart arrives tomorrow.",
+    "deliveryNote": "Tea leaves, honey, cocoa, chili, berries, ginger and sage come with the weekly delivery.",
+    "cartNote": "Moonleaf and cloud sugar come from Sela's cart.",
+    "close": "Close"
+  },
+  "upgrades": {
+    "items": {
+      "second_kettle": {
+        "name": "Second kettle",
+        "desc": "Two drinks brewing at once. Kettle A / B tabs, each with its own draft."
+      },
+      "bigger_shelf": {
+        "name": "Bigger shelf",
+        "desc": "+3 ingredient kinds on the shelf. Can be bought twice."
+      },
+      "window_bench": {
+        "name": "Window bench",
+        "desc": "A cat bed by the window. Customers linger happily (+15 starting patience)."
+      },
+      "coffee_machine": {
+        "name": "Coffee machine",
+        "desc": "Adds coffee as a kettle base for your own experiments."
+      },
+      "record_player": {
+        "name": "Record player",
+        "desc": "A quieter, slower music toggle appears in settings."
+      },
+      "hearth_expansion": {
+        "name": "Hearth expansion",
+        "desc": "The hearth glows warmer and the kettle works faster."
+      }
+    }
+  },
+  "journal": {
+    "title": "Journal",
+    "tabRecipes": "Recipes",
+    "tabRegulars": "Regulars",
+    "tabTown": "Town",
+    "tabLetters": "Letters",
+    "knownCard": "Known recipe",
+    "riddleCard": "A riddle from the valley",
+    "heartsLabel": "Hearts",
+    "favoriteKnownTemplate": "Usual: {drink}",
+    "favoriteUnknown": "Usual: not written down yet",
+    "newEntryToast": "The journal opens itself to the new page.",
+    "townSketch": "Hollowbrook Crossing: three roads meet here — the human town downriver, the elven woods east, the mountain hold up the switchbacks. Nobody lives here; everyone passes through. Your aunt's café is where they stop.",
+    "loreScraps": [
+      "Lantern posts around the square stay lit all night. Nobody remembers who trims the wicks.",
+      "The hearth was lit forty years ago and never went out.",
+      "Ferry ropes on the river still carry knots tied in an old keeper's hand."
+    ]
+  },
+  "letters": {
+    "letter_marigold_1": {
+      "title": "From Aunt Marigold",
+      "body": "Dear one,\n\nThe café keys are yours now. The kettle remembers every hand that stirred it. Trust your nose, trust the regulars, and don't worry about perfection — the best cups come from caring.\n\nI'll write when the moon turns.\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_2": {
+      "title": "From Aunt Marigold",
+      "body": "Dearest,\n\nThe first week flies like steam from the spout. I hear the door chime in my dreams — or perhaps that's just the wind in the chimney here.\n\nFenwick still forgets to fill his thermos. Bram still enters without ringing. Wren still orders the same thing and pretends not to notice when it's not quite right.\n\nYou're learning the rhythm. That's all I ever hoped for.\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_3": {
+      "title": "From Aunt Marigold",
+      "body": "Dear one,\n\nThe mountain pass will close with the first heavy snow. Fenwick's service wants him downriver — better pay, warmer beds, a route that doesn't ice over.\n\nHe came to me once, twenty years ago, with a letter he couldn't deliver. The address had burned. He waited three days at my counter until the recipient walked in.\n\nSome people carry the road in their boots. Others carry it in their heart.\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_4": {
+      "title": "From Aunt Marigold",
+      "body": "Dearest,\n\nWren asked after you yesterday. Just \"How's the niece?\" between sips, like it was nothing.\n\nFifty years ago they sat where you sit now, heart broken over a sailor who never returned. I made them a drink that tasted like the morning they'd missed — honey, milk, a pinch of something that grows only where the moon touches the water.\n\nThe recipe book burned in the winter of '38. But Wren remembers every sip.\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_5": {
+      "title": "From Aunt Marigold",
+      "body": "Dear one,\n\nSela's cart wheel finally gave out on the Vessany road. She's mending it behind the café, humming a tune the moths taught her.\n\nShe says she's leaving when the road clears. Her elders sent three letters this moon. She hasn't opened the last two.\n\nSometimes staying is the bravest journey.\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_6": {
+      "title": "From Aunt Marigold",
+      "body": "Dearest,\n\nBram fixed the door chime's bracket today. He didn't say why. He never does.\n\nHis wife, Elsie, cast that chime from a shard of the first bell she ever made. \"So I'll hear you coming,\" she told me. When she passed, Bram couldn't bring himself to ring it.\n\nThe sound today was small. Bright. Like a held breath finally released.\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_7": {
+      "title": "From Aunt Marigold",
+      "body": "Dear one,\n\nNia's automaton flooded the counter yesterday. Steam everywhere, frostberries in the tea leaves, the cat profoundly offended.\n\nShe apologized for three hours. Then she built you a kettle that whistles in a minor key when the brew is nearly right.\n\n\"Warmth isn't a variable you optimize,\" she said. \"It's the thing you build around.\"\n\nWith love,\nAunt Marigold"
+    },
+    "letter_marigold_8": {
+      "title": "From Aunt Marigold",
+      "body": "Dearest,\n\nTwo arcs complete. The courier who stays. The storyteller who remembers.\n\nThe café isn't the building, or the kettle, or even the recipes. It's the chair you pulled out for someone who needed to sit down.\n\nI'm proud of you. Not for the cups. For the caring.\n\nWith love,\nAunt Marigold"
+    },
+    "board_day2_hint": {
+      "title": "Notice board — Day 2",
+      "body": "Trader's cart parked by the well, selling cloud sugar \"by the spoonful or the skyful.\" Someone chalked: cocoa + chili warms a smith twice."
+    },
+    "board_day3_hint": {
+      "title": "Notice board — Day 3",
+      "body": "Mountain pass report: first frost on the switchbacks. Courier service posting transfer notices. \"Downriver routes — steady work, warm beds.\""
+    },
+    "board_day4_hint": {
+      "title": "Notice board — Day 4",
+      "body": "Brewing tip: moonleaf steeped too long turns bitter. Count to thirty heartbeats. Your aunt wrote this in the margin of R003."
+    },
+    "board_day5_hint": {
+      "title": "Notice board — Day 5",
+      "body": "Vessany cart schedule: Sela returns every 3rd day. Moonleaf restocks then. She also carries cloud sugar — ask for \"the fluffy tin.\""
+    },
+    "board_day6_hint": {
+      "title": "Notice board — Day 6",
+      "body": "Ferry log found in the reeds: \"Old Wren's remedy — root for the road, leaf-wisdom for the lungs, simmered long, served hot.\" The ink is faded but legible."
+    },
+    "board_day7_hint": {
+      "title": "Notice board — Day 7",
+      "body": "Blacksmith's note on the board: \"Door chime bracket cracked. If anyone sees Bram, tell him the forge is warm. — Elsie's old apprentice\""
+    },
+    "board_day8_hint": {
+      "title": "Notice board — Day 8",
+      "body": "Weekly delivery arrived: tea leaves, honey, cocoa, ember chili, frostberries, ginger root, sage. \"Keep the shelf honest\" — M."
+    },
+    "board_day9_hint": {
+      "title": "Notice board — Day 9",
+      "body": "Brewing tip: cloud sugar foams best in cold milk, whisked slow. Whisk it patiently and it holds its height."
+    },
+    "board_day10_hint": {
+      "title": "Notice board — Day 10",
+      "body": "Traveler's warning: mountain pass snowing. Fenwick's last loop up may be his last loop down. \"Courier service transfer deadline: day 12.\""
+    },
+    "board_day11_hint": {
+      "title": "Notice board — Day 11",
+      "body": "Sela's cart wheel mended. She's staying \"until the road clears.\" Her elders' letters sit unopened on her cart seat. Three of them."
+    },
+    "board_day12_hint": {
+      "title": "Notice board — Day 12",
+      "body": "Brewing tip: ginger root and sage need a long simmer — five minutes at least. The flavor lives in the patience."
+    },
+    "board_day13_hint": {
+      "title": "Notice board — Day 13",
+      "body": "Wren's usual, reconstructed: honey milk with a whisper of moonleaf. \"She liked it sweet,\" the old ferry-keeper murmured. \"But the moonleaf… that was for the cough.\""
+    },
+    "board_day14_hint": {
+      "title": "Notice board — Day 14",
+      "body": "The café's first moon cycle complete. Lanterns trimmed. Hearth fed. The cat has claimed the window bench. Tomorrow begins again."
+    },
+    "board_wren_riddle": {
+      "title": "Notice board — Wren's riddle",
+      "body": "Old ferry-keeper's remedy, she called it: root for the road, leaf-wisdom for the lungs, simmered long and served hot."
+    },
+    "marigold_delivery": {
+      "title": "Standing order — Hollowbrook suppliers",
+      "body": "Weekly basket, paid ahead: tea leaves, honey, cocoa, ember chili, frostberries, ginger root, sage. \"Keep the shelf honest\" — M."
+    }
+  },
+  "shelf": {
+    "title": "Shelf",
+    "stockTemplate": "{name} × {count}"
+  },
+  "saveio": {
+    "exportTitle": "Export save code",
+    "importTitle": "Import save code",
+    "exportButton": "Generate code",
+    "copyButton": "Copy",
+    "copied": "Copied",
+    "howToUse": "How to use this",
+    "howToUseBody": "Paste this code into Moonleaf Café on any device to restore this save exactly as it is now.",
+    "importPlaceholder": "Paste your save code here…",
+    "restoreButton": "Restore",
+    "previewLine": "This save is Day {day} · ¤{coins} · {stars} — Replace your current save?",
+    "confirmReplace": "Replace",
+    "cancel": "Cancel",
+    "cryptoUnavailable": "Your browser can't create encrypted codes here, so export and import are off.",
+    "importSuccess": "Save restored.",
+    "failureNotACode": "Hmm, that doesn't look like a Moonleaf Café save code.",
+    "failureDamaged": "This code seems damaged — maybe a character got lost when copying it?",
+    "failureWrongVersion": "This save comes from a different version of the game.",
+    "failureNewerVersion": "This save is from a newer update. Please update the game first.",
+    "failureSchemaInvalid": "This save is damaged inside. Starting fresh might be kindest."
+  },
+  "fenwick": {
+    "chiliGiftToast": "Fenwick's chili crate is on the shelf ({count} ember chili).",
+    "scene1": {
+      "line1": "\"Mountain road's closing early this year. Courier service wants me downriver.\"",
+      "line2": "\"Steady pay. Warm beds. Route that doesn't ice over.\"",
+      "line3": "\"But someone has to deliver the letters up here. Your aunt's letters.\"",
+      "line4": "\"...Suppose I'll think on it.\"",
+      "choicePrompt": "What do you say?",
+      "choice1Label": "\"The mountain needs its courier.\"",
+      "choice1Flavor": "He exhales, slow. \"Aye. That's the shape of it.\"",
+      "choice2Label": "\"Downriver sounds safer.\"",
+      "choice2Flavor": "He nods. \"Safer. Warmer. Quieter.\" His thermos stays empty."
+    },
+    "scene2": {
+      "line1": "\"First frost hit the switchbacks yesterday. Nearly lost a boot.\"",
+      "line2": "\"Service supervisor gave me the transfer papers. Signed and everything.\"",
+      "line3": "\"Told him I'd decide by the twelfth. That's... ten days from now.\"",
+      "line4": "\"Your aunt used to leave a cup on the windowsill for me. Moonleaf tea, black as the pass at midnight.\"",
+      "choicePrompt": "What do you say?",
+      "choice1Label": "\"She'd want you to stay.\"",
+      "choice1Flavor": "His beard twitches — almost a smile. \"She'd want me to do what's right. Not what's easy.\"",
+      "choice2Label": "\"The pass is dangerous.\"",
+      "choice2Flavor": "\"Aye. It is.\" He taps his empty thermos. \"But it's *my* pass.\""
+    },
+    "scene3": {
+      "line1": "\"Met a traveler yesterday. Lost her way off the Vessany road.\"",
+      "line2": "\"Carried a letter for her sister in the mountain hold. Three weeks late.\"",
+      "line3": "\"She wept when I handed it over. Said she'd given up on it ever arriving.\"",
+      "line4": "\"That's the job. Not the walking. The *arriving*.\"",
+      "line5": "\"Downriver... letters get there fast. But nobody *waits* for them.\""
+    },
+    "scene4": {
+      "line1": "\"Twelfth day tomorrow. Transfer deadline.\"",
+      "line2": "\"Walked the whole loop today. Every switchback. Every landmark.\"",
+      "line3": "\"The pine where the lightning struck. The cairn where I eat lunch. The spot where the valley opens and you see the café's chimney smoke.\"",
+      "line4": "\"That smoke... it's the only landmark that matters.\"",
+      "choicePrompt": "What do you say?",
+      "choice1Label": "\"Stay. We need you here.\"",
+      "choice1Flavor": "Long silence. Then: \"Reckon you're right. Somebody has to deliver your aunt's letters.\"",
+      "choice2Label": "\"Go. Be safe. Be warm.\"",
+      "choice2Flavor": "He nods slowly. \"Safe. Warm. Quiet.\" But his boots don't turn toward the door."
+    },
+    "scene5": {
+      "line1": "\"Tore up the transfer papers this morning. Burned them in the hearth.\"",
+      "line2": "\"Supervisor wasn't pleased. Said I was throwing away a pension.\"",
+      "line3": "\"Told him: pension doesn't warm the hands that hold the letters.\"",
+      "line4": "\"Negotiated a new route. Hollowbrook letter-carrier. Official. Stamped.\"",
+      "line5": "\"Means I stay. Means the mountain keeps its courier.\"",
+      "line6": "\"...Means I'll need a proper thermos. This one's seen generations.\""
+    },
+    "scene6": {
+      "line1": "\"Ember chili. From the mountain hold. Grows where the rock runs hot.\"",
+      "line2": "\"Brought a crate down on my last loop. Best I've ever carried.\"",
+      "line3": "\"Thought you might want it for the shelf. For the cocoa. For... whoever needs warming.\"",
+      "line4": "\"And this thermos —\" he sets a battered copper flask on the counter — \"yours now. Keeps heat for days. Or so the dwarves claim.\"",
+      "line5": "\"Thanks for the cup. And the listening. And the chair.\""
+    }
+  },
+  "wren": {
+    "scene1": {
+      "line1": "\"I'll have my usual.\"",
+      "line2": "\"...You don't know it yet. That's alright. Marigold didn't write it down either — not where anyone could find it.\"",
+      "line3": "\"She made it for me fifty years ago. The night I came home without the sailor.\"",
+      "line4": "\"Tasted like morning. Like the dawn I thought I'd never see again.\"",
+      "line5": "\"The recipe book burned. Winter of '38. Chimney fire. Took the whole back wall.\"",
+      "line6": "\"But I remember every sip. And I'll tell you, piece by piece.\""
+    },
+    "scene2": {
+      "line1": "\"First clue: it starts with milk. Not water. Not tea.\"",
+      "line2": "\"She said: 'Milk holds the warmth. Water runs through you.'\"",
+      "line3": "\"Second: something sweet. Not sugar. Something the bees make.\"",
+      "line4": "\"Honey. Local. The hives by the river bend.\"",
+      "line5": "\"Third... ah, that's for another day. Drink your tea, dear.\""
+    },
+    "scene3": {
+      "line1": "\"Third clue: a whisper of the valley's own herb.\"",
+      "line2": "\"Moonleaf. But just a pinch — like a secret you're not sure you heard.\"",
+      "line3": "\"Marigold gathered it herself, moonlit nights only. Said the leaf remembers the rain.\"",
+      "line4": "\"Fourth: served hot. Always hot. Even in summer.\"",
+      "line5": "\"Because warmth isn't temperature. It's *intention*.\""
+    },
+    "scene4": {
+      "line1": "\"The last clue isn't an ingredient. It's the *waiting*.\"",
+      "line2": "\"Five minutes simmering. Not four. Not six. Five.\"",
+      "line3": "\"She'd count heartbeats. One hundred fifty. I counted with her.\"",
+      "line4": "\"The broth remembers the hands that stirred it.\"",
+      "line5": "\"You have all the pieces now, dear. Milk. Honey. Moonleaf. Time.\"",
+      "choicePrompt": "Brew it for them?",
+      "choice1Label": "\"Yes. I'll make it now.\"",
+      "choice1Flavor": "Their eyes soften. \"Good. Take your time. She always did.\"",
+      "choice2Label": "\"Let me double-check the journal first.\"",
+      "choice2Flavor": "They chuckle, low and warm. \"Wisdom. She'd have liked that in you.\""
+    },
+    "scene5": {
+      "line1": "The cup steams. Honey milk, moonleaf-kissed, simmered five minutes exactly.",
+      "line2": "Wren lifts it with both hands. The shawl slips, revealing knotted fingers.",
+      "line3": "A long sip. Steam curls against weathered cheeks.",
+      "line4": "Silence stretches — the kind that holds its breath.",
+      "line5": "\"Ah.\"",
+      "line6": "\"There she is.\""
+    },
+    "scene6": {
+      "line1": "\"The music box on your title screen... it played a different tune, once.\"",
+      "line2": "\"Marigold wound it every morning. A lullaby for the valley.\"",
+      "line3": "\"When the recipe book burned, the melody went with it. I'm the only one who remembers.\"",
+      "line4": "\"Now that the broth is found... the tune returns.\"",
+      "line5": "\"Listen for it tomorrow morning. She's been waiting to play it for you.\""
+    }
+  },
+  "sela": {
+    "intro": {
+      "line1": "\"Something with flowers in it? No— something that tastes like morning.\"",
+      "line2": "She sets down a jar that glows faintly — cloud sugar, she calls it.",
+      "line3": "\"Cart wheel's been 'about to break' for three weeks now. Vessany elders sent three letters. I haven't opened the last two.\"",
+      "line4": "\"Every town's temporary, they say. But my cart... my cart knows the way home.\"",
+      "line5": "\"I'll have the Cloud Foam. Whipped tall. Tastes like morning, she promises.\""
+    }
+  },
+  "bram": {
+    "intro": {
+      "line1": "\"Hot. Strong. Don't care what.\"",
+      "line2": "He wraps his hands around the cup like it might escape.",
+      "line3": "\"Door chime's bracket cracked years ago. Elsie cast it — first bell she ever made.\"",
+      "line4": "\"Haven't rung it since she passed. Enter behind other folks so I don't have to.\"",
+      "line5": "\"Ember Cocoa. With the chili. ...Don't write that down.\""
+    }
+  },
+  "nia": {
+    "intro": {
+      "line1": "\"Do you have anything effervescent? Failing that, anything flammable? …Failing THAT, tea's fine.\"",
+      "line2": "Steam leaks from her satchel. Goggles pushed up into wild hair.",
+      "line3": "\"Building a beverage automaton. Prototype three flooded the counter yesterday. Prototype four *almost* made the best drink anyone's had.\"",
+      "line4": "\"Need a test site. This café's got... good energy. Literally. Leylines hum under the floorboards.\"",
+      "line5": "\"Iced Berry Tisane. Frostberries, water, iced. Bubbles adjacent!\""
+    }
+  },
+  "chat": {
+    "fenwick": [
+      "\"Mountain pass report: first frost on the switchbacks. Two weeks early.\"",
+      "\"Courier service posted transfer notices again. Downriver routes — steady work, warm beds.\"",
+      "\"Met a traveler yesterday. Lost her way off the Vessany road. Carried a letter three weeks late.\"",
+      "\"The pine where lightning struck? Still standing. Cairn where I eat lunch? Still there.\"",
+      "\"Thermos is still empty. Been meaning to fill it. Been meaning for twenty years.\"",
+      "\"Someone has to deliver the letters up here. Your aunt's letters. That's the shape of it.\""
+    ],
+    "sela": [
+      "\"Cart wheel's holding. Mended it with Vessany silk and a prayer.\"",
+      "\"Elders sent another letter. This one smells like autumn mushrooms.\"",
+      "\"Cloud sugar harvest was good this moon. The moths sang to the crystals.\"",
+      "\"Every town's temporary. But the road... the road remembers every cart.\"",
+      "\"Moonleaf's sweet this year. Rained on the right nights.\"",
+      "\"I'll leave when the road clears. ...The road hasn't cleared in forty years.\""
+    ],
+    "bram": [
+      "\"Forge is warm. Anvil's singing.\"",
+      "\"Door chime... bracket's holding. For now.\"",
+      "\"Elsie's apprentice stopped by. Brought apples. Good kid.\"",
+      "\"Cocoa's for children. ...The chili makes it *honest*.\"",
+      "\"Hands remember what the heart forgets. Hammer, tongs, cup — same grip.\"",
+      "\"Quiet day. Good day.\""
+    ],
+    "nia": [
+      "\"Prototype five uses steam pressure! ...Mostly. Sometimes it just whistles.\"",
+      "\"Leylines under the floorboards are humming in F-sharp today. Optimal for extraction.\"",
+      "\"Goggles fogged up again. Note to self: anti-fog charm. Or just... wipe them.\"",
+      "\"Frostberries from Sela's cart — 23% more effervescent than last batch! Science!\"",
+      "\"Automaton's not about replacing warmth. It's about *understanding* it. Variables and all.\"",
+      "\"Bubbles adjacent! ...That's my catchphrase now. Bram says it's annoying. Success!\""
+    ],
+    "wren": [
+      "\"The river runs quiet this moon. Ferry ropes still carry the old knots.\"",
+      "\"Marigold's chair by the window... the cushion still holds her shape.\"",
+      "\"Fifty years of 'usuals.' Only one recipe. The one that tasted like morning.\"",
+      "\"Hearth was lit forty years ago. Never went out. Neither did she, really.\"",
+      "\"Lantern posts around the square — nobody remembers who trims the wicks. They just burn.\"",
+      "\"You're doing fine, dear. The café's in good hands. Shaky, but good.\""
+    ],
+    "traveler": [
+      "\"Just passing through. The mist gets thicker past the crossing.\"",
+      "\"Heard this café serves a decent cup. Road's been long.\"",
+      "\"Mountain hold's closed for winter. Had to come down the long way.\"",
+      "\"Vessany woods are glowing this season. Bioluminescent, they say.\"",
+      "\"Downriver city never sleeps. This place... this place remembers how to rest.\""
+    ]
+  }
+}
