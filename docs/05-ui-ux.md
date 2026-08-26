@@ -44,11 +44,13 @@ Desktop reference 1280×720 (native art 480×270 integer-scaled). Mobile/tablet:
 
 ### 3.1 First 90 seconds (tutorial-by-design, no wall of text)
 1. Title → New Game → short letter from Aunt Marigold (skippable, ≤ 100 words).
-2. Café, morning. Journal pulses once. Notice board shows one tip card. Kettle glints.
-3. First arrival scripted: **Old Wren** — *"I'll have my usual."* Bubble shows a generic-cup icon with "?".
-4. Kettle opens automatically first time. Only water+tea_leaves available initially → hard to fail. Brew → serve.
-5. Wren smiles: *"Close enough, dear. You'll find it."* (Sets up the arc AND teaches that near-misses are fine.)
-6. Fenwick arrives and explicitly teaches R003. Player brews it. Success chime. Coins tick. Done — the player now knows: brew → serve → earn → journal remembers.
+2. Café, morning. Journal pulses once. Notice board shows one tip card.
+3. First arrival scripted: **Fenwick** — *\"Whatever's fastest. No— whatever's warmest. Actually… surprise me.\"* Bubble shows Black Tea icon.
+4. Player opens kettle manually (no auto-open — playtest fix #2). Only water+tea_leaves available initially → hard to fail. Brew → serve.
+5. Fenwick: *\"Good pace. Keep it.\"* Coins tick.
+6. Second arrival: **Old Wren** — *\"I'll have my usual.\"* Bubble shows a generic-cup icon with \"?\" (near-miss tutorial).
+7. Player brews any known recipe → Wren: *\"Close enough, dear. You'll find it.\"* (Sets up the arc AND teaches that near-misses are fine.)
+8. Fenwick returns and explicitly teaches R003 Moonleaf Tea. Player brews it. Success chime. Coins tick. Done — the player now knows: brew → serve → earn → journal remembers.
 
 No further tutorials. Systems 2–4 introduce themselves via morning mail cards, one per day max.
 

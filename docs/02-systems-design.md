@@ -44,7 +44,8 @@ The kettle is the one interaction verb. Depth comes from recipes, not mechanics.
 | R005 | Cloud Foam | milk + cloud_sugar, foamed | Sela's favorite |
 | R006 | Iced Berry Tisane | water + frostberries, iced | Summer unlock |
 | R007 | Root & Remedy Broth | water + ginger_root + sage | Winter unlock |
-| R008–R012 | *(reserved)* | — | Post-MVP seasonal specials |
+| R008 | Cozy Comfort | milk + moonleaf + honey, hot | Wren's revealed usual (day 2+) |
+| R009–R012 | *(reserved)* | — | Post-MVP seasonal specials |
 
 ### 2.4 Failure states
 There are none that punish. A non-recipe combination produces **Murky Brew**: the customer politely declines ("Oh… how inventive."), no coins, tiny reputation nudge downward only if repeated to the same customer twice in a day, cat sniffs it and walks away. Pour it out, try again. No inventory is consumed on failure beyond the ingredients used.

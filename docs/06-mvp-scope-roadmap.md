@@ -38,13 +38,13 @@ Combat · fail states · rent/stamina pressure · ads/gacha/FOMO
 
 Assumes solo dev, part-time pace. Durations are planning guides, not promises.
 
-| Milestone | Contents | Exit criteria |
-|-----------|----------|---------------|
-| **M0 — Foundations** (~1 wk) | Engine choice finalized (open question in README), repo, CI-less build script, title screen → café screen navigation stub | Build opens to café room; navigation works; empty but real |
-| **M1 — Core loop** (~2 wk) | Day cycle, kettle brewing, one customer type (Fenwick), coins, recap modal, autosave, encrypted save export/import (doc 02 §7.2) | Can play days 1–3 with Fenwick only; save survives reload; crypto test gates pass (round-trip, tamper, cross-browser) |
-| **M2 — Cast & systems** (~2–3 wk) | All 6 characters, patience, hearts/stars, journal v1, upgrades shop | Full MVP systems present with placeholder art |
-| **M3 — Content pass** (~2–3 wk) | All dialogue/scenes written + integrated, 2 arcs complete, letters/board content for 14 days, final art/audio | Content-complete; no placeholder assets |
-| **M4 — Polish & launch** (~1–2 wk) | Juice checklist (doc 04 §3), accessibility pass, playtest round + fixes, itch page live | Success criteria (GDD §7) met; public page published |
+| Milestone | Contents | Exit criteria | Status |
+|-----------|----------|---------------|--------|
+| **M0 — Foundations** (~1 wk) | Engine choice finalized (open question in README), repo, CI-less build script, title screen → café screen navigation stub | Build opens to café room; navigation works; empty but real | ✅ Done |
+| **M1 — Core loop** (~2 wk) | Day cycle, kettle brewing, one customer type (Fenwick), coins, recap modal, autosave, encrypted save export/import (doc 02 §7.2) | Can play days 1–3 with Fenwick only; save survives reload; crypto test gates pass (round-trip, tamper, cross-browser) | ✅ Done |
+| **M2 — Cast & systems** (~2–3 wk) | All 6 characters, patience, hearts/stars, journal v1, upgrades shop | Full MVP systems present with placeholder art | ✅ Done |
+| **M3 — Content pass** (~2–3 wk) | All dialogue/scenes written + integrated, 2 arcs complete, letters/board content for 14 days, final art/audio | Content-complete; no placeholder assets | ✅ Done |
+| **M4 — Polish & launch** (~1–2 wk) | Juice checklist (doc 04 §3), accessibility pass, playtest round + fixes, itch page live | Success criteria (GDD §7) met; public page published | ✅ Done (tests passing) |
 
 **Total: roughly 8–11 weeks part-time.** First public devlog can start after M1 (playable core loop is the best devlog material).
 

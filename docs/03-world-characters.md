@@ -40,7 +40,7 @@ All portraits 48×48, sprites 24×36. Hearts 0–5 per character; scenes unlock 
 | Who | Dwarf, 140s, courier who runs the mountain road loop. Perpetually exhausted, secretly sentimental. |
 | Visual | Braided grey beard with a crooked clip, patched courier coat, thermos he never filled |
 | First line | *"Whatever's fastest. No— whatever's warmest. Actually… surprise me."* |
-| Favorite | Ember Cocoa → later, Black Tea with honey ("the honest drink") |
+| Favorite | Ember Cocoa |
 | Arc | **The Route.** The mountain pass is closing this winter and the courier service wants him to transfer downriver. Across days he decides what home means. Resolution: he negotiates to stay as Hollowbrook's official letter-carrier — "somebody has to deliver your aunt's letters." |
 | Reward | Teaches R003 Moonleaf Tea early; late arc gift: ember chili stock |
 

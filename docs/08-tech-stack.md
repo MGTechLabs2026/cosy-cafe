@@ -54,25 +54,45 @@ Why this wins on all three stated axes:
 
 - Fixed-timestep simulation at **30 Hz** (patience drains, arrivals, brew timers) + render on every `requestAnimationFrame`. Deterministic sim makes tests and future replays trivial.
 - Backbuffer canvas locked at 480×270, composited via CSS `transform: scale(k)` where k is the largest **integer** ≤ available scale (DPR-aware). `image-rendering: pixelated`. Integer-only scaling honors doc 04 §1.2 and avoids shimmer.
-- Dirty-flag rendering: the room re-draws each frame only while anything animates (steam, characters, FX); during a fully idle morning screen the loop can idle at 1 Hz. Battery-friendly, and cozy games are mostly still.
+- Always-render-per-rAF: the room repaints every frame (fixes a flicker regression from the dirty-flag attempt). Still battery-friendly at 480×270; the GPU does the heavy lifting.
 - Particles: preallocated pool, hard cap 40 live. Steam = recycled sprites, not objects.
 
-### 3.3 Modules (first cut)
+### 3.3 Modules (post-refactor)
 
-```
+```text
 src/
-  main.ts            bootstrap, loop, scaling
-  render/            draw.ts (room/sprite compositor), fx.ts (pooled particles), palette.ts
-  sim/               day.ts, brewing.ts, customers.ts, economy.ts   ← pure logic, no DOM/canvas imports
-  ui/                hud.ts, dialogue.ts, journal.ts, kettle.ts, shop.ts, recap.ts, saveio.ts
-  data/              recipes.ts, cast.ts, strings.json              ← content lives here, writers edit JSON
-  save/              store.ts (localStorage), crypto.ts (doc 02 §7.2), validate.ts
-  audio/             howl.ts (thin wrapper, gesture-gated unlock)
+  main.ts                 bootstrap, loop, scaling
+  render/                 scene.ts (room/sprite compositor), fx.ts (pooled particles),
+                          palette.ts, images.ts, tween.ts
+  sim/                    day.ts, brewing.ts, customers.ts, economy.ts,
+                          hearts.ts, upgrades.ts, shelf.ts      ← pure logic, no platform imports
+  controllers/            game-controller.ts (composition root),
+                          day-controller.ts, service-controller.ts,
+                          kettle-controller.ts, progression-controller.ts
+                          ← orchestration ONLY, no DOM/canvas/audio imports
+  ui/                     cafe-dom.ts (DOM plumbing), game.ts (thin compat layer),
+                          hud.ts, journal.ts, kettle.ts, shop.ts, recap.ts,
+                          scene.ts, settings.ts, textsize.ts
+  data/                   recipes.ts, strings.json, scenes.ts  ← content lives here
+  save/                   store.ts (localStorage), crypto.ts, validate.ts
+  audio/                  howl.ts (thin wrapper, gesture-gated unlock)
 ```
 
-Rule: `sim/` is pure TypeScript with zero platform imports — every gameplay rule from doc 02 is unit-testable without a browser.
+Rule: `sim/` is pure TypeScript with zero platform imports — every gameplay rule from doc 02 is unit-testable without a browser. `controllers/` orchestrates between pure sim and presentation (ui/render/audio/save) — no business rules live here.
 
-### 3.4 Assets pipeline
+### 3.4 Controller responsibility matrix
+
+| Controller | Owns | Delegates to | Must NOT import |
+|------------|------|--------------|-----------------|
+| `GameController` | Composition root, app lifecycle, shared state refs, render loop | `DayController`, `ServiceController`, `KettleController`, `ProgressionController`, `ui/cafe-dom`, `render/*`, `audio/*`, `save/*` | — |
+| `DayController` | Morning banner, door open, evening close, recap modal, next-day transition, daily schedule | `sim/day.ts` (phase machine), `sim/customers.ts` (schedule build), `sim/shelf.ts` (delivery), `ui/cafe-dom` (banner/toast), `ui/recap`, `ui/shop` | DOM directly, Canvas, Audio, localStorage |
+| `ServiceController` | Active customer session: arrivals, patience, chat, serve → payout/hearts, teach beats, arc-scene triggers, visit retirement | `sim/customers.ts`, `sim/economy.ts`, `sim/hearts.ts`, `data/scenes.ts`, `ui/scene.ts` (playScene), `render/fx.ts` | DOM, Canvas, Audio, localStorage |
+| `KettleController` | Kettle panel UI state, ingredient stock gate, brew submission | `sim/brewing.ts` (resolveBrew, hasStock), `sim/day.ts` (inventory), `sim/upgrades.ts` (brewAnimSec) | DOM, Canvas, Audio, localStorage |
+| `ProgressionController` | Economy runtime, hearts ledger, inventory, shelf capacity, upgrades, save snapshots | `sim/economy.ts`, `sim/hearts.ts`, `sim/upgrades.ts`, `sim/day.ts`, `sim/shelf.ts`, `save/store.ts`, `save/crypto.ts` | DOM, Canvas, Audio |
+
+Dependency direction: `sim/` → `controllers/` → `ui/` / `render/` / `audio/` / `save/`. Pure sim never imports browser APIs.
+
+### 3.5 Assets pipeline
 
 - Atlas: pack PNGs with free-tex-packer into one sheet + JSON frames. Target ≤ 6 MB total art (manifest in `assets/ASSETS.md` tracks actuals).
 - Audio: OGG Vorbis, music ~q4–5 (≈1–1.5 MB/track), SFX mono. Preload only the door-chime + click sounds; stream music after first user gesture (also satisfies autoplay policy).
@@ -116,3 +136,4 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 |------|--------|
 | 2026-08-25 | Initial stack decided: engine-less TS/Vite/Canvas2D + DOM UI + Howler; resolves README open question |
 | 2026-08-25 | **Amendment (M0 review):** minifier is Vite's built-in esbuild, not terser — the dependency-free constraint in the M0 brief wins over the table above; at ~13–26 KB bundle size terser's few-percent edge is irrelevant. Table row "Vite + terser" should read "Vite + esbuild". |
+| 2026-08-27 | **Orchestration refactor:** extracted `src/ui/game.ts` (~1100 LOC) into five controller modules under `src/controllers/` — `game-controller.ts` (composition root), `day-controller.ts`, `service-controller.ts`, `kettle-controller.ts`, `progression-controller.ts`. `ui/game.ts` retained as thin compatibility layer. Pure sim boundary enforced; zero behavior change; all 241 tests + typecheck + build pass. Updated stale doc statements (R008 status, Fenwick favorite, kettle auto-open, module map, dirty-flag claim, milestone table). |
