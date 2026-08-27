@@ -1,7 +1,14 @@
 // src/narrative/narrative-evaluator.ts — evaluates narrative signals into narrative state
 // Pure TypeScript, zero platform imports. Contains ONLY dimension evaluation logic.
 
-import type { NarrativeSignals, NarrativeDimension } from './narrative-signals';
+import type { NarrativeSignals } from './narrative-signals';
+
+export type NarrativeDimension =
+  | 'care'
+  | 'curiosity'
+  | 'community'
+  | 'comfort'
+  | 'independence';
 
 /** Complete narrative state — immutable result */
 export interface NarrativeState {

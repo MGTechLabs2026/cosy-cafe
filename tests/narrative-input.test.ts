@@ -5,6 +5,13 @@ import { calculateAllSignals } from '../src/narrative/narrative-signals';
 import { evaluateNarrativeStateFromInput, type NarrativeState } from '../src/narrative/narrative-state';
 import { createEmptyCounters } from '../src/narrative/activity-ledger';
 
+export { 
+  evaluateNarrativeStateFromInput, 
+  createMockNarrativeInput, 
+  createMockActivity,
+  createEmptyCounters 
+};
+
 function createMockSaveData(overrides: Partial<{
   day: number;
   stars: number;
