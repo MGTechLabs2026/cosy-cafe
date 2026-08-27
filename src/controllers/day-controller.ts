@@ -24,6 +24,8 @@ import { showRecap } from '../ui/recap.js';
 import { openShop, closeShop } from '../ui/shop.js';
 // Narrative activity events
 import { recordDaySkipped } from '../narrative/activity-ledger.js';
+// Narrative runtime integration (Batch 2 — wires schedulers into the lifecycle)
+import { advanceNarrative } from '../narrative/runtime.js';
 
 export interface DayContext {
   dayState: DayState;
@@ -71,6 +73,11 @@ export class DayController {
     // Performed by the GameController through onDayBegin's caller; hearts cap
     // reset likewise happens at the autosave boundary (behavior preserved).
     this.deps.onDayBegin([]);
+
+    // Narrative runtime hook (Batch 2): advance chapter, evaluate state, and
+    // deliver any eligible letter for this morning. Mutates the save in place;
+    // the autosave at recap persists it. Idempotent per day.
+    advanceNarrative(ctx.save, ctx.activityLedger);
 
     // Playtest fix #3: morning/prep carries the calm track.
     playMusicForPhase('prep');

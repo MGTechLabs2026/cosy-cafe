@@ -55,6 +55,12 @@ export interface SaveFlags {
   marigold_mystery_layer: number;
   /** Wren clues gathered (0–3) */
   wren_clues_gathered: number;
+  /**
+   * Batch 2 — queue of letter ids delivered by the runtime narrative scheduler
+   * but not yet surfaced by the (future) mailbox UI. Read-only for presentation;
+   * eligibility is driven by `letters_delivered`, not this queue.
+   */
+  pending_narrative_letters: string[];
   /** Playthrough count for replay features */
   playthrough_count: number;
   /** Previously achieved endings */
@@ -418,6 +424,7 @@ export function validateSaveData(input: unknown): ValidationResult {
         ending_day: (typeof rawFlags['ending_day'] === 'number' && Number.isInteger(rawFlags['ending_day']) && rawFlags['ending_day'] >= 1) ? rawFlags['ending_day'] : undefined,
         marigold_mystery_layer: (typeof rawFlags['marigold_mystery_layer'] === 'number' && Number.isInteger(rawFlags['marigold_mystery_layer']) && rawFlags['marigold_mystery_layer'] >= 1 && rawFlags['marigold_mystery_layer'] <= 5) ? rawFlags['marigold_mystery_layer'] : 1,
         wren_clues_gathered: (typeof rawFlags['wren_clues_gathered'] === 'number' && Number.isInteger(rawFlags['wren_clues_gathered']) && rawFlags['wren_clues_gathered'] >= 0 && rawFlags['wren_clues_gathered'] <= 3) ? rawFlags['wren_clues_gathered'] : 0,
+        pending_narrative_letters: isStringArray(rawFlags['pending_narrative_letters']) ? rawFlags['pending_narrative_letters'] : [],
         playthrough_count: (typeof rawFlags['playthrough_count'] === 'number' && Number.isInteger(rawFlags['playthrough_count']) && rawFlags['playthrough_count'] >= 0) ? rawFlags['playthrough_count'] : 0,
         previous_endings: isStringArray(rawFlags['previous_endings']) ? rawFlags['previous_endings'] : [],
         // v6 activity ledger flags with safe defaults
@@ -504,6 +511,7 @@ export function createInitialSave(): SaveData {
             // ending_day: omitted (optional)
             marigold_mystery_layer: 1,
             wren_clues_gathered: 0,
+            pending_narrative_letters: [],
             playthrough_count: 0,
             previous_endings: [],
             // v6 — Activity ledger flags
