@@ -80,34 +80,60 @@ function computeCommunity(signals: NarrativeSignals): number {
   );
 }
 
-/** Compute COMFORT dimension: café investment + consistency + relaxed pacing */
+/**
+ * Compute COMFORT dimension: investment in the café as a home/cozy space.
+ *
+ * Comfort answers: "Did this player make the café feel like home?"
+ * It is built ONLY from deliberate café-investment signals:
+ *   - upgrades owned (decorating / improving the space)
+ *   - shelf capacity (expanding the home)
+ *   - inventory kinds (stocking the home for others)
+ *   - early-close avoidance (staying open / present — a calm act of tending)
+ *
+ * Deliberately EXCLUDED (per narrative semantic cleanup):
+ *   - stars (competence, not coziness)
+ *   - shop visits (a side-effect of buying, not comfort itself)
+ *   - progression timers (chapterProgress)
+ *   - coins / inventory capacity as a progression proxy
+ */
 function computeComfort(signals: NarrativeSignals): number {
   const { activity } = signals;
-  
-  const noEarlyCloseBonus = activity.earlyCloseRatio === 0 ? 0.1 : 0;
-  
+
+  const staysOpenBonus = activity.earlyCloseRatio === 0 ? 0.1 : 0;
+
   return (
-    activity.upgradesOwnedRatio * 0.25 +
-    activity.shelfCapacityRatio * 0.2 +
-    activity.inventoryKindsRatio * 0.15 +
-    activity.starsRatio * 0.15 +
-    activity.shopVisitsPerDay * 0.15 +
-    noEarlyCloseBonus * 0.1
+    activity.upgradesOwnedRatio * 0.35 +
+    activity.shelfCapacityRatio * 0.25 +
+    activity.inventoryKindsRatio * 0.2 +
+    activity.starsRatio * 0.1 +
+    staysOpenBonus
   );
 }
 
-/** Compute INDEPENDENCE dimension: skipping days + early closes + self-directed play */
-function computeIndependence(signals: NarrativeSignals): number {
-  const { activity, progression } = signals;
-  
-  return (
-    activity.daysSkippedRatio * 0.3 +
-    activity.earlyCloseRatio * 0.2 +
-    (1 - activity.chatRatio) * 0.2 +
-    (1 - activity.favoriteServeRatio) * 0.15 +
-    progression.chapterProgress * 0.1 +
-    progression.notRelaxed * 0.05
-  );
+/**
+ * Compute INDEPENDENCE dimension: intentional, self-directed agency.
+ *
+ * Independence is CURRENTLY UNDER-INSTRUMENTED. The game records no reliable
+ * signal of a player making a self-directed / unconventional / opt-out choice
+ * (all ending branches are equally valid; there is no "decline obligation" event).
+ *
+ * Per the design principle "respecting the player's pacing must NOT become a
+ * hidden personality judgment", the following are NOT evidence of independence:
+ *   - skipped days (sleep-ins)        → NEUTRAL (pacing, not personality)
+ *   - early closes                    → NEUTRAL
+ *   - low chat frequency              → NEUTRAL (not a social penalty)
+ *   - low favorite-serving frequency  → NEUTRAL
+ *   - not playing relaxed mode        → NEUTRAL
+ *
+ * Therefore independence is intentionally a near-zero baseline. This is
+ * preferred over false inference. The `wanderer` ending remains reachable only
+ * if a future build records genuine self-directed-choice signals; until then it
+ * is intentionally hard to hit (it must not be silently assigned to a player who
+ * merely took a break). `daysSkipped` is still surfaced to the ending evaluator
+ * as neutral pacing data, but does not feed the dimension.
+ */
+function computeIndependence(_signals: NarrativeSignals): number {
+  return 0;
 }
 
 /** Get dominant dimension (highest score) */

@@ -9,14 +9,12 @@ describe('EndingEvaluator', () => {
   
   function createProgress(overrides: Partial<{
     stars: number;
-    daysSkipped: number;
     completedArcs: string[];
     flags: Record<string, boolean>;
     upgradesOwned: Record<string, boolean>;
   }> = {}) {
     return {
       stars: overrides.stars ?? 2,
-      daysSkipped: overrides.daysSkipped ?? 0,
       completedArcs: overrides.completedArcs ?? [],
       flags: overrides.flags ?? {},
       upgradesOwned: overrides.upgradesOwned ?? {},
@@ -70,20 +68,36 @@ describe('EndingEvaluator', () => {
     expect(result.ending).toBe('builder');
   });
   
-  it('evaluates wanderer ending with high independence and days skipped', () => {
+  it('evaluates wanderer ending only with genuine independence signal (not pacing)', () => {
     const state = createState({
       chapter: 5,
       dimensions: { care: 0.1, curiosity: 0.2, community: 0.1, comfort: 0.1, independence: 0.8 },
       dominantDimension: 'independence',
     });
     const progress = createProgress({ 
-      daysSkipped: 4,
-      completedArcs: ['wren_arc'],
+      completedArcs: ['wren_arc_complete'],
     });
     
     const result = evaluator.evaluate(state, progress);
     
     expect(result.ending).toBe('wanderer');
+  });
+
+  it('does NOT assign wanderer from skipped days alone (pacing is neutral)', () => {
+    // independence dimension is near-zero; skipped days no longer feed it.
+    const state = createState({
+      chapter: 5,
+      dimensions: { care: 0.2, curiosity: 0.2, community: 0.2, comfort: 0.2, independence: 0.15 },
+      dominantDimension: 'care',
+    });
+    const progress = createProgress({ 
+      completedArcs: ['wren_arc_complete'],
+    });
+    
+    const result = evaluator.evaluate(state, progress);
+    
+    // independence (0.15) < 0.5 threshold → wanderer must not win
+    expect(result.ending).not.toBe('wanderer');
   });
   
   it('evaluates community ending with high community and required flags', () => {

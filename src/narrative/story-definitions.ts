@@ -500,7 +500,6 @@ export const ENDING_CONFIGS: readonly EndingConfig[] = [
     id: 'wanderer',
     theme: 'Autonomy / Independence',
     min_dimensions: { independence: 0.5 },
-    min_days_skipped: 3,
     required_arcs: ['wren_arc_complete'],
     tiebreaker_dimension: 'independence',
     final_scene: 'door_sign_closed',

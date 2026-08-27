@@ -115,11 +115,17 @@ Five hidden narrative dimensions. **NOT visible stats.** Computed from existing 
 
 | Dimension | Meaning | Primary Signals (Available Now) | Derivable? |
 |-----------|---------|--------------------------------|------------|
-| **CARE** | Attentiveness to individuals | Hearts (total), favorite serves, chats, recipe discovery for specific NPCs | YES |
-| **CURIOSITY** | Drive to understand systems & secrets | Recipe discoveries, journal tab usage, hint card reads, experimental brews, Wren interactions | YES |
-| **COMMUNITY** | Breadth of social engagement | NPCs served (unique), hearts distribution breadth, letter archive size, town tab engagement | YES |
-| **COMFORT** | Investment in the café as a place | Upgrades owned, stars, shelf capacity, inventory breadth, recap shop visits | YES |
-| **INDEPENDENCE** | Automaous pacing & self-direction | Days skipped (sleep-in), door close timing, relaxed mode, experimental brews, solo play | YES |
+| **CARE** | Depth of attention to individuals | Hearts (per NPC), favorite serves, chats, learned preferences, relationship arcs | YES |
+| **CURIOSITY** | Drive to explore & discover | Recipe discoveries, experimental brews, hint-card reads, journal (recipes/lore) opens, Wren mystery interactions | YES |
+| **COMMUNITY** | Breadth of social participation | Unique NPCs served, hearts breadth, letter reading, town-tab engagement, multiple arcs | YES |
+| **COMFORT** | Investment in the café as home | Upgrades owned, shelf capacity, inventory kinds, staying open (no early close) | YES |
+| **INDEPENDENCE** | Intentional self-directed agency | **Under-instrumented** — see note below | PARTIAL |
+
+> **INDEPENDENCE is currently under-instrumented.** The game records no reliable
+> signal of a player making a self-directed / unconventional / opt-out choice (every
+> ending branch is equally valid; there is no "decline obligation" event). Therefore
+> independence is intentionally a **near-zero baseline** and must NOT be inferred from
+> pacing. It remains in the model so a future build can feed it genuine choice signals.
 
 ### Computation Rules
 
@@ -128,20 +134,43 @@ Five hidden narrative dimensions. **NOT visible stats.** Computed from existing 
 - **Thresholds at 0.33 / 0.66** (low / medium / high) for branch eligibility.
 - **Deterministic.** Same save state → same narrative state.
 - **Persisted only as flags.** The dimensions themselves are not saved; only the chapter/letter/scene flags they unlock.
+- **Pacing is neutral.** Skipped days, early closes, low activity, and not using relaxed mode are **NOT** personality signals. They never raise or lower a dimension.
 
-### Signal Weights (Initial)
+### Signal Weights (Post–Semantic Cleanup)
 
 ```
-CARE = 0.40 * (avg_hearts / 5) + 0.30 * (favorite_serves / total_serves) + 0.20 * (chats / opportunities) + 0.10 * (recipes_for_NPCs / total_recipes)
+CARE      = 0.25 * heartsBreadth/5  + 0.25 * avgHearts/5
+          + 0.20 * chatRatio        + 0.15 * favoriteServeRatio
+          + 0.15 * learnedPrefs/5
+          (depth of attention to individuals — direct behavioral signals only)
 
-CURIOSITY = 0.35 * (discovered_recipes / 8) + 0.25 * (journal_opens / days) + 0.20 * (hint_cards_read / 4) + 0.10 * (experimental_brews / total_brews) + 0.10 * (wren_scenes_seen / 6)
+CURIOSITY = 0.25 * recipeDiscoveryRatio + 0.20 * experimentalBrewRatio
+          + 0.15 * wrenMysteryBrewRatio + 0.15 * wrenSceneRatio
+          + 0.15 * hintCardRatio       + 0.10 * journalOpensPerDay
+          (exploration & discovery — never "more gameplay = more curiosity")
 
-COMMUNITY = 0.35 * (unique_NPCs_served / 6) + 0.25 * (hearts_breadth / 6) + 0.20 * (letters_archived / max_letters) + 0.20 * (town_tab_opens / days)
+COMMUNITY = 0.20 * uniqueNPCsServed/5 + 0.20 * heartsBreadth/5
+          + 0.20 * lettersReadRatio    + 0.20 * townLetterRatio
+          + 0.20 * townTabOpensPerDay
+          (breadth of social participation — distinct from CARE's depth)
 
-COMFORT = 0.30 * (upgrades_owned / 6) + 0.25 * (stars / 5) + 0.20 * (shelf_capacity / 12) + 0.15 * (inventory_kinds / 9) + 0.10 * (shop_visits / days)
+COMFORT   = 0.35 * upgradesOwnedRatio + 0.25 * shelfCapacityRatio
+          + 0.20 * inventoryKindsRatio + 0.10 * starsRatio
+          + 0.10 * (staysOpen ? 1 : 0)
+          (café as home — built ONLY from deliberate café-investment signals.
+           Stars are a minor coziness hint; shop visits / progression timers excluded.)
 
-INDEPENDENCE = 0.35 * (days_skipped / 14) + 0.25 * (early_closes / service_days) + 0.20 * (relaxed_mode) + 0.10 * (experimental_brews / total) + 0.10 * (wren_mystery_brews / wren_visits)
+INDEPENDENCE = 0   (intentionally neutral — under-instrumented)
+          Skipped days, early closes, low chat, low favorite-serving, and
+          non-relaxed play are NOT evidence. See note above.
 ```
+
+> **Wanderer ending** requires `independence ≥ 0.5` and the Wren arc. Because
+> independence is currently ~0, the wanderer ending is intentionally hard to reach
+> until genuine self-directed-choice signals exist — it must not be silently
+> assigned to a player who merely skipped days or played short sessions. When no
+> ending meets its minimum dimension thresholds, the deterministic neutral fallback
+> is **keeper** (belonging / continuity — the calm, P1-aligned default).
 
 ---
 
@@ -160,8 +189,8 @@ INDEPENDENCE = 0.35 * (days_skipped / 14) + 0.25 * (early_closes / service_days)
 | Journal usage (regulars tab) | CARE / COMMUNITY | AVAILABLE NOW |
 | Journal usage (letters tab) | CURIOSITY / MEMORY | AVAILABLE NOW |
 | Journal usage (town tab) | COMMUNITY | AVAILABLE NOW |
-| Skipped days (sleep-in) | INDEPENDENCE / AUTONOMY | AVAILABLE NOW |
-| Early door close | INDEPENDENCE / PACING | AVAILABLE NOW |
+| Skipped days (sleep-in) | NEUTRAL — pacing only, NOT a personality signal | REMOVED FROM DIMENSIONS |
+| Early door close | NEUTRAL — pacing only, NOT a personality signal | REMOVED FROM DIMENSIONS |
 | Multiple NPC arcs active | COMMUNITY / BREADTH | AVAILABLE NOW |
 | Focusing on one NPC | DEEP ATTACHMENT / CARE | AVAILABLE NOW |
 | Many NPCs served | COMMUNITY / BREADTH | AVAILABLE NOW |
@@ -786,6 +815,53 @@ Complete specification for a behavior-driven narrative layer that:
 | Trajectory labels leak | Never show trajectory name; only natural content variation |
 | Save migration complexity | Add narrative flags in v5 migration with safe defaults |
 | Content scope (40+ letters) | Phase implementation: mandatory first, optional second |
+
+---
+
+## 14. Narrative Dimension Semantics (Semantic Cleanup)
+
+Dimensions are **contextual interpretations of player behavior**, not RPG stats, morality scores,
+progression currencies, or punishment meters. The system answers: *"What kind of experience does this
+player's behavior suggest?"* — not *"Which stat did the player accidentally maximize?"*
+
+| Dimension | Meaning | Primary behavior | Neutral / excluded |
+|-----------|---------|------------------|--------------------|
+| **CARE** | Attention to individuals | Serving preferences, chats, learned preferences, relationship arcs, returning to people | Generic progression, coins |
+| **CURIOSITY** | Exploration & discovery | Experimental brews, recipe discovery, mystery investigation, lore reading | "More gameplay" ≠ curiosity; coins/upgrades |
+| **COMMUNITY** | Breadth of social participation | Chatting multiple NPCs, maintaining many relationships, town engagement | NOT a duplicate of CARE (depth vs. breadth) |
+| **COMFORT** | Investment in home / café & cozy stability | Café upgrades, decoration, staying open, routine | Stars (minor hint only); shop visits; raw progression |
+| **INDEPENDENCE** | Intentional, self-directed agency | Genuine self-directed / opt-out choices (currently **unrecorded**) | **Under-instrumented → baseline 0** |
+
+### CARE vs COMMUNITY (the key distinction)
+- **CARE** = *depth of attention to individuals* (one NPC's favorite drink, their arc, remembering them).
+- **COMMUNITY** = *breadth / investment in the social world* (many NPCs, town events, broad engagement).
+- Each action has a **primary** interpretation; secondary effects are rare and intentional. Favorite serving → CARE (not COMMUNITY + COMFORT + CURIOSITY).
+
+### Pacing is NOT a personality judgment
+Respecting the player's pacing is a core pillar (NO fail states, NO timers, calm over challenge,
+player-controlled pacing). Therefore the following are **strictly neutral** for narrative dimensions:
+
+- **Skipped days** → neutral (affects progression timing only, never personality)
+- **Early closes** → neutral
+- **Low activity / short sessions** → neutral
+- **Not using relaxed mode** → neutral
+- **Low chat / low favorite-serving frequency** → neutral (not a social penalty)
+
+A player who closes early, skips a day, plays briefly, or does not chat is **never** silently pushed
+toward an "independent" or any other narrative. They retain the complete story: chapter advancement is
+day-based and dimension-independent, and the ending evaluator falls back to **keeper** (belonging /
+continuity) when no ending's dimension thresholds are met.
+
+### INDEPENDENCE status
+Independence is intentionally a near-zero baseline because the current game does not record any reliable
+self-directed-choice signal (all ending branches are equally valid; there is no "decline obligation"
+event). Fabricating evidence from pacing was explicitly rejected. The `wanderer` ending remains in the
+model and is reachable *only* if a future build supplies genuine independence signals; until then it is
+intentionally hard to hit. This is documented as preferable to false inference.
+
+### Double-counting guard
+Each action maps to one primary dimension. Cross-dimension leakage (e.g. favorite serve → CARE +
+COMMUNITY + COMFORT + CURIOSITY) is avoided; secondary effects require a deliberate design reason.
 
 ---
 

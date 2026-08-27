@@ -135,21 +135,40 @@ export class NarrativeScheduler {
     const primaryDim = state.dominantDimension;
     const tiebreakerConfig = this.endingConfigs.find(e => e.tiebreaker_dimension === primaryDim);
     const tiebreakerBonus = tiebreakerConfig ? 0.1 : 0;
-    
+
+    // An ending only "qualifies" if it meets ALL its minimum dimension thresholds.
+    // Pacing does not feed any dimension, so a calm/low-engagement player is not
+    // pushed toward an ending. When NO ending qualifies, the deterministic neutral
+    // fallback is 'keeper' (belonging / continuity — the calm, P1-aligned default).
+    const qualifiers = this.endingConfigs.filter(e => this.endingQualifies(e, state));
+    const candidatePool = qualifiers.length > 0
+      ? qualifiers
+      : [this.endingConfigs.find(e => e.id === 'keeper')!];
+
     // Find max score with tiebreaker
     let bestEnding: EndingId = 'keeper';
-    let bestScore = scores.keeper + (tiebreakerConfig?.id === 'keeper' ? tiebreakerBonus : 0);
-    
-    for (const [ending, score] of Object.entries(scores)) {
-      const bonus = this.endingConfigs.find(e => e.id === ending)?.tiebreaker_dimension === primaryDim ? tiebreakerBonus : 0;
-      const finalScore = score + bonus;
+    let bestScore = -Infinity;
+
+    for (const config of candidatePool) {
+      const ending = config.id;
+      const bonus = config.tiebreaker_dimension === primaryDim ? tiebreakerBonus : 0;
+      const finalScore = scores[ending] + bonus;
       if (finalScore > bestScore) {
         bestScore = finalScore;
-        bestEnding = ending as EndingId;
+        bestEnding = ending;
       }
     }
-    
+
     return bestEnding;
+  }
+
+  /** True if the state meets ALL of an ending's minimum dimension thresholds. */
+  private endingQualifies(config: EndingConfig, state: NarrativeState): boolean {
+    for (const [dim, threshold] of Object.entries(config.min_dimensions ?? {})) {
+      const value = state.dimensions[dim as NarrativeDimension] ?? 0;
+      if (value < (threshold as number)) return false;
+    }
+    return true;
   }
   
   /** Score an ending based on requirements */
@@ -177,12 +196,6 @@ export class NarrativeScheduler {
       const upgradeCount = Object.keys(state.upgradesOwned ?? {}).length;
       if (upgradeCount >= config.min_upgrades) score += 1;
       else score -= (config.min_upgrades - upgradeCount) * 0.5;
-    }
-    
-    // Days skipped requirement
-    if (config.min_days_skipped !== undefined) {
-      if (state.daysSkipped >= config.min_days_skipped) score += 1;
-      else score -= (config.min_days_skipped - state.daysSkipped) * 0.3;
     }
     
     // Required arcs

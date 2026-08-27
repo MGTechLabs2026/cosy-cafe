@@ -33,7 +33,7 @@ npm run dev        # dev server on http://localhost:5173
 | `npm run dev`       | Vite dev server (port 5173, strict)           |
 | `npm run build`     | Typecheck (`tsc --noEmit`) + production build to `dist/` |
 | `npm run preview`   | Serve the production build locally            |
-| `npm test`          | Run the Vitest suite (337 tests)              |
+| `npm test`          | Run the Vitest suite (362 tests)              |
 | `npm run typecheck` | TypeScript only                               |
 
 ## itch.io Release

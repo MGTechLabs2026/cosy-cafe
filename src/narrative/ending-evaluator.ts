@@ -27,7 +27,6 @@ export class EndingEvaluator {
     progress: { 
       chapter: number;
       stars: number;
-      daysSkipped: number;
       completedArcs: string[];
       flags: Record<string, boolean>;
       upgradesOwned: Record<string, boolean>;
@@ -49,30 +48,51 @@ export class EndingEvaluator {
       wanderer: this.scoreEnding(state, progress, this.endingConfigs.find(e => e.id === 'wanderer')!),
       community: this.scoreEnding(state, progress, this.endingConfigs.find(e => e.id === 'community')!),
     };
-    
+
     // Get primary dimension for tiebreaker
     const primaryDimension = state.dominantDimension;
     const tiebreakerConfig = this.endingConfigs.find(e => e.tiebreaker_dimension === primaryDimension);
     const tiebreakerBonus = tiebreakerConfig ? 0.1 : 0;
-    
+
+    // An ending only "qualifies" if it meets ALL its minimum dimension thresholds.
+    // Pacing (skipped days, early closes, low activity) does NOT feed any dimension,
+    // so a calm/low-engagement player must not be silently pushed toward an ending.
+    // When NO ending qualifies, the deterministic neutral fallback is 'keeper'
+    // (belonging / continuity — the calm, P1-aligned default), not the ending with
+    // the fewest requirements.
+    const qualifiers = this.endingConfigs.filter(e => this.endingQualifies(e, state));
+    const candidatePool = qualifiers.length > 0
+      ? qualifiers
+      : [this.endingConfigs.find(e => e.id === 'keeper')!];
+
     // Find max score with deterministic tiebreaker
     let bestEnding: EndingId = 'keeper';
-    let bestScore = scores.keeper + (tiebreakerConfig?.id === 'keeper' ? tiebreakerBonus : 0);
-    
-    for (const [ending, score] of Object.entries(scores)) {
-      const bonus = this.endingConfigs.find(e => e.id === ending)?.tiebreaker_dimension === primaryDimension ? tiebreakerBonus : 0;
-      const finalScore = score + bonus;
+    let bestScore = -Infinity;
+
+    for (const config of candidatePool) {
+      const ending = config.id;
+      const bonus = config.tiebreaker_dimension === primaryDimension ? tiebreakerBonus : 0;
+      const finalScore = scores[ending] + bonus;
       if (finalScore > bestScore) {
         bestScore = finalScore;
-        bestEnding = ending as EndingId;
+        bestEnding = ending;
       }
     }
-    
+
     return {
       ending: bestEnding,
       scores,
       primaryDimension,
     };
+  }
+
+  /** True if the state meets ALL of an ending's minimum dimension thresholds. */
+  private endingQualifies(config: EndingConfig, state: NarrativeState): boolean {
+    for (const [dim, threshold] of Object.entries(config.min_dimensions ?? {})) {
+      const value = state.dimensions[dim as 'care' | 'curiosity' | 'community' | 'comfort' | 'independence'] ?? 0;
+      if (value < (threshold as number)) return false;
+    }
+    return true;
   }
   
   /** Score an ending based on its requirements */
@@ -80,7 +100,6 @@ export class EndingEvaluator {
     state: NarrativeState, 
     progress: { 
       stars: number;
-      daysSkipped: number;
       completedArcs: string[];
       flags: Record<string, boolean>;
       upgradesOwned: Record<string, boolean>;
@@ -110,12 +129,6 @@ export class EndingEvaluator {
       const upgradeCount = Object.keys(progress.upgradesOwned ?? {}).length;
       if (upgradeCount >= config.min_upgrades) score += 1;
       else score -= (config.min_upgrades - upgradeCount) * 0.5;
-    }
-    
-    // Days skipped requirement
-    if (config.min_days_skipped !== undefined) {
-      if (progress.daysSkipped >= config.min_days_skipped) score += 1;
-      else score -= (config.min_days_skipped - progress.daysSkipped) * 0.3;
     }
     
     // Required arcs
@@ -149,7 +162,6 @@ export function evaluateEnding(
   progress: { 
     chapter: number;
     stars: number;
-    daysSkipped: number;
     completedArcs: string[];
     flags: Record<string, boolean>;
     upgradesOwned: Record<string, boolean>;

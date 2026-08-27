@@ -286,12 +286,14 @@ Five dimensions computed each morning from save state (0–1 normalized):
 | **CARE** | Attentiveness to individuals | Hearts, favorite serves, chats, NPC-specific recipes |
 | **CURIOSITY** | Drive to understand secrets | Recipe discoveries, journal usage, experimental brews, Wren interactions |
 | **COMMUNITY** | Breadth of social engagement | Unique NPCs served, hearts breadth, town letters, town tab |
-| **COMFORT** | Investment in the café as a place | Upgrades, stars, shelf capacity, inventory breadth, shop visits |
-| **INDEPENDENCE** | Autonomous pacing | Skipped days, early closes, relaxed mode, solo play |
+| **COMFORT** | Investment in the café as a place | Upgrades, shelf capacity, inventory breadth, staying open (no early close) |
+| **INDEPENDENCE** | Intentional self-directed agency | **Under-instrumented** — baseline 0; not derived from pacing |
 
 - **Computed, not stored.** Recalculated daily from source state.
 - **Thresholds:** 0.33 (low) / 0.66 (high) for branch eligibility.
 - **Deterministic:** same save → same dimensions.
+- **Pacing is neutral.** Skipped days, early closes, low activity, and non-relaxed play are NOT
+  personality signals and are excluded from all dimensions (see docs/09 §14).
 
 ### 9.2 Dimension → Content Mapping
 
@@ -301,7 +303,7 @@ Five dimensions computed each morning from save state (0–1 normalized):
 | CURIOSITY ≥ 0.66 | Mystery letters, hidden recipe hints, Wren clue letters, basement hints |
 | COMMUNITY ≥ 0.66 | Town letters, community development letters, broad NPC engagement |
 | COMFORT ≥ 0.66 | Legacy letters, renovation letters, town council proposals, shop focus |
-| INDEPENDENCE ≥ 0.66 | Wanderer-path letters, pacing autonomy letters, optional scene unlocks |
+| INDEPENDENCE ≥ 0.66 | (Reserved — independence is under-instrumented; no content auto-unlocks from pacing) |
 
 ### 9.3 Letter Scheduler Integration
 
@@ -357,7 +359,7 @@ Four valid endings scored from final dimension state:
 |--------|-------|-------------------|---------|
 | KEEPER | Belonging | CARE | ≥ 0.5, Fenwick arc complete |
 | BUILDER | Creation | COMFORT | ≥ 0.6, Stars ≥ 4, Upgrades ≥ 4 |
-| WANDERER | Autonomy | INDEPENDENCE | ≥ 0.5, Skipped ≥ 3, Wren arc complete |
+| WANDERER | Autonomy | INDEPENDENCE | ≥ 0.5, Wren arc complete (no skipped-day requirement; independence is under-instrumented so this ending is intentionally rare) |
 | COMMUNITY KEEPER | Legacy | COMMUNITY | ≥ 0.6, Town letters ≥ 3, All intros |
 
 Tiebreaker: highest dimension. All endings celebrated; no failure state.
