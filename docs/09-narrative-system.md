@@ -548,27 +548,58 @@ interface NarrativeFlags {
 | Category | Examples | Persistence |
 |----------|----------|-------------|
 | **Source Game State** | hearts, stars, coins, inventory, upgrades, recipes, scenes, day | Persisted |
-| **Derived Narrative State** | CARE, CURIOSITY, COMMUNITY, COMFORT, INDEPENDENCE | **Computed each morning** |
+| **Derived Narrative State** | CARE, CURIOSITY, COMMUNITY, COMFORT, INDEPENDENCE | **Computed each morning from NarrativeInput** |
 | **Persistent Story Flags** | chapter, letters_delivered, ending_achieved, mystery_layer | Persisted |
 
 **Do not save the computed dimensions.** Recalculate from source state on load.
 
+**The adapter (`createNarrativeInput`) isolates the narrative system from SaveData structure.** Narrative modules depend only on `NarrativeInput` interface.
+
 ---
 
-## 15. Implementation Architecture (Future)
+### Implementation Architecture (Refactored)
 
 ### Module Structure
 
 ```
 src/narrative/
-  narrative-state.ts        # Compute dimensions from save state
-  narrative-evaluator.ts    # Check eligibility, score endings
-  narrative-scheduler.ts    # Advance chapter, trigger beats
-  letter-scheduler.ts       # Select & deliver letters
+  narrative-input.ts        # Adapter: SaveData → NarrativeInput (read model)
+  narrative-state.ts        # Compute 5 dimensions from NarrativeInput
   story-definitions.ts      # Letter definitions, chapter config, endings
-  ending-evaluator.ts       # Final ending determination
-  narrative-hooks.ts        # Integration points for controllers
+  narrative-evaluator.ts    # Eligibility, scoring, thresholds (future)
+  narrative-scheduler.ts    # Chapter advancement, beat triggering (future)
+  letter-scheduler.ts       # Letter selection, delivery, caps (future)
+  ending-evaluator.ts       # Final ending determination (future)
+  narrative-hooks.ts        # Controller integration points (future)
 ```
+
+### Data Flow (Refactored)
+
+```
+Save State (source)
+    ↓
+createNarrativeInput(save) → NarrativeInput (read-only model)
+    ↓
+evaluateNarrativeState(input) → NarrativeState (5 dimensions + derived)
+    ↓
+LetterScheduler.select(narrativeState, narrativeInput) → LetterDelivery[]
+    ↓
+DayController delivers via UI/letter.ts
+    ↓
+Player reads → sets flags.read
+    ↓
+Next day → recompute
+```
+
+### Key Architecture Decision: Adapter Pattern
+
+The narrative system consumes a **read model** (`NarrativeInput`) rather than directly accessing `SaveData`. 
+
+**Benefits:**
+- **Testability**: NarrativeEvaluator can run with plain mocked `NarrativeInput` without constructing full `SaveData`
+- **Isolation**: Narrative logic has no direct dependency on SaveData structure
+- **Single Source of Truth**: The adapter (`createNarrativeInput`) is the ONLY place that translates SaveData
+- **Future-Proof**: SaveData changes only require adapter updates, not narrative logic changes
 
 ### Integration Points
 
@@ -579,22 +610,6 @@ src/narrative/
 | `ServiceController` | `onServe` / `onChat` / `onArcBeat` → update dimension signals |
 | `ProgressionController` | `onUpgrade` / `onRecipeDiscovery` → curiosity/comfort signals |
 | `KettleController` | `onExperimentalBrew` → independence/curiosity signal |
-
-### Data Flow
-
-```
-Save State (source)
-    ↓
-NarrativeState.compute(save) → 5 dimensions (derived)
-    ↓
-LetterScheduler.select(narrativeState, save) → LetterDelivery[]
-    ↓
-DayController delivers via UI/letter.ts
-    ↓
-Player reads → sets flags.read
-    ↓
-Next day → recompute
-```
 
 ---
 
@@ -706,17 +721,18 @@ Complete specification for a behavior-driven narrative layer that:
 6. **Letters reactive** — priority by dimension alignment
 7. **Deterministic** — same save = same narrative
 
-### 7. Planned Implementation Modules
+### 7. Planned Implementation Modules (Refactored)
 
-| Module | Responsibility |
-|--------|----------------|
-| `narrative-state.ts` | Compute 5 dimensions from save |
-| `narrative-evaluator.ts` | Eligibility, scoring, thresholds |
-| `narrative-scheduler.ts` | Chapter advancement, beat triggering |
-| `letter-scheduler.ts` | Letter selection, delivery, caps |
-| `story-definitions.ts` | All narrative content data |
-| `ending-evaluator.ts` | Final ending determination |
-| `narrative-hooks.ts` | Controller integration points |
+| Module | Responsibility | Status |
+|--------|----------------|--------|
+| `narrative-input.ts` | Adapter: SaveData → NarrativeInput | ✅ Done (Batch 1) |
+| `narrative-state.ts` | Compute 5 dimensions from NarrativeInput | ✅ Done (Batch 1) |
+| `story-definitions.ts` | All narrative content data (letters, chapters, endings) | ⏳ Future |
+| `narrative-evaluator.ts` | Eligibility, scoring, thresholds | ⏳ Future |
+| `narrative-scheduler.ts` | Chapter advancement, beat triggering | ⏳ Future |
+| `letter-scheduler.ts` | Letter selection, delivery, caps | ⏳ Future |
+| `ending-evaluator.ts` | Final ending determination | ⏳ Future |
+| `narrative-hooks.ts` | Controller integration points | ⏳ Future |
 
 ### 8. Risks / Unresolved Decisions
 

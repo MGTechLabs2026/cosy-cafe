@@ -1,335 +1,272 @@
-// src/narrative/narrative-state.ts — compute hidden narrative dimensions from save state
-// Pure TypeScript, zero platform imports. Deterministic, derived from existing gameplay data.
+// src/narrative/narrative-state.ts — compute hidden narrative dimensions from narrative input
+// Pure TypeScript, zero platform imports. Deterministic, derived from NarrativeInput.
 
-import type { SaveData } from '../save/validate.js';
-import type { HeartLedger } from '../sim/hearts.js';
-import { displayedHearts } from '../sim/hearts.js';
-
-export type NarrativeDimension =
-  | 'care'
-  | 'curiosity'
-  | 'community'
-  | 'comfort'
-  | 'independence';
+import type { NarrativeInput, NarrativeDimension } from './narrative-input';
 
 export interface NarrativeState {
-  dimensions: Record<NarrativeDimension, number>; // 0–1 normalized
-  highestDimension: NarrativeDimension;
+  /** 0..1 for each dimension */
+  dimensions: Record<NarrativeDimension, number>;
+  /** Dominant dimension (or null if tied) */
+  dominantDimension: NarrativeDimension | null;
+  /** Second-highest dimension (or null) */
+  secondaryDimension: NarrativeDimension | null;
+  /** Computed trajectory based on dominant dimension */
+  trajectory: 'relationship' | 'cafe' | 'curiosity' | null;
+  /** Chapter this state applies to */
   chapter: number;
-  trajectoryHint: 'care' | 'comfort' | 'curiosity' | 'community' | 'independence' | null;
-  // Computed signals for debugging
-  signals: {
-    avgHearts: number;
-    favoriteServeRatio: number;
-    chatRatio: number;
-    recipeDiscoveryRatio: number;
-    journalOpensPerDay: number;
-    hintCardsRead: number;
-    experimentalBrewRatio: number;
-    wrenScenesSeen: number;
-    uniqueNPCsServed: number;
-    heartsBreadth: number;
-    lettersArchivedRatio: number;
-    townTabOpensPerDay: number;
-    upgradesOwnedRatio: number;
-    starsRatio: number;
-    shelfCapacityRatio: number;
-    inventoryKindsRatio: number;
-    shopVisitsPerDay: number;
-    daysSkippedRatio: number;
-    earlyCloseRatio: number;
-    relaxedMode: boolean;
-    wrenMysteryBrewRatio: number;
-  };
+  /** Marigold mystery layer 1-5 */
+  marigoldMysteryLayer: number;
+  /** Wren clues gathered 0-3 */
+  wrenCluesGathered: number;
+  /** Wren scenes seen count */
+  wrenScenesSeen: number;
+  /** Whether trajectory is locked (after chapter 3) */
+  trajectoryLocked: boolean;
+  /** Achieved ending (if any) */
+  endingAchieved: 'keeper' | 'builder' | 'wanderer' | 'community' | null;
+  /** Days played this playthrough */
+  day: number;
+  /** Total playthroughs completed */
+  playthroughCount: number;
+  /** Previous endings achieved */
+  previousEndings: string[];
 }
 
-// Safe division
-function safeDiv(numerator: number, denominator: number): number {
-  return denominator > 0 ? numerator / denominator : 0;
+/** Default dimension values when no data */
+const DEFAULT_DIMENSIONS: Record<NarrativeDimension, number> = {
+  care: 0,
+  curiosity: 0,
+  community: 0,
+  comfort: 0,
+  independence: 0,
+};
+
+/** Compute care dimension: relationship depth + preferred serve + chat */
+function computeCare(input: NarrativeInput): number {
+  const { relationships, activity } = input;
+  
+  // Heart breadth: how many NPCs have at least 1 heart
+  const breadth = relationships.heartsBreadth / 5; // 0..1
+  
+  // Average displayed hearts across all NPCs
+  const avgHearts = Object.values(relationships.displayedHearts).reduce((a, b) => a + b, 0) / 5;
+  const heartsNorm = Math.min(avgHearts / 5, 1); // 0..1
+  
+  // Chat engagement (ratio of chats to serves)
+  const chatRatio = activity.chatRatio;
+  
+  // Favorite serve accuracy
+  const favoriteServeRatio = activity.favoriteServeRatio;
+  
+  // Learned preferences count
+  const prefRatio = Math.min(relationships.learnedPrefs.length / 5, 1);
+  
+  return (
+    breadth * 0.25 +
+    heartsNorm * 0.25 +
+    chatRatio * 0.2 +
+    favoriteServeRatio * 0.15 +
+    prefRatio * 0.15
+  );
 }
 
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
+/** Compute curiosity dimension: recipe discovery + experimental brews + Wren mystery */
+function computeCuriosity(input: NarrativeInput): number {
+  const { recipes, activity, story } = input;
+  
+  // Recipe discovery ratio
+  const discoveryRatio = recipes.discoveredRecipes.length / recipes.totalRecipes;
+  
+  // Hint cards read (R004-R007)
+  const hintRatio = recipes.hintCardsRead / 4;
+  
+  // Experimental brew ratio
+  const experimentalRatio = activity.experimentalBrewRatio;
+  
+  // Wren mystery brew ratio
+  const wrenMysteryRatio = activity.wrenMysteryBrewRatio;
+  
+  // Wren scenes seen
+  const wrenSceneRatio = Math.min(recipes.wrenScenesSeen / 6, 1);
+  
+  // Journal engagement (opens per day)
+  const journalRatio = Math.min(activity.journalOpensPerDay / 2, 1);
+  
+  return (
+    discoveryRatio * 0.25 +
+    hintRatio * 0.15 +
+    experimentalRatio * 0.2 +
+    wrenMysteryRatio * 0.15 +
+    wrenSceneRatio * 0.15 +
+    journalRatio * 0.1
+  );
 }
 
-function getDisplayedHearts(save: SaveData, npc: string): number {
-  const points = save.hearts[npc] ?? 0;
-  return Math.floor(points + 1e-9);
+/** Compute community dimension: town engagement + letter reading + diverse NPCs served */
+function computeCommunity(input: NarrativeInput): number {
+  const { letters, activity, relationships } = input;
+  
+  // Letters read ratio
+  const lettersReadRatio = letters.lettersDelivered.length > 0
+    ? letters.lettersRead.length / letters.lettersDelivered.length
+    : 0;
+  
+  // Town letters delivered
+  const townRatio = letters.townLettersDelivered / letters.maxLetters;
+  
+  // Unique NPCs served breadth
+  const uniqueRatio = relationships.uniqueNPCsServed / 5;
+  
+  // Hearts breadth
+  const breadthRatio = relationships.heartsBreadth / 5;
+  
+  // Town tab opens per day
+  const townTabRatio = Math.min(activity.townTabOpensPerDay / 1, 1);
+  
+  return (
+    lettersReadRatio * 0.3 +
+    townRatio * 0.2 +
+    uniqueRatio * 0.2 +
+    breadthRatio * 0.15 +
+    townTabRatio * 0.15
+  );
 }
 
-function getUniqueNPCsServed(save: SaveData): number {
-  // Derived from hearts distribution - NPCs with any hearts have been served
-  const regularNPCs = ['fenwick', 'sela', 'bram', 'nia', 'wren'];
-  return regularNPCs.filter(npc => (save.hearts[npc] ?? 0) > 0).length;
+/** Compute comfort dimension: café investment + consistency + relaxed pacing */
+function computeComfort(input: NarrativeInput): number {
+  const { upgrades, activity, story } = input;
+  
+  // Upgrades owned ratio
+  const upgradeRatio = upgrades.upgradesOwned / upgrades.maxUpgrades;
+  
+  // Shelf capacity ratio
+  const shelfRatio = upgrades.shelfCapacity / upgrades.maxShelfCapacity;
+  
+  // Inventory variety
+  const inventoryRatio = upgrades.inventoryKinds / upgrades.maxInventoryKinds;
+  
+  // Stars ratio (consistency)
+  const starsRatio = activity.starsRatio;
+  
+  // Shop visits per day (engagement with café)
+  const shopRatio = Math.min(activity.shopVisitsPerDay / 3, 1);
+  
+  // Relaxed mode / no early closes
+  const relaxedBonus = activity.relaxedMode ? 0.1 : 0;
+  const noEarlyCloseBonus = activity.earlyCloseRatio === 0 ? 0.1 : 0;
+  
+  return (
+    upgradeRatio * 0.25 +
+    shelfRatio * 0.2 +
+    inventoryRatio * 0.15 +
+    starsRatio * 0.15 +
+    shopRatio * 0.15 +
+    relaxedBonus * 0.05 +
+    noEarlyCloseBonus * 0.05
+  );
 }
 
-function getHeartsBreadth(save: SaveData): number {
-  // How many NPCs have at least 1 displayed heart
-  const regularNPCs = ['fenwick', 'sela', 'bram', 'nia', 'wren'];
-  return regularNPCs.filter(npc => getDisplayedHearts(save, npc) >= 1).length;
+/** Compute independence dimension: skipping days + early closes + self-directed play */
+function computeIndependence(input: NarrativeInput): number {
+  const { activity, story } = input;
+  
+  // Days skipped ratio
+  const skipRatio = activity.daysSkippedRatio;
+  
+  // Early close ratio
+  const earlyCloseRatio = activity.earlyCloseRatio;
+  
+  // Low chat engagement
+  const lowChatRatio = 1 - activity.chatRatio;
+  
+  // Low favorite serve adherence
+  const lowFavoriteRatio = 1 - activity.favoriteServeRatio;
+  
+  // High chapter (later chapters = more independence)
+  const chapterRatio = Math.min(story.chapter / 5, 1);
+  
+  // Not relaxed mode
+  const notRelaxed = activity.relaxedModeSetting ? 0 : 0.1;
+  
+  return (
+    skipRatio * 0.3 +
+    earlyCloseRatio * 0.2 +
+    lowChatRatio * 0.2 +
+    lowFavoriteRatio * 0.15 +
+    chapterRatio * 0.1 +
+    notRelaxed * 0.05
+  );
 }
 
-function getTotalServes(save: SaveData): number {
-  return save.total_serves ?? 0;
+/** Get dominant dimension (highest score) */
+function getDominantDimension(dimensions: Record<NarrativeDimension, number>): NarrativeDimension | null {
+  const entries = Object.entries(dimensions) as [NarrativeDimension, number][];
+  const sorted = entries.sort((a, b) => b[1] - a[1]);
+  
+  if (sorted.length < 2) return sorted[0]?.[0] ?? null;
+  
+  // Check for tie (within 0.01)
+  const first = sorted[0];
+  const second = sorted[1];
+  if (!first || !second) return null;
+  if (Math.abs(first[1] - second[1]) < 0.01) return null;
+  
+  return first[0];
 }
 
-function getFavoriteServes(save: SaveData): number {
-  // Approximate: we don't track favorite serves directly, but we can estimate
-  // from hearts gained - favorite serves give +1.0, correct serves +0.1, chats +0.25
-  // This is a rough heuristic
-  const regularNPCs = ['fenwick', 'sela', 'bram', 'nia', 'wren'];
-  let estimate = 0;
-  for (const npc of regularNPCs) {
-    const points = save.hearts[npc] ?? 0;
-    // Each favorite serve = 1.0, so max favorites = floor(points)
-    estimate += Math.floor(points + 1e-9);
+/** Get secondary dimension (second highest) */
+function getSecondaryDimension(dimensions: Record<NarrativeDimension, number>): NarrativeDimension | null {
+  const entries = Object.entries(dimensions) as [NarrativeDimension, number][];
+  const sorted = entries.sort((a, b) => b[1] - a[1]);
+  if (sorted.length < 2) return null;
+  const second = sorted[1];
+  return second ? second[0] : null;
+}
+
+/** Compute trajectory from dominant dimension */
+function computeTrajectory(dominant: NarrativeDimension | null, chapter: number): 'relationship' | 'cafe' | 'curiosity' | null {
+  if (!dominant) return null;
+  
+  switch (dominant) {
+    case 'care':
+    case 'community':
+      return 'relationship';
+    case 'comfort':
+      return 'cafe';
+    case 'curiosity':
+    case 'independence':
+      return 'curiosity';
   }
-  return estimate;
 }
 
-function getChatCount(save: SaveData): number {
-  // Approximate from hearts - each chat = 0.25
-  // But we can't distinguish from correct serves (0.1)
-  // Use the chatted_this_service flag as a proxy for current service
-  // For lifetime, we'd need to track separately - approximate from heart_points_today
-  let estimate = 0;
-  for (const [, pointsToday] of Object.entries(save.heart_points_today)) {
-    // Points today from chats: 0.25 each
-    estimate += Math.floor(pointsToday / 0.25);
-  }
-  return estimate;
-}
-
-function getExperimentalBrews(save: SaveData): number {
-  // Not directly tracked - approximate from murky brews which consume ingredients
-  // but don't result in serves. We can estimate from ingredient consumption vs serves.
-  // For now, use a flag-based approach if we add tracking later.
-  // Return 0 for now - can be enhanced with telemetry.
-  return 0;
-}
-
-function getWrenMysteryBrews(save: SaveData): number {
-  // Wren mystery brews = brews when Wren is active with "?" order
-  // Not tracked directly - return 0 for now
-  return 0;
-}
-
-function getWrenVisits(save: SaveData): number {
-  // Approximate from Wren hearts + scenes
-  const hearts = getDisplayedHearts({ ...save, hearts: save.hearts }, 'wren');
-  const scenes = save.flags.seen_scenes.filter(s => s.startsWith('wren_')).length;
-  return hearts + scenes; // rough estimate
-}
-
-function getWrenScenesSeen(save: SaveData): number {
-  return save.flags.seen_scenes.filter(s => s.startsWith('wren_')).length;
-}
-
-function getJournalOpens(save: SaveData): number {
-  // Not tracked directly - could add to flags later
-  // For now, estimate from letters read + recipes discovered
-  return (save.flags['letters_read']?.length ?? 0) + save.flags.discovered_recipes.length;
-}
-
-function getHintCardsRead(save: SaveData): number {
-  // Hint cards are the 4 hinted recipes: R004-R007
-  const hintedRecipes = ['R004', 'R005', 'R006', 'R007'];
-  return hintedRecipes.filter(r => save.flags.discovered_recipes.includes(r)).length;
-}
-
-function getLettersArchived(save: SaveData): number {
-  return save.letters.length;
-}
-
-function getMaxLetters(): number {
-  // Estimate max possible letters in MVP
-  return 40; // rough estimate
-}
-
-function getTownTabOpens(save: SaveData): number {
-  // Not tracked - estimate from town letters delivered
-  return save.letters.filter(l => l.startsWith('town_')).length;
-}
-
-function getShopVisits(save: SaveData): number {
-  // Not directly tracked - estimate from upgrades purchased + ingredients bought
-  return save.upgrades.length + Object.values(save.inventory).reduce((a, b) => a + b, 0);
-}
-
-function getDaysSkipped(save: SaveData): number {
-  // Not tracked directly - could add flag for sleep-in days
-  // For now, estimate from day vs total_serves ratio
-  // Low serves relative to days = likely skipped days
-  const expectedServes = save.day * 5; // ~5 serves/day average
-  const actualServes = save.total_serves;
-  return Math.max(0, Math.floor((expectedServes - actualServes) / 5));
-}
-
-function getServiceDays(save: SaveData): number {
-  return Math.max(1, save.day - getDaysSkipped(save));
-}
-
-function getEarlyCloses(save: SaveData): number {
-  // Not tracked - return 0 for now
-  return 0;
-}
-
-function getUpgradesOwned(save: SaveData): number {
-  return save.upgrades.length;
-}
-
-function getMaxUpgrades(): number {
-  // 6 upgrades, but bigger_shelf is repeatable x2 = 7 total
-  return 7;
-}
-
-function getShelfCapacity(save: SaveData): number {
-  const biggerShelfCount = save.upgrades.filter(u => u === 'bigger_shelf').length;
-  return 6 + biggerShelfCount * 3;
-}
-
-function getInventoryKinds(save: SaveData): number {
-  return Object.values(save.inventory).filter(v => v > 0).length;
-}
-
-function getMaxInventoryKinds(): number {
-  return 9; // tea_leaves, honey, moonleaf, cocoa, ember_chili, cloud_sugar, frostberries, ginger_root, sage
-}
-
-function getDays(save: SaveData): number {
-  return save.day;
-}
-
-function getRelaxedMode(save: SaveData): boolean {
-  return save.settings.relaxed_mode ?? true;
-}
-
-/**
- * Compute the complete narrative state from save data.
- * Pure function - deterministic, no side effects.
- */
-export function computeNarrativeState(save: SaveData): NarrativeState {
-  const day = getDays(save);
-  const totalServes = getTotalServes(save);
-  const favoriteServes = getFavoriteServes(save);
-  const chatCount = getChatCount(save);
-  const recipesDiscovered = save.flags.discovered_recipes.length;
-  const journalOpens = getJournalOpens(save);
-  const hintCardsRead = getHintCardsRead(save);
-  const experimentalBrews = getExperimentalBrews(save);
-  const wrenScenesSeen = getWrenScenesSeen(save);
-  const uniqueNPCsServed = getUniqueNPCsServed(save);
-  const heartsBreadth = getHeartsBreadth(save);
-  const lettersArchived = getLettersArchived(save);
-  const townTabOpens = getTownTabOpens(save);
-  const upgradesOwned = getUpgradesOwned(save);
-  const stars = save.stars;
-  const shelfCapacity = getShelfCapacity(save);
-  const inventoryKinds = getInventoryKinds(save);
-  const shopVisits = getShopVisits(save);
-  const daysSkipped = getDaysSkipped(save);
-  const serviceDays = getServiceDays(save);
-  const earlyCloses = getEarlyCloses(save);
-  const relaxedMode = getRelaxedMode(save);
-  const wrenMysteryBrews = getWrenMysteryBrews(save);
-  const wrenVisits = getWrenVisits(save);
-
-  // Average hearts across all regular NPCs
-  const regularNPCs = ['fenwick', 'sela', 'bram', 'nia', 'wren'];
-  const avgHearts = regularNPCs.reduce((sum, npc) => sum + getDisplayedHearts(save, npc), 0) / regularNPCs.length;
-
-  // Compute raw dimension values (before clamping)
-  const careRaw = 
-    0.40 * safeDiv(avgHearts, 5) +
-    0.30 * safeDiv(favoriteServes, totalServes) +
-    0.20 * safeDiv(chatCount, Math.max(1, totalServes)) +
-    0.10 * safeDiv(recipesDiscovered, 8); // 8 total recipes
-
-  const curiosityRaw =
-    0.35 * safeDiv(recipesDiscovered, 8) +
-    0.25 * safeDiv(journalOpens, Math.max(1, day)) +
-    0.20 * safeDiv(hintCardsRead, 4) +
-    0.10 * safeDiv(experimentalBrews, Math.max(1, totalServes)) +
-    0.10 * safeDiv(wrenScenesSeen, 6);
-
-  const communityRaw =
-    0.35 * safeDiv(uniqueNPCsServed, 5) + // 5 regular NPCs (excluding travelers)
-    0.25 * safeDiv(heartsBreadth, 5) +
-    0.20 * safeDiv(lettersArchived, 40) +
-    0.20 * safeDiv(townTabOpens, Math.max(1, day));
-
-  const comfortRaw =
-    0.30 * safeDiv(upgradesOwned, 7) +
-    0.25 * safeDiv(stars, 5) +
-    0.20 * safeDiv(shelfCapacity, 12) +
-    0.15 * safeDiv(inventoryKinds, 9) +
-    0.10 * safeDiv(shopVisits, Math.max(1, day));
-
-  const independenceRaw =
-    0.35 * safeDiv(daysSkipped, 14) +
-    0.25 * safeDiv(earlyCloses, serviceDays) +
-    0.20 * (relaxedMode ? 1 : 0) +
-    0.10 * safeDiv(experimentalBrews, Math.max(1, totalServes)) +
-    0.10 * safeDiv(wrenMysteryBrews, Math.max(1, wrenVisits));
-
+/** Main evaluator function */
+export function evaluateNarrativeState(input: NarrativeInput): NarrativeState {
   const dimensions: Record<NarrativeDimension, number> = {
-    care: clamp01(careRaw),
-    curiosity: clamp01(curiosityRaw),
-    community: clamp01(communityRaw),
-    comfort: clamp01(comfortRaw),
-    independence: clamp01(independenceRaw),
+    care: computeCare(input),
+    curiosity: computeCuriosity(input),
+    community: computeCommunity(input),
+    comfort: computeComfort(input),
+    independence: computeIndependence(input),
   };
 
-  // Find highest dimension for tiebreaking
-  let highestDimension: NarrativeDimension = 'care';
-  let highestValue = dimensions.care;
-  for (const [dim, value] of Object.entries(dimensions)) {
-    if (value > highestValue) {
-      highestValue = value;
-      highestDimension = dim as NarrativeDimension;
-    }
-  }
-
-  // Trajectory hint based on highest dimension
-  const trajectoryMap: Record<NarrativeDimension, 'care' | 'comfort' | 'curiosity' | 'community' | 'independence'> = {
-    care: 'care',
-    comfort: 'comfort',
-    curiosity: 'curiosity',
-    community: 'community',
-    independence: 'independence',
-  };
-  const trajectoryHint = trajectoryMap[highestDimension];
-
-  // Chapter from save flags
-  const chapter = save.flags['current_chapter'] as number ?? 0;
+  const dominantDimension = getDominantDimension(dimensions);
+  const secondaryDimension = getSecondaryDimension(dimensions);
+  const trajectory = computeTrajectory(dominantDimension, input.story.chapter);
+  const trajectoryLocked = input.story.chapter >= 3 && trajectory !== null;
 
   return {
     dimensions,
-    highestDimension,
-    chapter,
-    trajectoryHint,
-    signals: {
-      avgHearts,
-      favoriteServeRatio: safeDiv(favoriteServes, totalServes),
-      chatRatio: safeDiv(chatCount, Math.max(1, totalServes)),
-      recipeDiscoveryRatio: safeDiv(recipesDiscovered, 8),
-      journalOpensPerDay: safeDiv(journalOpens, day),
-      hintCardsRead: safeDiv(hintCardsRead, 4),
-      experimentalBrewRatio: safeDiv(experimentalBrews, Math.max(1, totalServes)),
-      wrenScenesSeen,
-      uniqueNPCsServed,
-      heartsBreadth,
-      lettersArchivedRatio: safeDiv(lettersArchived, 40),
-      townTabOpensPerDay: safeDiv(townTabOpens, day),
-      upgradesOwnedRatio: safeDiv(upgradesOwned, 7),
-      starsRatio: safeDiv(stars, 5),
-      shelfCapacityRatio: safeDiv(shelfCapacity, 12),
-      inventoryKindsRatio: safeDiv(inventoryKinds, 9),
-      shopVisitsPerDay: safeDiv(shopVisits, Math.max(1, day)),
-      daysSkippedRatio: safeDiv(daysSkipped, 14),
-      earlyCloseRatio: safeDiv(earlyCloses, serviceDays),
-      relaxedMode,
-      wrenMysteryBrewRatio: safeDiv(wrenMysteryBrews, Math.max(1, wrenVisits)),
-    },
+    dominantDimension,
+    secondaryDimension,
+    trajectory,
+    chapter: input.story.chapter,
+    marigoldMysteryLayer: input.story.marigoldMysteryLayer,
+    wrenCluesGathered: input.story.wrenCluesGathered,
+    wrenScenesSeen: input.recipes.wrenScenesSeen,
+    trajectoryLocked,
+    endingAchieved: input.story.endingAchieved,
+    day: input.activity.day,
+    playthroughCount: input.story.playthroughCount,
+    previousEndings: input.story.previousEndings,
   };
 }
