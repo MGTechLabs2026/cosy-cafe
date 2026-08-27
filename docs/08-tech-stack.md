@@ -110,6 +110,8 @@ src/
     recipes.ts            recipe view helpers (name, icon, combo from strings)
     strings.ts            STRINGS object (inlined strings.json)
     strings.json          single source of truth for all game text
+                          (nested object; dotted keys like "fenwick.scene1.line1"
+                           resolve through the nested structure, not flat lookup)
     scenes.ts             scene definitions + trigger logic
   save/
     store.ts              localStorage read/write, migration chain, import pipeline

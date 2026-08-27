@@ -64,10 +64,33 @@ let textSpeedMultiplier = 1; // 0.5 (fast) to 2 (slow), from settings
 // Typing speeds in ms per character
 const BASE_TYPING_SPEED_MS = 30;
 
-/** Get string from STRINGS by key, with fallback */
-function getString(key: string): string {
-  const stringsRecord = STRINGS as unknown as Record<string, string>;
-  return stringsRecord[key] ?? key;
+/**
+ * Resolve a translation key against the nested STRINGS object.
+ *
+ * Supports both direct keys (e.g. "settings.close") and dotted/nested keys
+ * (e.g. "fenwick.scene1.line1") by traversing the object path. Returns the
+ * string when found, otherwise falls back to the key itself (never throws,
+ * never returns a non-string value). This fixes the scene i18n bug where
+ * dotted scene keys resolved to `undefined` and leaked raw keys to the player.
+ */
+export function getString(key: string): string {
+  if (typeof STRINGS === 'string') return STRINGS;
+
+  // Direct (single-segment) key lookup first — preserves prior behavior and
+  // keeps a flat key working if one is ever added.
+  const root = STRINGS as unknown as Record<string, unknown>;
+  const direct = root[key];
+  if (typeof direct === 'string') return direct;
+
+  // Nested traversal for dotted keys (e.g. "fenwick.scene1.line1").
+  const segments = key.split('.');
+  let current: unknown = STRINGS;
+  for (const segment of segments) {
+    if (current === null || typeof current !== 'object') return key;
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return typeof current === 'string' ? current : key;
 }
 
 /** Get character name from STRINGS.cast */
