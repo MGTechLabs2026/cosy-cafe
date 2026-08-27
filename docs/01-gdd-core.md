@@ -1,6 +1,6 @@
 # 01 · Moonleaf Café — Core Game Design Document
 
-> Doc 01 of 07 · Status: Draft v0.1 · 2026-08-25
+> Doc 01 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative System
 
 ## 1. High Concept
 
@@ -46,6 +46,9 @@ In practice: six characters with real arcs beat twenty with one line each. The s
 **P5 — Respect the player's time.**
 In practice: one in-game day fits a coffee break. Prep is untimed — the day starts when the player flips the door sign, not on a schedule. Skipping a day is one click. Autosave happens at every evening recap; closing the tab mid-service loses at most one day's service.
 
+**P6 — Narrative-driven experience.**
+In practice: the player doesn't select a story; they live a style of play, and the story responds. Five hidden dimensions (Care, Curiosity, Community, Comfort, Independence) derived from gameplay shape letter delivery, optional scenes, and ending direction. No dialogue tree determines the outcome — your café habits do. See doc 09 for full specification.
+
 ## 4. The Loops
 
 ### Core loop (every day, ~3–5 min)
@@ -71,6 +74,9 @@ In practice: one in-game day fits a coffee break. Prep is untimed — the day st
 ```
  serve well ──► reputation stars ──► unlock ingredients, methods, capacity
  bond w/ regulars ──► hearts ──► personal scenes, gifts, small arcs resolve
+ explore recipes ──► curiosity ──► hidden recipes, Marigold's mystery
+ build comfort ──► upgrades ──► café transforms visually
+ choose pace ──► independence ──► ending direction
  day 14+: sandbox continues, seasons rotate décor, all arcs complete
 ```
 
@@ -80,7 +86,7 @@ The intended emotional shape of a full run: *curiosity → competence → belong
 
 Magic in this world is **ambient, domestic, and harmless** — never a combat system, never a resource to optimize.
 
-1. Magic explains coziness: the hearth never goes out, the kettle hums when a recipe is *nearly* right, moonleaf glows faintly on the shelf.
+1. Magic explains coziness: the hearth never goes out, the kettle hums when a recipe is *nearly* right, moonleaf glows faintly on nights it rained that day.
 2. Magic creates gentle variety: an 8-night moon cycle (post-MVP) nudges which drinks people crave.
 3. Magic never punishes: a failed experiment makes "murky tea" that even the cat declines. You pour it out. That's all.
 4. Wonder budget: roughly one small magical delight per in-game day. More than that and wonder stops being wonderful.
@@ -106,3 +112,61 @@ How we'll know the MVP is good enough to keep building publicly. Measured inform
 3. **Bonding:** at least one playtester mentions a *named character* unprompted in feedback.
 4. **Calm:** zero comments describing stress/rush (if any appear, P1 is broken — fix before adding content).
 5. **Technical:** loads and runs in current Chrome/Firefox/Safari, initial download ≤ 20 MB, no crash reports of save loss.
+
+## 8. Narrative System Overview (Doc 09)
+
+**Thesis:** The player doesn't select a story. The player lives a style of play. The story responds to that style.
+
+Five hidden dimensions derived from existing gameplay:
+- **CARE** — attentiveness to individuals (hearts, favorite serves, chats)
+- **CURIOSITY** — drive to understand (recipe discovery, journal, experimentation)
+- **COMMUNITY** — breadth of engagement (NPCs served, town letters, town tab)
+- **COMFORT** — investment in the café (upgrades, stars, inventory breadth)
+- **INDEPENDENCE** — autonomous pacing (skipped days, early closes, relaxed mode)
+
+Three behavior-driven trajectories:
+- **Relationship-First** → NPC letters, Marigold memories, community stories
+- **Café-First** → legacy letters, renovation, town development
+- **Curiosity-First** → mystery clues, hidden recipes, Wren's spine
+
+Four valid endings (Keeper, Builder, Wanderer, Community Keeper) — no failure states.
+
+See **doc 09-narrative-system.md** for authoritative specification.
+
+---
+
+## 9. Design Docs Map
+
+| # | Document | What it covers |
+|---|----------|----------------|
+| 01 | [Core GDD](01-gdd-core.md) | This document |
+| 02 | [Systems Design](02-systems-design.md) | Day cycle, brewing, economy, saves, narrative hooks |
+| 03 | [World & Characters](03-world-characters.md) | Setting, tone, cast with arcs and rewards |
+| 04 | [Art & Audio Direction](04-art-audio-direction.md) | Pixel-art spec, palette, animation budget, music/SFX |
+| 05 | [UI & UX](05-ui-ux.md) | Screens, HUD, flows, tutorial, accessibility, letter mailbox |
+| 06 | [MVP Scope & Roadmap](06-mvp-scope-roadmap.md) | What ships first, milestones, narrative milestones |
+| 07 | [itch.io Release Plan](07-itchio-release-plan.md) | Page copy, asset checklist, tags, devlog strategy |
+| 08 | [Tech Stack & Architecture](08-tech-stack.md) | Engine-less TS/Vite/Canvas2D, module map, narrative modules |
+| 09 | [Narrative System](09-narrative-system.md) | Behavior-driven narrative, dimensions, letters, arcs, endings |
+
+Read 01 first; everything else hangs off its pillars. 06 defines the hard boundary of what ships first; 08 defines what it's built with; 09 defines the narrative layer.
+
+## 10. Decision Log
+
+| Date | Decision | Status |
+|------|----------|--------|
+| 2026-08-25 | Target platform: browser-first (HTML5) on itch.io; downloadable builds later | Decided |
+| 2026-08-25 | Free / donationware for the MVP; revisit pricing at 1.0 | Decided |
+| 2026-08-25 | English only for MVP; all strings kept in one data file for later translation | Decided |
+| 2026-08-25 | **Stack:** engine-less TypeScript + Vite + Canvas2D (own renderer) + DOM text/UI + Howler. Priorities: size + performance; PixiJS kept as sanctioned escape hatch. See doc 08. | Decided |
+| 2026-08-25 | Save export/import uses AES-GCM encrypted codes (`MLC1` wire format, key id for rotation). Local localStorage saves stay plaintext by design. Tamper-resistance yes, DRM no. | Decided |
+| 2026-08-25 | Art made in-house, single cast of 6 for MVP to control scope | Decided |
+| 2026-08-27 | **Narrative system:** behavior-driven, 5 hidden dimensions, reactive letters, 4 endings. No explicit story choices. See doc 09. | Decided |
+| — | Working-title trademark/name availability check before public devlogs | TODO |
+
+## 11. Ground Rules for Anyone Editing These Docs
+
+1. Pillars (doc 01 §5) win arguments. If a feature fights a pillar, the feature changes or dies.
+2. Every number in doc 02 is a starting value, not gospel — but change it in the doc, not just in code.
+3. Nothing gets added to scope without removing something of equal size (see doc 06 cut list).
+4. Narrative divergence comes from behavior, not dialogue choices (doc 09 §11).

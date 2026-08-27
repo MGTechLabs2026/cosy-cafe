@@ -1,6 +1,6 @@
 # 05 · Moonleaf Café — UI & UX
 
-> Doc 05 of 07 · Status: Draft v0.1 · 2026-08-25
+> Doc 05 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative Letter System
 > One room, one screen, no menus unless asked. If the player ever wonders what to do next, the UI failed.
 
 ## 1. Screen Map
@@ -45,17 +45,18 @@ Desktop reference 1280×720 (native art 480×270 integer-scaled). Mobile/tablet:
 ### 3.1 First 90 seconds (tutorial-by-design, no wall of text)
 1. Title → New Game → short letter from Aunt Marigold (skippable, ≤ 100 words).
 2. Café, morning. Journal pulses once. Notice board shows one tip card.
-3. First arrival scripted: **Fenwick** — *\"Whatever's fastest. No— whatever's warmest. Actually… surprise me.\"* Bubble shows Black Tea icon.
+3. First arrival scripted: **Fenwick** — *"Whatever's fastest. No— whatever's warmest. Actually… surprise me."* Bubble shows Black Tea icon.
 4. Player opens kettle manually (no auto-open — playtest fix #2). Only water+tea_leaves available initially → hard to fail. Brew → serve.
-5. Fenwick: *\"Good pace. Keep it.\"* Coins tick.
-6. Second arrival: **Old Wren** — *\"I'll have my usual.\"* Bubble shows a generic-cup icon with \"?\" (near-miss tutorial).
-7. Player brews any known recipe → Wren: *\"Close enough, dear. You'll find it.\"* (Sets up the arc AND teaches that near-misses are fine.)
+5. Fenwick: *"Good pace. Keep it."* Coins tick.
+6. Second arrival: **Old Wren** — *"I'll have my usual."* Bubble shows a generic-cup icon with "?" (near-miss tutorial).
+7. Player brews any known recipe → Wren: *"Close enough, dear. You'll find it."* (Sets up the arc AND teaches that near-misses are fine.)
 8. Fenwick returns and explicitly teaches R003 Moonleaf Tea. Player brews it. Success chime. Coins tick. Done — the player now knows: brew → serve → earn → journal remembers.
 
 No further tutorials. Systems 2–4 introduce themselves via morning mail cards, one per day max.
 
 ### 3.2 Service loop (target ≤ 30 s per customer)
 arrival (door chime) → walk-in → bubble appears → player clicks kettle → builds drink → serve → reaction + optional chat prompt (one click) → coin fly → customer lingers or leaves.
+
 Chat is opt-in per customer (a small speech icon above them); skipping it costs nothing but the tip bonus.
 
 ### 3.3 Closing
@@ -72,6 +73,83 @@ Rules:
 - The preview always shows day/coins/stars so players can recognize *their* save without trusting the code blindly.
 - Both buttons disable (with tooltip) if `crypto.subtle` is unavailable rather than falling back to plaintext.
 
+### 3.5 Morning Mail & Letter System (Doc 09 §7)
+
+**New in Narrative System:** The morning mail delivery is now the primary narrative content delivery mechanism.
+
+**Mailbox UI (replaces static notice board):**
+
+```
+┌─────────────────────────────────────┐
+│ 📬  MORNING MAIL              Day 5 │
+├─────────────────────────────────────┤
+│ ✉  Marigold: "The Ledger"      NEW  │  ← mandatory, high priority
+│ ✉  Fenwick: "A Promise"        NEW  │  ← NPC relationship (CARE-driven)
+│ ✉  Town Council: "Market Day"       │  ← community (COMMUNITY-driven)
+│ ✉  ???: "A Clue About Moonleaf"     │  ← mystery (CURIOSITY-driven)
+│                                     │
+│ [Read]  [Dismiss]  [Journal]        │
+└─────────────────────────────────────┘
+```
+
+**Mailbox behaviors:**
+- Opens automatically on morning entry (after Day 1)
+- Letters sorted: mandatory first → dimension-aligned optional
+- **"NEW"** badge on unread letters
+- **Source icon** (📜 Marigold, 👤 NPC, 🏘 Town, 🔮 Mystery)
+- **Read** → opens letter overlay (doc 05 §3.4 style)
+- **Dismiss** → marks read without opening (for optional letters)
+- **Journal** → jumps to Letters tab with this letter highlighted
+- Max 1 letter auto-delivered per day; additional letters queue for subsequent mornings
+- Mandatory letters (Marigold, convergence) always deliver on schedule
+
+**Letter Overlay (extends existing pattern):**
+
+```
+┌─────────────────────────────────────┐
+│ [×]                    Marigold     │
+├─────────────────────────────────────┤
+│                                     │
+│   Dear one,                         │
+│                                     │
+│   The ledger in the drawer...       │
+│   (letter content, ≤ 120 words)     │
+│                                     │
+├─────────────────────────────────────┤
+│ [Archive]      [Reply Later]        │  ← Reply Later = marks for follow-up
+└─────────────────────────────────────┘
+```
+
+- **Archive** → saves to journal Letters tab, sets `flags.letters_read`
+- **Reply Later** → keeps in mailbox with 📌 pin, sets `flags.letters_dismissed`
+- **Esc / click outside / ×** → closes, letter remains in mailbox
+- **Reduced motion:** no animation, instant appear
+
+**Journal Letters Tab Update:**
+- Letters now show **source**, **day received**, **read status**
+- Unread letters highlighted with accent color
+- "Reply Later" letters show 📌 pin icon
+- Clicking archived letter re-opens letter overlay
+
+### 3.6 Narrative State Visibility (Post-MVP / Debug)
+
+For playtesting only (hidden in release):
+
+```
+Settings → Advanced → Narrative Debug
+┌─────────────────────────────────────┐
+│ CARE        ████████░░  0.72        │
+│ CURIOSITY   ██████░░░░  0.58        │
+│ COMMUNITY   █████░░░░░  0.45        │
+│ COMFORT     ████████░░  0.70        │
+│ INDEPENDENCE███░░░░░░  0.30        │
+│                                     │
+│ Chapter: 2 (Day 6)                  │
+│ Trajectory hint: CARE               │
+│ Letters delivered: 12               │
+└─────────────────────────────────────┘
+```
+
 ## 4. Interaction Rules
 
 - Everything clickable has hover + pressed + focus states (art spec doc 04). Cursor changes to "hand" only over true interactables.
@@ -79,6 +157,7 @@ Rules:
 - Any modal closes with Esc / right-click / X button. No dead ends, ever: every state has a visible way forward.
 - Text speed slider; clicking dialogue instantly completes the current line.
 - All number feedback uses count-up animations (coins, hearts) — cheap dopamine, cozy pacing.
+- **Mailbox:** one-click read, one-click dismiss. No confirmation for dismiss (undo via Journal).
 
 ## 5. Feedback & State Design
 
@@ -90,6 +169,9 @@ Rules:
 | Not enough coins (shop) | Button shows price in muted color + wiggle-on-click + inline note "Earn ¤18 more" — never a blocking dialog |
 | Patience low | Candle icon flickers; customer shifts weight (animation), never a timer bar turning red |
 | Save happened | Tiny quill icon in corner fades in/out during evening recap only |
+| **New letter delivered** | Envelope icon pulses on HUD mail indicator (top bar) |
+| **Letter read** | Envelope opens animation; journal tab badge updates |
+| **Chapter transition** | Subtle screen tint shift + Marigold quote toast |
 
 Error-state rule: the player can always recover without losing progress or feeling blamed.
 
@@ -102,12 +184,14 @@ Error-state rule: the player can always recover without losing progress or feeli
 - Audio cues always duplicated visually (chime → door animation; discovery sparkle → journal flip).
 - Captions/subtitle option for future voice content (post-MVP); all dialogue already textual.
 - Seizure safety: no flashing above 3 Hz anywhere (candle flicker is 0.5 Hz).
+- **Mailbox:** screen reader announces "X new letters" on morning entry; each letter has source + day + read status.
 
 ## 7. Copy & Localization Notes
 
-- Voice: second person, warm, brief. Buttons are verbs ("Brew", "Serve", "Open"). Never exclamation marks in system UI.
+- Voice: second person, warm, brief. Buttons are verbs ("Brew", "Serve", "Open", "Read", "Dismiss"). Never exclamation marks in system UI.
 - Numbers formatted plainly: ¤42, not 42.00 coins.
 - All copy in `strings.json` (keys, not hardcoded) from commit one — same file the writers use (doc 03 §7).
+- **Letter keys:** `letters.marigold.ch1.ledger`, `letters.fenwick.ch2.promise`, `letters.town.ch3.market`, `letters.mystery.ch2.clue1`
 
 ## 8. Playtest UX Checklist (run on every build)
 
@@ -117,3 +201,13 @@ Error-state rule: the player can always recover without losing progress or feeli
 - [ ] Zero comments about stress/rush
 - [ ] Journal found and used by session end without being told
 - [ ] Settings reachable from title AND in-game
+- [ ] **Morning mailbox understood without explanation**
+- [ ] **Letter read/dismiss flow intuitive**
+- [ ] **Journal Letters tab shows read status clearly**
+
+## 9. UI Changelog
+
+| Date | Change | Reason |
+|------|--------|--------|
+| 2026-08-25 | Initial UI spec | Baseline for M1 |
+| 2026-08-27 | Added §3.5 Morning Mail & Letter System, §3.6 Narrative Debug | Doc 09 narrative system integration |

@@ -1,6 +1,6 @@
 # 02 · Moonleaf Café — Systems Design
 
-> Doc 02 of 07 · Status: Draft v0.1 · 2026-08-27 · Updated to match actual codebase
+> Doc 02 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative System hooks
 > Every numeric value here is a **starting value**, not gospel — tune through playtests, and record changes in the Changelog at the bottom.
 
 ## 1. The Day Cycle
@@ -273,9 +273,121 @@ All failures leave the current save untouched and return the player to Settings.
 - Relaxed Mode default ON. The alternative ("Standard") exists solely for players who want patience to mean something; it is never required for any content or ending.
 - Numbers above were chosen so a distracted player still succeeds: ~2 min patience vs. a ~30 sec average serve loop gives huge margin.
 
-## 9. Systems Changelog
+## 9. Narrative System (Doc 09)
+
+The narrative layer is a **behavior-driven system** that derives hidden state from existing gameplay data and uses it to schedule reactive content. It does not add new gameplay mechanics — it shapes the *presentation* of existing content.
+
+### 9.1 Narrative Dimensions (Hidden, Derived)
+
+Five dimensions computed each morning from save state (0–1 normalized):
+
+| Dimension | Core Meaning | Primary Signals |
+|-----------|-------------|-----------------|
+| **CARE** | Attentiveness to individuals | Hearts, favorite serves, chats, NPC-specific recipes |
+| **CURIOSITY** | Drive to understand secrets | Recipe discoveries, journal usage, experimental brews, Wren interactions |
+| **COMMUNITY** | Breadth of social engagement | Unique NPCs served, hearts breadth, town letters, town tab |
+| **COMFORT** | Investment in the café as a place | Upgrades, stars, shelf capacity, inventory breadth, shop visits |
+| **INDEPENDENCE** | Autonomous pacing | Skipped days, early closes, relaxed mode, solo play |
+
+- **Computed, not stored.** Recalculated daily from source state.
+- **Thresholds:** 0.33 (low) / 0.66 (high) for branch eligibility.
+- **Deterministic:** same save → same dimensions.
+
+### 9.2 Dimension → Content Mapping
+
+| High Dimension | Content Emphasis |
+|----------------|------------------|
+| CARE ≥ 0.66 | NPC relationship letters, Marigold memory letters, deep arc scenes |
+| CURIOSITY ≥ 0.66 | Mystery letters, hidden recipe hints, Wren clue letters, basement hints |
+| COMMUNITY ≥ 0.66 | Town letters, community development letters, broad NPC engagement |
+| COMFORT ≥ 0.66 | Legacy letters, renovation letters, town council proposals, shop focus |
+| INDEPENDENCE ≥ 0.66 | Wanderer-path letters, pacing autonomy letters, optional scene unlocks |
+
+### 9.3 Letter Scheduler Integration
+
+The narrative system hooks into the **morning mail delivery** (DayController → letter.ts):
+
+```typescript
+// Morning flow addition
+function deliverMorningMail(save: SaveData): void {
+  const narrativeState = NarrativeState.compute(save);
+  const letters = LetterScheduler.select(narrativeState, save);
+  // Deliver via existing letter.ts mailbox UI
+}
+```
+
+**Letter categories:**
+- **Mandatory** (3 Marigold, convergence beats) — fixed schedule
+- **NPC** (6 per character) — hearts + dimension driven
+- **Town** (4) — community dimension + days
+- **Mystery** (5) — curiosity + Wren progress
+- **Branch** (varies) — dimension thresholds
+- **Reactive** — low priority, fill gaps
+
+**Scheduler algorithm:** mandatory first (by chapter/priority), then optional sorted by dimension alignment score.
+
+### 9.4 Trajectory Branches (Emergent)
+
+Three trajectories emerge from dimension profiles — **never explicitly chosen**:
+
+| Trajectory | Dominant Dimensions | Letter Emphasis |
+|------------|---------------------|-----------------|
+| Relationship-First | CARE + COMMUNITY | NPC letters → Marigold memories → Town |
+| Café-First | COMFORT + STARS | Legacy → Renovation → Practical NPC |
+| Curiosity-First | CURIOSITY + INDEPENDENCE | Mystery → Hidden recipes → Marigold secrets |
+
+All trajectories converge on mandatory beats (Day 1, 7, 10, 14).
+
+### 9.5 Chapter Structure (14 Days)
+
+| Chapter | Days | Focus | Key Beats |
+|---------|------|-------|-----------|
+| CH0: ARRIVAL | 1–2 | Inheritance, tutorial | Marigold Letter 1, first service |
+| CH1: SETTLING | 3–4 | Regulars reveal | Intro scenes, Wren Scene 1 |
+| CH2: FIRST BRANCH | 5–7 | Trajectories diverge | Marigold Letter 2, Fenwick Scene 2 |
+| CH3: DEEPENING | 8–10 | Mystery deepens | Weekly letters, Wren Scenes 2–3 |
+| CH4: REVELATION | 11–12 | Major reveal | Wren Scenes 4–5, Marigold Letter 3 |
+| CH5: CHOICE | 13–14 | Ending direction | Final letter, evaluation |
+
+### 9.6 Ending Evaluation (Day 14)
+
+Four valid endings scored from final dimension state:
+
+| Ending | Theme | Primary Dimension | Minimum |
+|--------|-------|-------------------|---------|
+| KEEPER | Belonging | CARE | ≥ 0.5, Fenwick arc complete |
+| BUILDER | Creation | COMFORT | ≥ 0.6, Stars ≥ 4, Upgrades ≥ 4 |
+| WANDERER | Autonomy | INDEPENDENCE | ≥ 0.5, Skipped ≥ 3, Wren arc complete |
+| COMMUNITY KEEPER | Legacy | COMMUNITY | ≥ 0.6, Town letters ≥ 3, All intros |
+
+Tiebreaker: highest dimension. All endings celebrated; no failure state.
+
+### 9.7 Save Schema Additions (Future v5)
+
+```typescript
+// Add to SaveFlags
+interface NarrativeFlags {
+  current_chapter: 0 | 1 | 2 | 3 | 4 | 5;
+  chapter_entered_day: Record<number, number>;
+  letters_delivered: string[];
+  letters_read: string[];
+  letters_dismissed: string[];
+  dominant_dimension_history: NarrativeDimension[];
+  trajectory_hint: "care" | "comfort" | "curiosity" | "community" | "independence" | null;
+  ending_achieved?: "keeper" | "builder" | "wanderer" | "community";
+  marigold_mystery_layer: 1 | 2 | 3 | 4 | 5;
+  wren_clues_gathered: number;
+  playthrough_count: number;
+  previous_endings: string[];
+}
+```
+
+**Dimensions are NOT saved** — recomputed on load from source state.
+
+## 10. Systems Changelog
 
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-08-25 | Initial values set | Baseline for playtest build M1 |
 | 2026-08-27 | Recipe R008 renamed from "Cozy Comfort" to "Wren's Usual"; favorite table corrected (Fenwick=R004); Sela's cart rule documented as chosen option ii; Murky Brew consumes ingredients; save schema updated to v4 with text_size; migration chain documented | Matches actual codebase |
+| 2026-08-27 | Added §9 Narrative System: 5 hidden dimensions, letter scheduler, 3 trajectories, 5 chapters, 4 endings, save schema additions | Doc 09 specification |

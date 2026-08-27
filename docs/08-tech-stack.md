@@ -1,6 +1,6 @@
 # 08 · Moonleaf Café — Tech Stack & Architecture
 
-> Doc 08 of 08 · Status: Draft v0.1 · 2026-08-27 · Updated to match actual codebase
+> Doc 08 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative Module Architecture
 > Stated priorities: **performance and size.** Everything else (dev speed, familiarity) is a tiebreaker, not a goal.
 
 ## 1. The Decision
@@ -57,7 +57,7 @@ Why this wins on all three stated axes:
 - **Always-render-per-rAF:** the room repaints every frame (a flicker regression from an earlier dirty-flag attempt was fixed by reverting to per-frame rendering). Still battery-friendly at 480×270; the GPU does the heavy lifting.
 - Particles: preallocated pool, hard cap 40 live. Steam = recycled sprites, not objects.
 
-### 3.3 Modules (post-refactor)
+### 3.3 Modules (post-refactor + narrative)
 
 ```
 src/
@@ -84,10 +84,18 @@ src/
     service-controller.ts active customer session: arrivals, patience, chat, serve, teach beats, arc scenes
     kettle-controller.ts  kettle panel state, stock gate, ingredient consumption, brew submission
     progression-controller.ts economy runtime, hearts ledger, inventory, upgrades, save snapshots
+  narrative/              ← NEW in M5
+    narrative-state.ts    compute 5 dimensions from save state
+    narrative-evaluator.ts eligibility, thresholds, scoring
+    narrative-scheduler.ts chapter advancement, beat triggering
+    letter-scheduler.ts   letter selection, delivery, caps
+    story-definitions.ts  all narrative content data (letters, chapters, endings)
+    ending-evaluator.ts   final ending determination
+    narrative-hooks.ts    controller integration points
   ui/
     cafe-dom.ts           DOM plumbing: banner, action bar, toast, canvas click routing
     game.ts               thin compat layer — public entry point for tests + main.ts
-    hud.ts                top bar: day, coins, stars, settings, journal
+    hud.ts                top bar: day, coins, stars, settings, journal, mail indicator
     journal.ts            4-tab overlay (recipes, regulars, town, letters)
     kettle.ts             kettle panel DOM (base/ingredients/finish/BREW, A/B slots)
     shop.ts               evening-market shop (upgrades + ingredients)
@@ -97,7 +105,7 @@ src/
     title.ts              title screen (Continue/New Game, gesture unlock)
     title-snow.ts         juice: snowfall canvas behind title
     textsize.ts           text-size + reduced-motion class on <html>
-    letter.ts             tutorial letter overlay
+    letter.ts             tutorial letter overlay + morning mailbox
   data/
     recipes.ts            recipe view helpers (name, icon, combo from strings)
     strings.ts            STRINGS object (inlined strings.json)
@@ -118,7 +126,9 @@ src/
 ```
 sim/                      ← pure TypeScript, zero platform imports
   ↑
-controllers/              ← orchestration ONLY: imports sim/ + data/ + presentation/infra
+narrative/                ← pure TypeScript, imports sim/ + save/validate only
+  ↑
+controllers/              ← orchestration ONLY: imports sim/ + data/ + narrative/ + presentation/infra
   ↑
 ui/        render/        ← presentation layer (DOM + Canvas)
 audio/      save/
@@ -126,19 +136,31 @@ audio/      save/
 main.ts                   ← bootstrap, ties everything together
 ```
 
-**Rule:** `sim/` is pure TypeScript with zero platform imports — every gameplay rule from doc 02 is unit-testable without a browser. `controllers/` orchestrates between pure sim and presentation (ui/render/audio/save) — no business rules live here. **Controllers DO import presentation/infrastructure modules** (DOM, Canvas, audio, save) to coordinate them; they don't contain gameplay rules themselves.
+**Rule:** `sim/` is pure TypeScript with zero platform imports — every gameplay rule from doc 02 is unit-testable without a browser. `narrative/` is also pure TypeScript, importing only `sim/` and `save/validate.ts` for types. `controllers/` orchestrates between pure sim, narrative, and presentation (ui/render/audio/save) — no business rules live here. **Controllers DO import presentation/infrastructure modules** (DOM, Canvas, audio, save) to coordinate them; they don't contain gameplay rules themselves.
 
 ### 3.4 Controller responsibility matrix (actual imports verified)
 
-| Controller | Owns (orchestrates) | Delegates to (sim/data) | Imports (presentation/infra) |
-|------------|---------------------|-------------------------|------------------------------|
-| `GameController` | Composition root, app lifecycle, shared state refs, per-frame render coordination, debug hook surface | `DayController`, `ServiceController`, `KettleController`, `ProgressionController` | `render/tween`, `render/scene`, `render/images`, `render/fx`, `ui/cafe-dom`, `ui/journal`, `ui/shop`, `ui/scene`, `ui/textsize`, `save/crypto`, `audio/howl` |
-| `DayController` | Morning banner, door open, evening close/recap, next-day transition, daily schedule init, weekly delivery | `sim/day` (phase machine), `sim/customers` (schedule), `sim/shelf` (delivery) | `audio/howl`, `ui/cafe-dom`, `ui/recap`, `ui/shop`, `data/strings`, `data/recipes` |
-| `ServiceController` | Active session: spawn/walk-in/patience/chat/serve/payout/hearts/teach beats/arc triggers/retire | `sim/customers`, `sim/economy`, `sim/hearts`, `data/scenes` | `audio/howl`, `render/images`, `render/tween`, `render/fx`, `render/scene`, `ui/scene`, `save/store` |
-| `KettleController` | Kettle panel state, stock gate, ingredient consumption, last-brew memory, brew submission | `sim/brewing` (resolveBrew), `sim/shelf` (stock), `sim/upgrades` (brewAnimSec, coffee base) | `ui/kettle`, `ui/cafe-dom`, `data/strings`, `data/recipes` |
-| `ProgressionController` | Economy runtime, hearts ledger, inventory, upgrades, shelf capacity, save snapshots, export | `sim/economy`, `sim/hearts`, `sim/upgrades`, `sim/day`, `sim/shelf` | `audio/howl`, `save/store`, `save/crypto`, `save/validate` |
+| Controller | Owns (orchestrates) | Delegates to (sim/data/narrative) | Imports (presentation/infra) |
+|------------|---------------------|-----------------------------------|------------------------------|
+| `GameController` | Composition root, app lifecycle, shared state refs, per-frame render coordination, debug hook surface | `DayController`, `ServiceController`, `KettleController`, `ProgressionController`, `NarrativeScheduler` | `render/tween`, `render/scene`, `render/images`, `render/fx`, `ui/cafe-dom`, `ui/journal`, `ui/shop`, `ui/scene`, `ui/textsize`, `save/crypto`, `audio/howl` |
+| `DayController` | Morning banner, door open, evening close/recap, next-day transition, daily schedule init, weekly delivery, **morning mail delivery** | `sim/day` (phase machine), `sim/customers` (schedule), `sim/shelf` (delivery), `LetterScheduler` | `audio/howl`, `ui/cafe-dom`, `ui/recap`, `ui/shop`, `data/strings`, `data/recipes` |
+| `ServiceController` | Active session: spawn/walk-in/patience/chat/serve/payout/hearts/teach beats/arc triggers/retire | `sim/customers`, `sim/economy`, `sim/hearts`, `data/scenes`, `NarrativeHooks.onServe/onChat/onArcBeat` | `audio/howl`, `render/images`, `render/tween`, `render/fx`, `render/scene`, `ui/scene`, `save/store` |
+| `KettleController` | Kettle panel state, stock gate, ingredient consumption, last-brew memory, brew submission | `sim/brewing` (resolveBrew), `sim/shelf` (stock), `sim/upgrades` (brewAnimSec, coffee base), `NarrativeHooks.onExperimentalBrew` | `ui/kettle`, `ui/cafe-dom`, `data/strings`, `data/recipes` |
+| `ProgressionController` | Economy runtime, hearts ledger, inventory, upgrades, shelf capacity, save snapshots, export | `sim/economy`, `sim/hearts`, `sim/upgrades`, `sim/day`, `sim/shelf`, `NarrativeHooks.onUpgrade/onRecipeDiscovery` | `audio/howl`, `save/store`, `save/crypto`, `save/validate` |
 
-### 3.5 Assets pipeline
+### 3.5 Narrative Module Responsibilities
+
+| Module | Responsibility | Imports |
+|--------|---------------|---------|
+| `narrative-state.ts` | Compute 5 dimensions (CARE, CURIOSITY, COMMUNITY, COMFORT, INDEPENDENCE) from save state | `sim/hearts`, `sim/economy`, `sim/upgrades`, `sim/customers`, `save/validate` |
+| `narrative-evaluator.ts` | Eligibility checks, threshold evaluation, dimension alignment scoring | `narrative-state`, `story-definitions` |
+| `narrative-scheduler.ts` | Chapter advancement, beat triggering, convergence enforcement | `narrative-evaluator`, `story-definitions` |
+| `letter-scheduler.ts` | Letter selection (mandatory + optional), priority sorting, delivery caps | `narrative-evaluator`, `story-definitions` |
+| `story-definitions.ts` | All narrative content: letter configs, chapter beats, ending definitions, trajectory rules | (data only — no imports) |
+| `ending-evaluator.ts` | Final ending scoring, tiebreaking, validity guarantee | `narrative-state`, `story-definitions` |
+| `narrative-hooks.ts` | Integration surface for controllers (onServe, onChat, onUpgrade, etc.) | `narrative-state`, `narrative-evaluator` |
+
+### 3.6 Assets pipeline
 
 - Atlas: pack PNGs with free-tex-packer into one sheet + JSON frames. Target ≤ 6 MB total art (manifest in `assets/ASSETS.md` tracks actuals).
 - Audio: OGG Vorbis, music ~q4–5 (≈1–1.5 MB/track), SFX mono. Preload only the door-chime + click sounds; stream music after first user gesture (also satisfies autoplay policy).
@@ -161,9 +183,10 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 
 ## 5. Testing
 
-- **Vitest:** all of `sim/` (brew matching, economy, patience, hearts, shelf, upgrades) + save round-trip/tamper gates from doc 06 §M1 run as plain unit tests — the crypto module is pure WebCrypto, mockable with a tiny inline polyfill for Node 20+ (globalThis.crypto exists).
+- **Vitest:** all of `sim/` (brew matching, economy, patience, hearts, shelf, upgrades) + `narrative/` (dimension computation, eligibility, letter scheduling, ending evaluation) + save round-trip/tamper gates from doc 06 §M1 run as plain unit tests — the crypto module is pure WebCrypto, mockable with a tiny inline polyfill for Node 20+ (globalThis.crypto exists).
 - **Integration/smoke:** `tests/m2_smoke.test.ts` exercises full day cycles via debug hooks on the `GameController`.
 - **Content/migration:** `tests/m2_migration.test.ts` validates v1→v4 migration, export/import round-trips, tamper refusal.
+- **Narrative tests:** `tests/narrative/` (new) — dimension computation, letter eligibility, trajectory branching, ending evaluation, replay determinism.
 - **Playwright:** cross-browser import/export (Chromium/Firefox/WebKit), tutorial 90-second gate, reduced-motion audit.
 
 ## 6. Risks
@@ -174,6 +197,8 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 | Canvas text temptation creep | Lint rule: no `ctx.fillText` outside debug builds — UI text belongs to DOM |
 | Scope pull toward "engine features" (shaders, camera moves) | If genuinely needed, adopt PixiJS v8 behind the `render/draw.ts` interface (§7) — not before |
 | Safari quirks (pixelated, WebAudio unlock) | Playwright WebKit in CI from M0; gesture-gated audio per doc 05 |
+| **Narrative content volume** | Phase implementation (M5a mandatory, M5b optional); size-limit guards total JS |
+| **Dimension weight tuning** | Expose as constants in `narrative-state.ts`; validate with playtest telemetry |
 
 ## 7. Escape Hatch
 
@@ -187,3 +212,4 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 | 2026-08-25 | **Amendment (M0 review):** minifier is Vite's built-in esbuild, not terser — the dependency-free constraint in the M0 brief wins over the table above; at ~13–26 KB bundle size terser's few-percent edge is irrelevant. Table row "Vite + terser" should read "Vite + esbuild". |
 | 2026-08-27 | **Orchestration refactor:** extracted `src/ui/game.ts` (~1100 LOC) into five controller modules under `src/controllers/` — `game-controller.ts` (composition root), `day-controller.ts`, `service-controller.ts`, `kettle-controller.ts`, `progression-controller.ts`. `ui/game.ts` retained as thin compatibility layer. Pure sim boundary enforced; zero behavior change; all 241 tests + typecheck + build pass. Updated stale doc statements (R008 status, Fenwick favorite, kettle auto-open, module map, dirty-flag claim, milestone table). |
 | 2026-08-27 | **Architecture documentation audit:** docs/08-tech-stack.md rewritten to match actual codebase. Corrected controller dependency model (controllers DO import presentation/infra modules), removed stale dirty-flag rendering claim, completed module map, documented real dependency direction, documented save architecture accurately. |
+| 2026-08-27 | **Narrative module architecture added:** `src/narrative/` (6 modules), updated dependency direction, controller responsibility matrix, module map. Pure narrative boundary enforced (imports sim/ + save/validate only). |
