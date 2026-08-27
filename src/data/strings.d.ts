@@ -240,4 +240,13 @@ export interface Strings {
   bram: { intro: SceneSection };
   nia: { intro: SceneSection };
   chat: Record<string, string[]>;
+  /** Day-14 ending resolution screen — calm conclusion, never a failure screen. */
+  endings: {
+    title: string;
+    continue: string;
+    keeper: { theme: string; title: string; body: string; cafeState: string };
+    builder: { theme: string; title: string; body: string; cafeState: string };
+    wanderer: { theme: string; title: string; body: string; cafeState: string };
+    community: { theme: string; title: string; body: string; cafeState: string };
+  };
 }

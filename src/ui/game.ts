@@ -17,6 +17,7 @@ import type { BrewInput } from '../sim/brewing.js';
 import type { UpgradeId } from '../sim/upgrades.js';
 import type { SaveData } from '../save/validate.js';
 import { exportSaveCode } from '../save/crypto.js';
+import { isEndingOpen as isEndingOpenImpl } from '../ui/ending.js';
 
 let game: GameController | null = null;
 
@@ -83,6 +84,11 @@ export function debugCloseJournal(): void {
   game?.debugCloseJournal();
 }
 
+/** Drive the Day-14 run resolution (evaluate → record → present ending). */
+export function debugResolveEnding(): void {
+  game?.debugResolveEnding();
+}
+
 export function debugBuyUpgrade(id: UpgradeId): void {
   game?.debugBuyUpgrade(id);
 }
@@ -105,4 +111,10 @@ export function debugSelaCartOpen(): boolean {
 
 export function debugSaveSnapshot(): SaveData {
   return game?.debugSaveSnapshot() ?? ({} as never);
+}
+
+/** True if the ending overlay is currently mounted (test/smoke introspection). */
+export function isEndingOpen(): boolean {
+  // Lazy import keeps the dependency graph identical to the runtime path.
+  return isEndingOpenImpl();
 }

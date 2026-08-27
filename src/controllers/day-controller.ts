@@ -10,7 +10,7 @@ import type { DayPhase } from '../audio/howl.js';
 import { STRINGS, format } from '../data/strings.js';
 import { ingredientLabel } from '../data/recipes.js';
 import type { DayState, Inventory } from '../sim/day.js';
-import { beginNextDay, closeDay, openService } from '../sim/day.js';
+import { beginNextDay, closeDay, openService, FINAL_DAY } from '../sim/day.js';
 import { buildDaySchedule } from '../sim/customers.js';
 import type { ScheduledArrival } from '../sim/customers.js';
 import { applyDelivery, isDeliveryDay, shelfIdsFor } from '../sim/shelf.js';
@@ -51,6 +51,12 @@ export interface DayControllerDeps {
   onOpenShop: () => void;
   /** Autosave at recap boundaries (doc 02 §7.1). */
   onAutosave: () => void;
+  /**
+   * Day-14 recap "Continue" pressed → resolve the run (ending evaluation +
+   * presentation + return to title). The GameController owns this flow; it
+   * must NEVER roll to Day 15 before the ending is shown (Batch 4 / BUG-03).
+   */
+  onRunComplete: () => void;
 }
 
 /**
@@ -185,6 +191,13 @@ export class DayController {
         },
         ctx.reducedMotion,
         () => {
+          // Batch 4 / BUG-03: closing Day 14 resolves the run (ending). Day 15
+          // must never silently begin as normal gameplay — route to the
+          // GameController's run-resolution flow instead of onNextDay().
+          if (finishedDay >= FINAL_DAY) {
+            this.autosaveAt(this.deps.onRunComplete);
+            return;
+          }
           this.autosaveAt(this.deps.onNextDay);
         },
         () => {

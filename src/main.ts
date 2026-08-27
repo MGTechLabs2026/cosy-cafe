@@ -124,6 +124,9 @@ function startGame(newGame: boolean): void {
     canvas: getCanvas(),
     onHudSync: syncHud,
     onOpenSettings: openSettingsOverlay,
+    // Batch 4 / BUG-03: when a completed run resolves (Day-14 ending), return
+    // to the title screen rather than silently starting Day 15.
+    onReturnToTitle: () => returnToTitle(),
   });
 
   // Tutorial step 1: Marigold's letter on a brand-new game only (doc 05 §3.1).
@@ -133,6 +136,26 @@ function startGame(newGame: boolean): void {
       /* morning banner is already waiting underneath */
     });
   }
+}
+
+/** Run resolved → return to the title screen (authoritative navigation boundary). */
+function returnToTitle(): void {
+  cafeActive = false;
+  gameStarted = false;
+  // Tear down the café DOM so the title screen owns the stage; reload the
+  // (now ending-bearing) save so Continue reflects the completed run.
+  const wrapper = document.getElementById('game-wrapper');
+  if (wrapper) wrapper.innerHTML = '';
+  const hud = document.getElementById('hud');
+  if (hud) hud.classList.add('hidden');
+
+  const existingSave = loadSave();
+  initTitleScreen({
+    onContinue: () => enterCafe(false),
+    onNewGame: () => enterCafe(true),
+    hasSave: existingSave.ok,
+    savedDay: existingSave.ok ? existingSave.data.day : null,
+  });
 }
 
 /** Title → café navigation. Continue resumes the autosave; New Game resets. */

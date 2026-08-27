@@ -622,5 +622,33 @@
       "\"Vessany woods are glowing this season. Bioluminescent, they say.\"",
       "\"Downriver city never sleeps. This place... this place remembers how to rest.\""
     ]
+  },
+  "endings": {
+    "title": "Your Two Weeks at the Café",
+    "continue": "Return to the front door",
+    "keeper": {
+      "theme": "Belonging & Continuity",
+      "title": "The Keeper of the Hearth",
+      "body": "You came to tend a café and stayed to tend a home. The regulars found their rhythm around your counter; the kettle kept its song; Marigold's chair by the window stayed warm. You didn't change the café so much as become its steady hand. Some mornings ask only for presence, and yours was enough. The door will open again tomorrow, and you'll be here.",
+      "cafeState": "The café endures, exactly as it should."
+    },
+    "builder": {
+      "theme": "Comfort & Craft",
+      "title": "The Builder of Something Warm",
+      "body": "You rolled up your sleeves. New shelves, a second kettle, a bench by the window where the light falls just so. The café is more than Marigold left it — not because you erased her, but because you added to her. Every upgrade is a small promise kept to the people who walk through the door. The room hums with the comfort you built into it, board by board.",
+      "cafeState": "The café is fuller, warmer, more yours."
+    },
+    "wanderer": {
+      "theme": "Autonomy & Rest",
+      "title": "The Wanderer Who Rested",
+      "body": "You kept your own counsel. The café ran, the days passed, and you let the world move at its own pace. Wren's stories stayed with you; the river kept its quiet. Not every journey is loud. Some are the gentle art of tending a thing and then letting it be. You closed the sign when you needed to, and that was its own kind of wisdom.",
+      "cafeState": "The café rests, preserved and quiet."
+    },
+    "community": {
+      "theme": "Community & Legacy",
+      "title": "The Heart of the Square",
+      "body": "You opened the door and the whole town walked in. The market found its day; the council found its voice; Sela's cart, Bram's workshops, Nia's sketches — all of it gathered around your counter. The café became what Marigold always hoped it could be: a place the town remembers how to meet. You didn't just keep a café. You kept a community.",
+      "cafeState": "The community board stays active, well past your stay."
+    }
   }
 }

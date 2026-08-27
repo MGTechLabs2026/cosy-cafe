@@ -26,6 +26,9 @@ import type { CafeDomRefs } from '../ui/cafe-dom.js';
 import { openJournal, closeJournal, isJournalOpen, openJournalToRecipe } from '../ui/journal.js';
 import { openShop, closeShop, isShopOpen, setShopDayProvider } from '../ui/shop.js';
 import { isSceneOpen } from '../ui/scene.js';
+import { showEnding, isEndingOpen, closeEnding } from '../ui/ending.js';
+import { evaluateEndingForRun, recordEnding } from '../narrative/runtime.js';
+import type { EndingId } from '../narrative/story-definitions.js';
 import type { SaveData } from '../save/validate.js';
 import { shelfPrice } from '../sim/shelf.js';
 import { ProgressionController } from './progression-controller.js';
@@ -38,6 +41,12 @@ export interface GameInit {
   canvas: HTMLCanvasElement;
   onHudSync: (s: { day: number; coins: number; stars: number }) => void;
   onOpenSettings: () => void;
+  /**
+   * Called when a completed run resolves (Day-14 ending shown + accepted) so
+   * main.ts can return to the title screen. The controller owns the resolution
+   * flow; this is the single boundary back to navigation (Batch 4 / BUG-03).
+   */
+  onReturnToTitle: () => void;
 }
 
 function prefersReducedMotion(): boolean {
@@ -137,6 +146,8 @@ export class GameController {
       onNextDay: () => this.rollToNextMorning(),
       onOpenShop: () => this.openShopOverlay(),
       onAutosave: () => this.progression.snapshotIntoSave(),
+      // Day-14 recap Continue resolves the run (ending) — never rolls to Day 15.
+      onRunComplete: () => this.resolveRun(),
     });
 
     this.dom = setupCafeDom(init.canvas, {
@@ -193,6 +204,39 @@ export class GameController {
     if (this.dayState.day >= 2 && !this.save.flags.discovered_recipes.includes('R003')) {
       this.save.flags.discovered_recipes.push('R003');
     }
+  }
+
+  // ---- Run resolution (Batch 4 / BUG-03) ------------------------------------
+
+  /**
+   * Day-14 recap "Continue" lands here. The runtime evaluates the ending from
+   * the REAL state (the existing, unit-tested EndingEvaluator — rules are not
+   * re-implemented here), then presents it. Day 15 is NEVER reached.
+   */
+  private resolveRun(): void {
+    const ending = evaluateEndingForRun(this.save);
+    if (ending) {
+      // Persist the chosen ending into the StoryProgress flags (idempotent).
+      recordEnding(this.save, ending, this.dayState.day);
+      this.persistSave();
+      this.presentEnding(ending);
+    } else {
+      // No qualifier at all (should not happen — keeper is the neutral
+      // fallback) — still return to title rather than advancing to Day 15.
+      this.returnToTitle();
+    }
+  }
+
+  /** Present the calm ending overlay. The player accepts it → return to title. */
+  private presentEnding(ending: EndingId): void {
+    showEnding(ending, {
+      onClose: () => this.returnToTitle(),
+    });
+  }
+
+  /** Run is resolved: hand control back to navigation (title screen). */
+  private returnToTitle(): void {
+    this.init.onReturnToTitle();
   }
 
   private tryCloseDay(): void {
@@ -388,6 +432,11 @@ export class GameController {
 
   debugCloseJournal(): void {
     closeJournal();
+  }
+
+  /** Drive the Day-14 run resolution from a test (full real flow: evaluate → record → present). */
+  debugResolveEnding(): void {
+    this.resolveRun();
   }
 
   debugBuyUpgrade(id: Parameters<ProgressionController['buyUpgrade']>[0]): void {

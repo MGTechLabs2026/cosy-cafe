@@ -12,7 +12,10 @@ import type { SaveData } from '../src/save/validate.js';
 import {
   advanceNarrative,
   chapterForDay,
+  evaluateEndingForRun,
+  recordEnding,
 } from '../src/narrative/runtime.js';
+import type { EndingId } from '../src/narrative/story-definitions.js';
 import {
   createNarrativeInput,
   createLetterContext,
@@ -152,26 +155,29 @@ describe('BUG-01: narrative STATE affects eligible content (no personality from 
   });
 });
 
-describe('BUG-01/03: ending evaluation is wired into the runtime (P1 neutral fallback)', () => {
-  it('Test 7 — low-engagement run reaches a valid ending without punishment', () => {
+describe('BUG-01/03: ending evaluation is NO LONGER done at the morning (Batch 4 / BUG-03)', () => {
+  it('Test 7 — advanceNarrative no longer evaluates the ending at the morning', () => {
     const save = makeSave(13);
     const result = advanceNarrative(save);
-    // Chapter 5 reached; the runtime evaluated the ending.
+    // Chapter 5 reached by the morning lifecycle.
     expect(save.flags.current_chapter).toBe(5);
-    expect(result.ending).not.toBeNull();
-    // Neutral, belonging-aligned fallback — never punishes a quiet player.
-    expect(result.ending).toBe('keeper');
-    expect(save.flags.ending_achieved).toBe('keeper');
-    expect(save.flags.ending_day).toBe(13);
-    // No punishment flag was introduced.
+    // Ending evaluation was deliberately moved out of the morning: the runtime
+    // must NOT pre-empt the Day-14 resolution, so it stays null here.
+    expect(result.ending).toBeNull();
+    expect(save.flags.ending_achieved).toBeUndefined();
+    // The real ending is evaluated at the Day-14 recap via evaluateEndingForRun().
+    const ending = evaluateEndingForRun(save);
+    expect(ending).toBe('keeper'); // P1 neutral fallback for a quiet run
     expect((save.flags as unknown as Record<string, unknown>)['punished']).toBeUndefined();
   });
 
-  it('ending is evaluated exactly once (idempotent across repeated mornings)', () => {
+  it('ending is evaluated exactly once (idempotent across repeated recap resolutions)', () => {
     const save = makeSave(13);
-    advanceNarrative(save);
+    const first = evaluateEndingForRun(save);
+    recordEnding(save, first as EndingId, 13);
     const afterFirst = save.flags.ending_achieved;
-    advanceNarrative(save);
+    const again = evaluateEndingForRun(save); // re-eval must return the resolved ending
+    expect(again).toBe(afterFirst);
     expect(save.flags.ending_achieved).toBe(afterFirst);
   });
 });

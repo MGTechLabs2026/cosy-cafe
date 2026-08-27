@@ -8,6 +8,13 @@ export interface DayState {
   phase: Phase;
 }
 
+/**
+ * The MVP season is 14 in-game days of stewardship (doc 09 §2, doc 06 MVP
+ * definition). Closing Day 14 triggers the final recap → ending resolution.
+ * The runtime must NEVER roll past this into a silent Day 15.
+ */
+export const FINAL_DAY = 14;
+
 export function createInitialDayState(): DayState {
   return {
     day: 1,
