@@ -22,12 +22,16 @@ import {
 } from '../ui/cafe-dom.js';
 import { showRecap } from '../ui/recap.js';
 import { openShop, closeShop } from '../ui/shop.js';
+// Narrative activity events
+import { recordDaySkipped } from '../narrative/activity-ledger.js';
 
 export interface DayContext {
   dayState: DayState;
   save: import('../save/validate.js').SaveData;
   inventory: Inventory;
   reducedMotion: boolean;
+  /** Activity ledger for narrative system */
+  activityLedger: import('../narrative/activity-ledger.js').ActivityLedger;
 }
 
 export interface DayControllerDeps {
@@ -83,6 +87,10 @@ export class DayController {
       onOpenDoors: () => this.openDoors(),
       onSleepIn: () => {
         playClick();
+        // Record day skipped activity for narrative system
+        recordDaySkipped(ctx.activityLedger, {
+          day: ctx.dayState.day,
+        });
         this.finishDay(0, false);
       },
     });

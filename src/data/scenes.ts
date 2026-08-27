@@ -177,8 +177,9 @@ export const WREN_SCENES: SceneDef[] = [
         ],
       },
     ],
-    onComplete: (_save: SaveData, _hearts: HeartLedger) => {
+    onComplete: (save: SaveData, _hearts: HeartLedger) => {
       // Update journal hint card - first clue revealed
+      save.flags.wren_clues_gathered = Math.min((save.flags.wren_clues_gathered ?? 0) + 1, 3);
     },
   },
   // Scene 3: Middle 2 — More clues (moonleaf, hot)
@@ -195,8 +196,9 @@ export const WREN_SCENES: SceneDef[] = [
         ],
       },
     ],
-    onComplete: (_save: SaveData, _hearts: HeartLedger) => {
+    onComplete: (save: SaveData, _hearts: HeartLedger) => {
       // Update journal hint card - more clues
+      save.flags.wren_clues_gathered = Math.min((save.flags.wren_clues_gathered ?? 0) + 1, 3);
     },
   },
   // Scene 4: Middle 3 — Final clue (5 minutes simmering) + choice to brew

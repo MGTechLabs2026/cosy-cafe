@@ -1,6 +1,8 @@
 // src/narrative/narrative-input.ts — narrow read-only interface for narrative system
 // The ONLY place that translates SaveData into narrative-consumable data.
 
+import type { ActivityCounters } from './activity-ledger';
+
 export type NarrativeDimension =
   | 'care'
   | 'curiosity'
@@ -99,6 +101,8 @@ export interface ActivitySnapshot {
   serviceDays: number;
   earlyCloses: number;
   relaxedModeSetting: boolean;
+  /** Real activity counters from ledger */
+  activity: ActivityCounters;
 }
 
 export interface NarrativeInput {
@@ -212,6 +216,32 @@ export function createNarrativeInput(save: {
     nia_intro_done: boolean;
     fenwick_chili_granted: boolean;
     kettle_auto_opened: boolean;
+    // v6 activity ledger flags
+    activity_total_serves: number;
+    activity_favorite_serves: number;
+    activity_correct_serves: number;
+    activity_serves_by_npc: Record<string, number>;
+    activity_serves_by_recipe: Record<string, number>;
+    activity_total_chats: number;
+    activity_chats_by_npc: Record<string, number>;
+    activity_total_brews: number;
+    activity_experimental_brews: number;
+    activity_wren_mystery_brews: number;
+    activity_recipe_discoveries: number;
+    activity_discovered_recipes: readonly string[];
+    activity_journal_opens_total: number;
+    activity_journal_opens_by_tab: Record<string, number>;
+    activity_upgrade_purchases: number;
+    activity_days_skipped: number;
+    activity_early_closes: number;
+    activity_letters_read: number;
+    activity_letters_dismissed: number;
+    activity_read_letter_ids: readonly string[];
+    activity_dismissed_letter_ids: readonly string[];
+    activity_wren_visits: number;
+    activity_wren_mystery_clues: number;
+    activity_ingredients_purchased: number;
+    activity_version: number;
     [key: string]: unknown;
   };
   settings: {
@@ -442,6 +472,33 @@ export function createNarrativeInput(save: {
       serviceDays,
       earlyCloses,
       relaxedModeSetting,
+      activity: {
+        totalServes: save.flags.activity_total_serves ?? save.total_serves ?? 0,
+        favoriteServeCount: save.flags.activity_favorite_serves ?? 0,
+        correctServeCount: save.flags.activity_correct_serves ?? 0,
+        servesByNpc: save.flags.activity_serves_by_npc ?? {},
+        servesByRecipe: save.flags.activity_serves_by_recipe ?? {},
+        totalChats: save.flags.activity_total_chats ?? 0,
+        chatsByNpc: save.flags.activity_chats_by_npc ?? {},
+        totalBrews: save.flags.activity_total_brews ?? 0,
+        experimentalBrewCount: save.flags.activity_experimental_brews ?? 0,
+        wrenMysteryBrewCount: save.flags.activity_wren_mystery_brews ?? 0,
+        recipeDiscoveryCount: save.flags.activity_recipe_discoveries ?? 0,
+        discoveredRecipes: [...(save.flags.activity_discovered_recipes ?? save.flags.discovered_recipes ?? [])],
+        journalOpensTotal: save.flags.activity_journal_opens_total ?? 0,
+        journalOpensByTab: save.flags.activity_journal_opens_by_tab ?? {},
+        upgradePurchaseCount: save.flags.activity_upgrade_purchases ?? save.upgrades.length,
+        daysSkipped: save.flags.activity_days_skipped ?? 0,
+        earlyCloses: save.flags.activity_early_closes ?? 0,
+        lettersReadCount: save.flags.activity_letters_read ?? save.flags.letters_read?.length ?? 0,
+        lettersDismissedCount: save.flags.activity_letters_dismissed ?? save.flags.letters_dismissed?.length ?? 0,
+        readLetterIds: [...(save.flags.activity_read_letter_ids ?? save.flags.letters_read ?? [])],
+        dismissedLetterIds: [...(save.flags.activity_dismissed_letter_ids ?? save.flags.letters_dismissed ?? [])],
+        wrenVisits: save.flags.activity_wren_visits ?? 0,
+        wrenMysteryClues: save.flags.activity_wren_mystery_clues ?? 0,
+        ingredientsPurchasedTotal: save.flags.activity_ingredients_purchased ?? 0,
+        version: save.flags.activity_version ?? 1,
+      },
     },
   };
 

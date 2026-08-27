@@ -555,7 +555,7 @@ describe('M2 smoke — PASS lines', () => {
     // Fenwick was chatted with → heart points recorded (> 0 or capped entry).
     const fenwickPoints = data.hearts['fenwick'] ?? 0;
     expect(fenwickPoints).toBeGreaterThanOrEqual(0);
-    expect(data.version).toBe(5); // current schema as of M5 (narrative flags)
+    expect(data.version).toBe(6); // current schema as of M6 (activity ledger)
     console.log(
       `PASS: continuity day=${data.day} upgrades=[${data.upgrades.join(',')}] hearts.fenwick=${fenwickPoints}`,
     );

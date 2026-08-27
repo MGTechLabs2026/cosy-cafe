@@ -99,6 +99,7 @@ export class GameController {
         inventory: this.progression.inventory,
         // Dynamic so test stubs of window.matchMedia work (old monolith behavior).
         reducedMotion: this.save.settings.reduced_motion || prefersReducedMotion(),
+        activityLedger: this.progression.activityLedger,
       }),
       toast: (msg, ms) => cafeShowToast(this.dom.toastEl, msg, ms),
       syncHud: () => this.syncHud(),
@@ -126,6 +127,7 @@ export class GameController {
         save: this.save,
         inventory: this.progression.inventory,
         reducedMotion: this.reducedMotion,
+        activityLedger: this.progression.activityLedger,
       }),
       toast: (msg, ms) => cafeShowToast(this.dom.toastEl, msg, ms),
       syncHud: () => this.syncHud(),

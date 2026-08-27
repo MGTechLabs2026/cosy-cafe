@@ -1,7 +1,7 @@
 // save/validate.ts — doc 02 §7.1 schema validation
 // Hand-rolled validator (~1 KB per doc 08); no dependency. Fail-closed.
 
-export const SAVE_SCHEMA_VERSION = 5;
+export const SAVE_SCHEMA_VERSION = 6;
 export const SAVE_STORAGE_KEY = 'moonleaf_save_v1';
 
 // Shape mirrors doc 02 §7.1 exactly:
@@ -59,6 +59,58 @@ export interface SaveFlags {
   playthrough_count: number;
   /** Previously achieved endings */
   previous_endings: string[];
+  
+  /** v6 — Activity ledger counters (compact, replaces heuristics) */
+  /** Total serves this playthrough */
+  activity_total_serves: number;
+  /** Favorite serves this playthrough */
+  activity_favorite_serves: number;
+  /** Correct serves this playthrough */
+  activity_correct_serves: number;
+  /** Serves per NPC */
+  activity_serves_by_npc: Record<string, number>;
+  /** Serves per recipe */
+  activity_serves_by_recipe: Record<string, number>;
+  /** Total chats this playthrough */
+  activity_total_chats: number;
+  /** Chats per NPC */
+  activity_chats_by_npc: Record<string, number>;
+  /** Total brews this playthrough */
+  activity_total_brews: number;
+  /** Experimental brews */
+  activity_experimental_brews: number;
+  /** Wren mystery brews */
+  activity_wren_mystery_brews: number;
+  /** Recipe discoveries */
+  activity_recipe_discoveries: number;
+  /** Discovered recipes list */
+  activity_discovered_recipes: string[];
+  /** Journal opens total */
+  activity_journal_opens_total: number;
+  /** Journal opens per tab */
+  activity_journal_opens_by_tab: Record<string, number>;
+  /** Upgrade purchases */
+  activity_upgrade_purchases: number;
+  /** Days skipped */
+  activity_days_skipped: number;
+  /** Early closes */
+  activity_early_closes: number;
+  /** Letters read count */
+  activity_letters_read: number;
+  /** Letters dismissed count */
+  activity_letters_dismissed: number;
+  /** Read letter IDs */
+  activity_read_letter_ids: string[];
+  /** Dismissed letter IDs */
+  activity_dismissed_letter_ids: string[];
+  /** Wren visits */
+  activity_wren_visits: number;
+  /** Wren mystery clues gathered */
+  activity_wren_mystery_clues: number;
+  /** Ingredients purchased total */
+  activity_ingredients_purchased: number;
+  /** Activity ledger version */
+  activity_version: number;
 }
 
 export interface SaveSettings {
@@ -233,6 +285,33 @@ export function validateSaveData(input: unknown): ValidationResult {
   const playthroughCount = rawFlags['playthrough_count'];
   const previousEndings = rawFlags['previous_endings'];
 
+  // v6 activity ledger flags (optional for backwards compat, default 0/empty)
+  const activityTotalServes = rawFlags['activity_total_serves'];
+  const activityFavoriteServes = rawFlags['activity_favorite_serves'];
+  const activityCorrectServes = rawFlags['activity_correct_serves'];
+  const activityServesByNpc = rawFlags['activity_serves_by_npc'];
+  const activityServesByRecipe = rawFlags['activity_serves_by_recipe'];
+  const activityTotalChats = rawFlags['activity_total_chats'];
+  const activityChatsByNpc = rawFlags['activity_chats_by_npc'];
+  const activityTotalBrews = rawFlags['activity_total_brews'];
+  const activityExperimentalBrews = rawFlags['activity_experimental_brews'];
+  const activityWrenMysteryBrews = rawFlags['activity_wren_mystery_brews'];
+  const activityRecipeDiscoveries = rawFlags['activity_recipe_discoveries'];
+  const activityDiscoveredRecipes = rawFlags['activity_discovered_recipes'];
+  const activityJournalOpensTotal = rawFlags['activity_journal_opens_total'];
+  const activityJournalOpensByTab = rawFlags['activity_journal_opens_by_tab'];
+  const activityUpgradePurchases = rawFlags['activity_upgrade_purchases'];
+  const activityDaysSkipped = rawFlags['activity_days_skipped'];
+  const activityEarlyCloses = rawFlags['activity_early_closes'];
+  const activityLettersRead = rawFlags['activity_letters_read'];
+  const activityLettersDismissed = rawFlags['activity_letters_dismissed'];
+  const activityReadLetterIds = rawFlags['activity_read_letter_ids'];
+  const activityDismissedLetterIds = rawFlags['activity_dismissed_letter_ids'];
+  const activityWrenVisits = rawFlags['activity_wren_visits'];
+  const activityWrenMysteryClues = rawFlags['activity_wren_mystery_clues'];
+  const activityIngredientsPurchased = rawFlags['activity_ingredients_purchased'];
+  const activityVersion = rawFlags['activity_version'];
+
   if (currentChapter !== undefined && (!isFiniteNumber(currentChapter) || !Number.isInteger(currentChapter) || currentChapter < 0 || currentChapter > 5)) return { ok: false };
   if (chapterEnteredDay !== undefined && !isRecord(chapterEnteredDay)) return { ok: false };
   if (lettersDelivered !== undefined && !isStringArray(lettersDelivered)) return { ok: false };
@@ -246,6 +325,33 @@ export function validateSaveData(input: unknown): ValidationResult {
   if (wrenCluesGathered !== undefined && (!isFiniteNumber(wrenCluesGathered) || !Number.isInteger(wrenCluesGathered) || wrenCluesGathered < 0 || wrenCluesGathered > 3)) return { ok: false };
   if (playthroughCount !== undefined && (!isFiniteNumber(playthroughCount) || !Number.isInteger(playthroughCount) || playthroughCount < 0)) return { ok: false };
   if (previousEndings !== undefined && !isStringArray(previousEndings)) return { ok: false };
+  
+  // v6 activity validation (optional, defaults applied)
+  if (activityTotalServes !== undefined && (!isFiniteNumber(activityTotalServes) || activityTotalServes < 0)) return { ok: false };
+  if (activityFavoriteServes !== undefined && (!isFiniteNumber(activityFavoriteServes) || activityFavoriteServes < 0)) return { ok: false };
+  if (activityCorrectServes !== undefined && (!isFiniteNumber(activityCorrectServes) || activityCorrectServes < 0)) return { ok: false };
+  if (activityServesByNpc !== undefined && !isRecord(activityServesByNpc)) return { ok: false };
+  if (activityServesByRecipe !== undefined && !isRecord(activityServesByRecipe)) return { ok: false };
+  if (activityTotalChats !== undefined && (!isFiniteNumber(activityTotalChats) || activityTotalChats < 0)) return { ok: false };
+  if (activityChatsByNpc !== undefined && !isRecord(activityChatsByNpc)) return { ok: false };
+  if (activityTotalBrews !== undefined && (!isFiniteNumber(activityTotalBrews) || activityTotalBrews < 0)) return { ok: false };
+  if (activityExperimentalBrews !== undefined && (!isFiniteNumber(activityExperimentalBrews) || activityExperimentalBrews < 0)) return { ok: false };
+  if (activityWrenMysteryBrews !== undefined && (!isFiniteNumber(activityWrenMysteryBrews) || activityWrenMysteryBrews < 0)) return { ok: false };
+  if (activityRecipeDiscoveries !== undefined && (!isFiniteNumber(activityRecipeDiscoveries) || activityRecipeDiscoveries < 0)) return { ok: false };
+  if (activityDiscoveredRecipes !== undefined && !isStringArray(activityDiscoveredRecipes)) return { ok: false };
+  if (activityJournalOpensTotal !== undefined && (!isFiniteNumber(activityJournalOpensTotal) || activityJournalOpensTotal < 0)) return { ok: false };
+  if (activityJournalOpensByTab !== undefined && !isRecord(activityJournalOpensByTab)) return { ok: false };
+  if (activityUpgradePurchases !== undefined && (!isFiniteNumber(activityUpgradePurchases) || activityUpgradePurchases < 0)) return { ok: false };
+  if (activityDaysSkipped !== undefined && (!isFiniteNumber(activityDaysSkipped) || activityDaysSkipped < 0)) return { ok: false };
+  if (activityEarlyCloses !== undefined && (!isFiniteNumber(activityEarlyCloses) || activityEarlyCloses < 0)) return { ok: false };
+  if (activityLettersRead !== undefined && (!isFiniteNumber(activityLettersRead) || activityLettersRead < 0)) return { ok: false };
+  if (activityLettersDismissed !== undefined && (!isFiniteNumber(activityLettersDismissed) || activityLettersDismissed < 0)) return { ok: false };
+  if (activityReadLetterIds !== undefined && !isStringArray(activityReadLetterIds)) return { ok: false };
+  if (activityDismissedLetterIds !== undefined && !isStringArray(activityDismissedLetterIds)) return { ok: false };
+  if (activityWrenVisits !== undefined && (!isFiniteNumber(activityWrenVisits) || activityWrenVisits < 0)) return { ok: false };
+  if (activityWrenMysteryClues !== undefined && (!isFiniteNumber(activityWrenMysteryClues) || activityWrenMysteryClues < 0)) return { ok: false };
+  if (activityIngredientsPurchased !== undefined && (!isFiniteNumber(activityIngredientsPurchased) || activityIngredientsPurchased < 0)) return { ok: false };
+  if (activityVersion !== undefined && (!isFiniteNumber(activityVersion) || !Number.isInteger(activityVersion) || activityVersion < 1)) return { ok: false };
 
   // settings: all fields with ranges.
   const rawSettings = input['settings'];
@@ -314,6 +420,32 @@ export function validateSaveData(input: unknown): ValidationResult {
         wren_clues_gathered: (typeof rawFlags['wren_clues_gathered'] === 'number' && Number.isInteger(rawFlags['wren_clues_gathered']) && rawFlags['wren_clues_gathered'] >= 0 && rawFlags['wren_clues_gathered'] <= 3) ? rawFlags['wren_clues_gathered'] : 0,
         playthrough_count: (typeof rawFlags['playthrough_count'] === 'number' && Number.isInteger(rawFlags['playthrough_count']) && rawFlags['playthrough_count'] >= 0) ? rawFlags['playthrough_count'] : 0,
         previous_endings: isStringArray(rawFlags['previous_endings']) ? rawFlags['previous_endings'] : [],
+        // v6 activity ledger flags with safe defaults
+        activity_total_serves: typeof rawFlags['activity_total_serves'] === 'number' ? rawFlags['activity_total_serves'] : 0,
+        activity_favorite_serves: typeof rawFlags['activity_favorite_serves'] === 'number' ? rawFlags['activity_favorite_serves'] : 0,
+        activity_correct_serves: typeof rawFlags['activity_correct_serves'] === 'number' ? rawFlags['activity_correct_serves'] : 0,
+        activity_serves_by_npc: (isRecord(rawFlags['activity_serves_by_npc']) ? rawFlags['activity_serves_by_npc'] : {}) as Record<string, number>,
+        activity_serves_by_recipe: (isRecord(rawFlags['activity_serves_by_recipe']) ? rawFlags['activity_serves_by_recipe'] : {}) as Record<string, number>,
+        activity_total_chats: typeof rawFlags['activity_total_chats'] === 'number' ? rawFlags['activity_total_chats'] : 0,
+        activity_chats_by_npc: (isRecord(rawFlags['activity_chats_by_npc']) ? rawFlags['activity_chats_by_npc'] : {}) as Record<string, number>,
+        activity_total_brews: typeof rawFlags['activity_total_brews'] === 'number' ? rawFlags['activity_total_brews'] : 0,
+        activity_experimental_brews: typeof rawFlags['activity_experimental_brews'] === 'number' ? rawFlags['activity_experimental_brews'] : 0,
+        activity_wren_mystery_brews: typeof rawFlags['activity_wren_mystery_brews'] === 'number' ? rawFlags['activity_wren_mystery_brews'] : 0,
+        activity_recipe_discoveries: typeof rawFlags['activity_recipe_discoveries'] === 'number' ? rawFlags['activity_recipe_discoveries'] : 0,
+        activity_discovered_recipes: isStringArray(rawFlags['activity_discovered_recipes']) ? rawFlags['activity_discovered_recipes'] : [],
+        activity_journal_opens_total: typeof rawFlags['activity_journal_opens_total'] === 'number' ? rawFlags['activity_journal_opens_total'] : 0,
+        activity_journal_opens_by_tab: (isRecord(rawFlags['activity_journal_opens_by_tab']) ? rawFlags['activity_journal_opens_by_tab'] : {}) as Record<string, number>,
+        activity_upgrade_purchases: typeof rawFlags['activity_upgrade_purchases'] === 'number' ? rawFlags['activity_upgrade_purchases'] : 0,
+        activity_days_skipped: typeof rawFlags['activity_days_skipped'] === 'number' ? rawFlags['activity_days_skipped'] : 0,
+        activity_early_closes: typeof rawFlags['activity_early_closes'] === 'number' ? rawFlags['activity_early_closes'] : 0,
+        activity_letters_read: typeof rawFlags['activity_letters_read'] === 'number' ? rawFlags['activity_letters_read'] : 0,
+        activity_letters_dismissed: typeof rawFlags['activity_letters_dismissed'] === 'number' ? rawFlags['activity_letters_dismissed'] : 0,
+        activity_read_letter_ids: isStringArray(rawFlags['activity_read_letter_ids']) ? rawFlags['activity_read_letter_ids'] : [],
+        activity_dismissed_letter_ids: isStringArray(rawFlags['activity_dismissed_letter_ids']) ? rawFlags['activity_dismissed_letter_ids'] : [],
+        activity_wren_visits: typeof rawFlags['activity_wren_visits'] === 'number' ? rawFlags['activity_wren_visits'] : 0,
+        activity_wren_mystery_clues: typeof rawFlags['activity_wren_mystery_clues'] === 'number' ? rawFlags['activity_wren_mystery_clues'] : 0,
+        activity_ingredients_purchased: typeof rawFlags['activity_ingredients_purchased'] === 'number' ? rawFlags['activity_ingredients_purchased'] : 0,
+        activity_version: typeof rawFlags['activity_version'] === 'number' ? rawFlags['activity_version'] : 1,
       },
       settings: { relaxed_mode: relaxed, reduced_motion: reducedMotion, master_vol: masterVol, text_size: textSize },
     },
@@ -374,6 +506,32 @@ export function createInitialSave(): SaveData {
             wren_clues_gathered: 0,
             playthrough_count: 0,
             previous_endings: [],
+            // v6 — Activity ledger flags
+            activity_total_serves: 0,
+            activity_favorite_serves: 0,
+            activity_correct_serves: 0,
+            activity_serves_by_npc: {},
+            activity_serves_by_recipe: {},
+            activity_total_chats: 0,
+            activity_chats_by_npc: {},
+            activity_total_brews: 0,
+            activity_experimental_brews: 0,
+            activity_wren_mystery_brews: 0,
+            activity_recipe_discoveries: 0,
+            activity_discovered_recipes: [],
+            activity_journal_opens_total: 0,
+            activity_journal_opens_by_tab: {},
+            activity_upgrade_purchases: 0,
+            activity_days_skipped: 0,
+            activity_early_closes: 0,
+            activity_letters_read: 0,
+            activity_letters_dismissed: 0,
+            activity_read_letter_ids: [],
+            activity_dismissed_letter_ids: [],
+            activity_wren_visits: 0,
+            activity_wren_mystery_clues: 0,
+            activity_ingredients_purchased: 0,
+            activity_version: 1,
           },
     settings: { relaxed_mode: true, reduced_motion: false, master_vol: 0.8, text_size: 100 },
   };

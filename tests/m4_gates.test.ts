@@ -698,7 +698,7 @@ describe('M4 accessibility support — text size persists across reload', () => 
     const loaded = loadSave();
     expect(loaded.ok).toBe(true);
     if (loaded.ok) expect(loaded.data.settings.text_size).toBe(150);
-    expect(SAVE_SCHEMA_VERSION).toBe(5);
+    expect(SAVE_SCHEMA_VERSION).toBe(6);
     console.log('A11Y: text_size=150 persisted and applied (root font-size 150%)');
   });
 });

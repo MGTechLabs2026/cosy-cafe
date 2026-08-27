@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { createNarrativeInput, type NarrativeInput } from '../src/narrative/narrative-input';
 import { evaluateNarrativeState } from '../src/narrative/narrative-state';
+import { createEmptyCounters } from '../src/narrative/activity-ledger';
 
 function createMockSaveData(overrides: Partial<{
   day: number;
@@ -41,6 +42,32 @@ function createMockSaveData(overrides: Partial<{
     nia_intro_done: boolean;
     fenwick_chili_granted: boolean;
     kettle_auto_opened: boolean;
+    // v6 activity flags
+    activity_total_serves: number;
+    activity_favorite_serves: number;
+    activity_correct_serves: number;
+    activity_serves_by_npc: Record<string, number>;
+    activity_serves_by_recipe: Record<string, number>;
+    activity_total_chats: number;
+    activity_chats_by_npc: Record<string, number>;
+    activity_total_brews: number;
+    activity_experimental_brews: number;
+    activity_wren_mystery_brews: number;
+    activity_recipe_discoveries: number;
+    activity_discovered_recipes: string[];
+    activity_journal_opens_total: number;
+    activity_journal_opens_by_tab: Record<string, number>;
+    activity_upgrade_purchases: number;
+    activity_days_skipped: number;
+    activity_early_closes: number;
+    activity_letters_read: number;
+    activity_letters_dismissed: number;
+    activity_read_letter_ids: string[];
+    activity_dismissed_letter_ids: string[];
+    activity_wren_visits: number;
+    activity_wren_mystery_clues: number;
+    activity_ingredients_purchased: number;
+    activity_version: number;
     [key: string]: unknown;
   };
   settings: {
@@ -87,6 +114,31 @@ function createMockSaveData(overrides: Partial<{
     nia_intro_done: boolean;
     fenwick_chili_granted: boolean;
     kettle_auto_opened: boolean;
+    activity_total_serves: number;
+    activity_favorite_serves: number;
+    activity_correct_serves: number;
+    activity_serves_by_npc: Record<string, number>;
+    activity_serves_by_recipe: Record<string, number>;
+    activity_total_chats: number;
+    activity_chats_by_npc: Record<string, number>;
+    activity_total_brews: number;
+    activity_experimental_brews: number;
+    activity_wren_mystery_brews: number;
+    activity_recipe_discoveries: number;
+    activity_discovered_recipes: string[];
+    activity_journal_opens_total: number;
+    activity_journal_opens_by_tab: Record<string, number>;
+    activity_upgrade_purchases: number;
+    activity_days_skipped: number;
+    activity_early_closes: number;
+    activity_letters_read: number;
+    activity_letters_dismissed: number;
+    activity_read_letter_ids: string[];
+    activity_dismissed_letter_ids: string[];
+    activity_wren_visits: number;
+    activity_wren_mystery_clues: number;
+    activity_ingredients_purchased: number;
+    activity_version: number;
     [key: string]: unknown;
   };
   settings: {
@@ -132,6 +184,32 @@ function createMockSaveData(overrides: Partial<{
       nia_intro_done: false,
       fenwick_chili_granted: false,
       kettle_auto_opened: false,
+      // v6 activity defaults
+      activity_total_serves: 0,
+      activity_favorite_serves: 0,
+      activity_correct_serves: 0,
+      activity_serves_by_npc: {},
+      activity_serves_by_recipe: {},
+      activity_total_chats: 0,
+      activity_chats_by_npc: {},
+      activity_total_brews: 0,
+      activity_experimental_brews: 0,
+      activity_wren_mystery_brews: 0,
+      activity_recipe_discoveries: 0,
+      activity_discovered_recipes: [],
+      activity_journal_opens_total: 0,
+      activity_journal_opens_by_tab: {},
+      activity_upgrade_purchases: 0,
+      activity_days_skipped: 0,
+      activity_early_closes: 0,
+      activity_letters_read: 0,
+      activity_letters_dismissed: 0,
+      activity_read_letter_ids: [],
+      activity_dismissed_letter_ids: [],
+      activity_wren_visits: 0,
+      activity_wren_mystery_clues: 0,
+      activity_ingredients_purchased: 0,
+      activity_version: 1,
     },
     settings: { relaxed_mode: true, reduced_motion: false, master_vol: 1, text_size: 100 },
   };
@@ -149,6 +227,112 @@ function createMockSaveData(overrides: Partial<{
   };
 }
 
+function createMockActivity(counters: Partial<ReturnType<typeof createEmptyCounters>> = {}) {
+  return {
+    ...createEmptyCounters(),
+    ...counters,
+  };
+}
+
+function createMockNarrativeInput(overrides: Partial<NarrativeInput> = {}): NarrativeInput {
+  const defaultActivity = {
+    day: 1,
+    totalServes: 0,
+    stars: 0,
+    coins: 100,
+    avgHearts: 0,
+    favoriteServeRatio: 0,
+    chatCount: 0,
+    chatRatio: 0,
+    journalOpensPerDay: 0,
+    recipeDiscoveryRatio: 0,
+    experimentalBrewCount: 0,
+    experimentalBrewRatio: 0,
+    wrenMysteryBrewCount: 0,
+    wrenMysteryBrewRatio: 0,
+    wrenVisits: 0,
+    uniqueNPCsServed: 0,
+    heartsBreadth: 0,
+    lettersArchivedRatio: 0,
+    townTabOpensPerDay: 0,
+    upgradesOwnedRatio: 0,
+    starsRatio: 0,
+    shelfCapacityRatio: 0.5,
+    inventoryKindsRatio: 0.11,
+    shopVisitsPerDay: 0,
+    daysSkippedRatio: 0,
+    earlyCloseRatio: 0,
+    relaxedMode: true,
+    daysSkipped: 0,
+    serviceDays: 1,
+    earlyCloses: 0,
+    relaxedModeSetting: true,
+    activity: createMockActivity(),
+  };
+
+  const defaultInput: NarrativeInput = {
+    relationships: {
+      heartPoints: { fenwick: 0, sela: 0, bram: 0, nia: 0, wren: 0 },
+      heartPointsToday: { fenwick: 0, sela: 0, bram: 0, nia: 0, wren: 0 },
+      displayedHearts: { fenwick: 0, sela: 0, bram: 0, nia: 0, wren: 0 },
+      learnedPrefs: [],
+      heartsBreadth: 0,
+      uniqueNPCsServed: 0,
+    },
+    recipes: {
+      discoveredRecipes: ['R001', 'R002'],
+      totalRecipes: 8,
+      hintCardsRead: 0,
+      experimentalBrewCount: 0,
+      wrenMysteryBrewCount: 0,
+      wrenVisits: 0,
+      wrenScenesSeen: 0,
+    },
+    upgrades: {
+      ownedUpgrades: [],
+      upgradesOwned: 0,
+      maxUpgrades: 7,
+      shelfCapacity: 6,
+      maxShelfCapacity: 12,
+      inventoryKinds: 3,
+      maxInventoryKinds: 9,
+      shopVisits: 0,
+    },
+    letters: {
+      archivedLetters: ['letter_marigold_1'],
+      lettersDelivered: ['letter_marigold_1'],
+      lettersRead: ['letter_marigold_1'],
+      lettersDismissed: [],
+      townLettersDelivered: 0,
+      maxLetters: 40,
+    },
+    story: {
+      chapter: 0,
+      chapterEnteredDay: { 0: 1 },
+      marigoldMysteryLayer: 1,
+      wrenCluesGathered: 0,
+      seenScenes: [],
+      flags: {},
+      trajectoryHint: null,
+      endingAchieved: null,
+      playthroughCount: 0,
+      previousEndings: [],
+      marigoldLettersDelivered: ['letter_marigold_1'],
+      npcLettersDelivered: { fenwick: [], sela: [], bram: [], nia: [], wren: [] },
+      mysteryLettersDelivered: [],
+      townLettersDelivered: [],
+      branchLettersDelivered: [],
+    },
+    activity: defaultActivity,
+  };
+
+  return {
+    ...defaultInput,
+    ...overrides,
+    activity: { ...defaultActivity, ...(overrides.activity ?? {}) },
+  };
+}
+
 describe('createNarrativeInput', () => {
   it('creates valid NarrativeInput from minimal SaveData', () => {
     const save = createMockSaveData({});
@@ -161,6 +345,7 @@ describe('createNarrativeInput', () => {
     expect(input.letters).toBeDefined();
     expect(input.story).toBeDefined();
     expect(input.activity).toBeDefined();
+    expect(input.activity.activity).toBeDefined();
   });
 
   it('computes relationships correctly', () => {
@@ -259,6 +444,7 @@ describe('createNarrativeInput', () => {
     expect(input.activity.coins).toBe(250);
     expect(input.activity.avgHearts).toBeCloseTo(0.8, 1);
     expect(input.activity.chatRatio).toBeGreaterThan(0);
+    expect(input.activity.activity).toBeDefined();
   });
 });
 
@@ -282,6 +468,11 @@ describe('evaluateNarrativeState', () => {
         letters_delivered: ['letter_marigold_1', 'letter_fenwick_1', 'town_news_1'],
         letters_read: ['letter_marigold_1', 'letter_fenwick_1'],
         letters_dismissed: [],
+        activity_total_serves: 30,
+        activity_favorite_serves: 5,
+        activity_correct_serves: 25,
+        activity_total_chats: 3,
+        activity_total_brews: 30,
       },
       upgrades: ['bigger_shelf', 'second_kettle'],
     });
@@ -300,7 +491,7 @@ describe('evaluateNarrativeState', () => {
 
   it('can run with mocked NarrativeInput without SaveData', () => {
     // Direct mock of NarrativeInput - no SaveData construction needed
-    const mockInput: NarrativeInput = {
+    const mockInput = createMockNarrativeInput({
       relationships: {
         heartPoints: { fenwick: 2, sela: 1, bram: 0, nia: 0, wren: 0 },
         heartPointsToday: { fenwick: 0, sela: 0, bram: 0, nia: 0, wren: 0 },
@@ -385,8 +576,15 @@ describe('evaluateNarrativeState', () => {
         serviceDays: 7,
         earlyCloses: 0,
         relaxedModeSetting: true,
+        activity: createMockActivity({
+          totalServes: 30,
+          favoriteServeCount: 3,
+          correctServeCount: 27,
+          totalChats: 3,
+          totalBrews: 30,
+        }),
       },
-    };
+    });
 
     const state = evaluateNarrativeState(mockInput);
 
@@ -398,7 +596,7 @@ describe('evaluateNarrativeState', () => {
   });
 
   it('computes care dimension from relationships', () => {
-    const mockInput: NarrativeInput = {
+    const mockInput = createMockNarrativeInput({
       relationships: {
         heartPoints: { fenwick: 4, sela: 3, bram: 2, nia: 1, wren: 1 },
         heartPointsToday: {},
@@ -419,8 +617,47 @@ describe('evaluateNarrativeState', () => {
       upgrades: { ownedUpgrades: [], upgradesOwned: 0, maxUpgrades: 7, shelfCapacity: 6, maxShelfCapacity: 12, inventoryKinds: 1, maxInventoryKinds: 9, shopVisits: 0 },
       letters: { archivedLetters: [], lettersDelivered: ['letter_marigold_1'], lettersRead: ['letter_marigold_1'], lettersDismissed: [], townLettersDelivered: 0, maxLetters: 40 },
       story: { chapter: 3, chapterEnteredDay: { 0: 1, 3: 10 }, marigoldMysteryLayer: 3, wrenCluesGathered: 1, seenScenes: [], flags: {}, trajectoryHint: 'care', endingAchieved: null, playthroughCount: 0, previousEndings: [], marigoldLettersDelivered: [], npcLettersDelivered: { fenwick: [], sela: [], bram: [], nia: [], wren: [] }, mysteryLettersDelivered: [], townLettersDelivered: [], branchLettersDelivered: [] },
-      activity: { day: 10, totalServes: 50, stars: 3, coins: 1000, avgHearts: 2.2, favoriteServeRatio: 0.8, chatCount: 10, chatRatio: 0.2, journalOpensPerDay: 0.5, recipeDiscoveryRatio: 0.125, experimentalBrewCount: 0, experimentalBrewRatio: 0, wrenMysteryBrewCount: 0, wrenMysteryBrewRatio: 0, wrenVisits: 0, uniqueNPCsServed: 5, heartsBreadth: 5, lettersArchivedRatio: 0.025, townTabOpensPerDay: 0, upgradesOwnedRatio: 0, starsRatio: 0.6, shelfCapacityRatio: 0.5, inventoryKindsRatio: 0.11, shopVisitsPerDay: 0, daysSkippedRatio: 0, earlyCloseRatio: 0, relaxedMode: true, daysSkipped: 0, serviceDays: 10, earlyCloses: 0, relaxedModeSetting: true },
-    };
+      activity: {
+        day: 10,
+        totalServes: 50,
+        stars: 3,
+        coins: 1000,
+        avgHearts: 2.2,
+        favoriteServeRatio: 0.8,
+        chatCount: 10,
+        chatRatio: 0.2,
+        journalOpensPerDay: 0.5,
+        recipeDiscoveryRatio: 0.125,
+        experimentalBrewCount: 0,
+        experimentalBrewRatio: 0,
+        wrenMysteryBrewCount: 0,
+        wrenMysteryBrewRatio: 0,
+        wrenVisits: 0,
+        uniqueNPCsServed: 5,
+        heartsBreadth: 5,
+        lettersArchivedRatio: 0.025,
+        townTabOpensPerDay: 0,
+        upgradesOwnedRatio: 0,
+        starsRatio: 0.6,
+        shelfCapacityRatio: 0.5,
+        inventoryKindsRatio: 0.11,
+        shopVisitsPerDay: 0,
+        daysSkippedRatio: 0,
+        earlyCloseRatio: 0,
+        relaxedMode: true,
+        daysSkipped: 0,
+        serviceDays: 10,
+        earlyCloses: 0,
+        relaxedModeSetting: true,
+        activity: createMockActivity({
+          totalServes: 50,
+          favoriteServeCount: 40,
+          correctServeCount: 50,
+          totalChats: 10,
+          servesByNpc: { fenwick: 10, sela: 10, bram: 10, nia: 10, wren: 10 },
+        }),
+      },
+    });
 
     const state = evaluateNarrativeState(mockInput);
 
@@ -431,14 +668,57 @@ describe('evaluateNarrativeState', () => {
   });
 
   it('computes curiosity dimension from discovery', () => {
-    const mockInput: NarrativeInput = {
+    const mockInput = createMockNarrativeInput({
       relationships: { heartPoints: {}, heartPointsToday: {}, displayedHearts: {}, learnedPrefs: [], heartsBreadth: 0, uniqueNPCsServed: 0 },
       recipes: { discoveredRecipes: ['R001', 'R002', 'R003', 'R004', 'R005', 'R006', 'R007'], totalRecipes: 8, hintCardsRead: 4, experimentalBrewCount: 10, wrenMysteryBrewCount: 5, wrenVisits: 10, wrenScenesSeen: 5 },
       upgrades: { ownedUpgrades: [], upgradesOwned: 0, maxUpgrades: 7, shelfCapacity: 6, maxShelfCapacity: 12, inventoryKinds: 1, maxInventoryKinds: 9, shopVisits: 0 },
       letters: { archivedLetters: [], lettersDelivered: [], lettersRead: [], lettersDismissed: [], townLettersDelivered: 0, maxLetters: 40 },
       story: { chapter: 3, chapterEnteredDay: { 0: 1, 3: 10 }, marigoldMysteryLayer: 3, wrenCluesGathered: 3, seenScenes: ['wren_1', 'wren_2', 'wren_3', 'wren_4', 'wren_5'], flags: {}, trajectoryHint: 'curiosity', endingAchieved: null, playthroughCount: 0, previousEndings: [], marigoldLettersDelivered: [], npcLettersDelivered: { fenwick: [], sela: [], bram: [], nia: [], wren: [] }, mysteryLettersDelivered: [], townLettersDelivered: [], branchLettersDelivered: [] },
-      activity: { day: 10, totalServes: 50, stars: 1, coins: 500, avgHearts: 0, favoriteServeRatio: 0, chatCount: 0, chatRatio: 0, journalOpensPerDay: 2, recipeDiscoveryRatio: 0.875, experimentalBrewCount: 10, experimentalBrewRatio: 0.2, wrenMysteryBrewCount: 5, wrenMysteryBrewRatio: 0.1, wrenVisits: 10, uniqueNPCsServed: 0, heartsBreadth: 0, lettersArchivedRatio: 0, townTabOpensPerDay: 0, upgradesOwnedRatio: 0, starsRatio: 0.2, shelfCapacityRatio: 0.5, inventoryKindsRatio: 0.11, shopVisitsPerDay: 0, daysSkippedRatio: 0, earlyCloseRatio: 0, relaxedMode: false, daysSkipped: 0, serviceDays: 10, earlyCloses: 0, relaxedModeSetting: false },
-    };
+      activity: {
+        day: 10,
+        totalServes: 50,
+        stars: 1,
+        coins: 500,
+        avgHearts: 0,
+        favoriteServeRatio: 0,
+        chatCount: 0,
+        chatRatio: 0,
+        journalOpensPerDay: 2,
+        recipeDiscoveryRatio: 0.875,
+        experimentalBrewCount: 10,
+        experimentalBrewRatio: 0.2,
+        wrenMysteryBrewCount: 5,
+        wrenMysteryBrewRatio: 0.1,
+        wrenVisits: 10,
+        uniqueNPCsServed: 0,
+        heartsBreadth: 0,
+        lettersArchivedRatio: 0,
+        townTabOpensPerDay: 0,
+        upgradesOwnedRatio: 0,
+        starsRatio: 0.2,
+        shelfCapacityRatio: 0.5,
+        inventoryKindsRatio: 0.11,
+        shopVisitsPerDay: 0,
+        daysSkippedRatio: 0,
+        earlyCloseRatio: 0,
+        relaxedMode: false,
+        daysSkipped: 0,
+        serviceDays: 10,
+        earlyCloses: 0,
+        relaxedModeSetting: false,
+        activity: createMockActivity({
+          totalServes: 50,
+          totalBrews: 50,
+          experimentalBrewCount: 10,
+          wrenMysteryBrewCount: 5,
+          recipeDiscoveryCount: 7,
+          discoveredRecipes: ['R001', 'R002', 'R003', 'R004', 'R005', 'R006', 'R007'],
+          journalOpensTotal: 20,
+          journalOpensByTab: { recipes: 10, letters: 5, regulars: 3, town: 2 },
+          wrenMysteryClues: 5,
+        }),
+      },
+    });
 
     const state = evaluateNarrativeState(mockInput);
 
@@ -447,14 +727,52 @@ describe('evaluateNarrativeState', () => {
   });
 
   it('computes comfort dimension from café investment', () => {
-    const mockInput: NarrativeInput = {
+    const mockInput = createMockNarrativeInput({
       relationships: { heartPoints: {}, heartPointsToday: {}, displayedHearts: {}, learnedPrefs: [], heartsBreadth: 1, uniqueNPCsServed: 1 },
       recipes: { discoveredRecipes: ['R001', 'R002'], totalRecipes: 8, hintCardsRead: 0, experimentalBrewCount: 0, wrenMysteryBrewCount: 0, wrenVisits: 0, wrenScenesSeen: 0 },
       upgrades: { ownedUpgrades: ['bigger_shelf', 'second_kettle', 'recipe_hints', 'title_music_box', 'comfort_furniture', 'autobrewer', 'express_service'], upgradesOwned: 7, maxUpgrades: 7, shelfCapacity: 12, maxShelfCapacity: 12, inventoryKinds: 9, maxInventoryKinds: 9, shopVisits: 20 },
       letters: { archivedLetters: [], lettersDelivered: [], lettersRead: [], lettersDismissed: [], townLettersDelivered: 0, maxLetters: 40 },
       story: { chapter: 3, chapterEnteredDay: { 0: 1, 3: 10 }, marigoldMysteryLayer: 1, wrenCluesGathered: 0, seenScenes: [], flags: {}, trajectoryHint: 'comfort', endingAchieved: null, playthroughCount: 0, previousEndings: [], marigoldLettersDelivered: [], npcLettersDelivered: { fenwick: [], sela: [], bram: [], nia: [], wren: [] }, mysteryLettersDelivered: [], townLettersDelivered: [], branchLettersDelivered: [] },
-      activity: { day: 10, totalServes: 50, stars: 5, coins: 1000, avgHearts: 0.2, favoriteServeRatio: 0.1, chatCount: 0, chatRatio: 0, journalOpensPerDay: 0, recipeDiscoveryRatio: 0.25, experimentalBrewCount: 0, experimentalBrewRatio: 0, wrenMysteryBrewCount: 0, wrenMysteryBrewRatio: 0, wrenVisits: 0, uniqueNPCsServed: 1, heartsBreadth: 1, lettersArchivedRatio: 0, townTabOpensPerDay: 0, upgradesOwnedRatio: 1, starsRatio: 1, shelfCapacityRatio: 1, inventoryKindsRatio: 1, shopVisitsPerDay: 2, daysSkippedRatio: 0, earlyCloseRatio: 0, relaxedMode: true, daysSkipped: 0, serviceDays: 10, earlyCloses: 0, relaxedModeSetting: true },
-    };
+      activity: {
+        day: 10,
+        totalServes: 50,
+        stars: 5,
+        coins: 1000,
+        avgHearts: 0.2,
+        favoriteServeRatio: 0.1,
+        chatCount: 0,
+        chatRatio: 0,
+        journalOpensPerDay: 0,
+        recipeDiscoveryRatio: 0.25,
+        experimentalBrewCount: 0,
+        experimentalBrewRatio: 0,
+        wrenMysteryBrewCount: 0,
+        wrenMysteryBrewRatio: 0,
+        wrenVisits: 0,
+        uniqueNPCsServed: 1,
+        heartsBreadth: 1,
+        lettersArchivedRatio: 0,
+        townTabOpensPerDay: 0,
+        upgradesOwnedRatio: 1,
+        starsRatio: 1,
+        shelfCapacityRatio: 1,
+        inventoryKindsRatio: 1,
+        shopVisitsPerDay: 2,
+        daysSkippedRatio: 0,
+        earlyCloseRatio: 0,
+        relaxedMode: true,
+        daysSkipped: 0,
+        serviceDays: 10,
+        earlyCloses: 0,
+        relaxedModeSetting: true,
+        activity: createMockActivity({
+          totalServes: 50,
+          upgradePurchaseCount: 7,
+          ingredientsPurchasedTotal: 20,
+          earlyCloses: 0,
+        }),
+      },
+    });
 
     const state = evaluateNarrativeState(mockInput);
 
@@ -463,14 +781,52 @@ describe('evaluateNarrativeState', () => {
   });
 
   it('locks trajectory at chapter 3', () => {
-    const mockInput: NarrativeInput = {
+    const mockInput = createMockNarrativeInput({
       relationships: { heartPoints: { fenwick: 2 }, heartPointsToday: {}, displayedHearts: { fenwick: 2 }, learnedPrefs: [], heartsBreadth: 1, uniqueNPCsServed: 1 },
       recipes: { discoveredRecipes: ['R001'], totalRecipes: 8, hintCardsRead: 0, experimentalBrewCount: 0, wrenMysteryBrewCount: 0, wrenVisits: 0, wrenScenesSeen: 0 },
       upgrades: { ownedUpgrades: [], upgradesOwned: 0, maxUpgrades: 7, shelfCapacity: 6, maxShelfCapacity: 12, inventoryKinds: 1, maxInventoryKinds: 9, shopVisits: 0 },
       letters: { archivedLetters: [], lettersDelivered: [], lettersRead: [], lettersDismissed: [], townLettersDelivered: 0, maxLetters: 40 },
       story: { chapter: 3, chapterEnteredDay: { 0: 1, 3: 10 }, marigoldMysteryLayer: 1, wrenCluesGathered: 0, seenScenes: [], flags: {}, trajectoryHint: 'care', endingAchieved: null, playthroughCount: 0, previousEndings: [], marigoldLettersDelivered: [], npcLettersDelivered: { fenwick: [], sela: [], bram: [], nia: [], wren: [] }, mysteryLettersDelivered: [], townLettersDelivered: [], branchLettersDelivered: [] },
-      activity: { day: 10, totalServes: 50, stars: 1, coins: 500, avgHearts: 0.4, favoriteServeRatio: 0.5, chatCount: 5, chatRatio: 0.1, journalOpensPerDay: 0.5, recipeDiscoveryRatio: 0.125, experimentalBrewCount: 0, experimentalBrewRatio: 0, wrenMysteryBrewCount: 0, wrenMysteryBrewRatio: 0, wrenVisits: 0, uniqueNPCsServed: 1, heartsBreadth: 1, lettersArchivedRatio: 0, townTabOpensPerDay: 0, upgradesOwnedRatio: 0, starsRatio: 0.2, shelfCapacityRatio: 0.5, inventoryKindsRatio: 0.11, shopVisitsPerDay: 0, daysSkippedRatio: 0, earlyCloseRatio: 0, relaxedMode: true, daysSkipped: 0, serviceDays: 10, earlyCloses: 0, relaxedModeSetting: true },
-    };
+      activity: {
+        day: 10,
+        totalServes: 50,
+        stars: 1,
+        coins: 500,
+        avgHearts: 0.4,
+        favoriteServeRatio: 0.5,
+        chatCount: 5,
+        chatRatio: 0.1,
+        journalOpensPerDay: 0.5,
+        recipeDiscoveryRatio: 0.125,
+        experimentalBrewCount: 0,
+        experimentalBrewRatio: 0,
+        wrenMysteryBrewCount: 0,
+        wrenMysteryBrewRatio: 0,
+        wrenVisits: 0,
+        uniqueNPCsServed: 1,
+        heartsBreadth: 1,
+        lettersArchivedRatio: 0,
+        townTabOpensPerDay: 0,
+        upgradesOwnedRatio: 0,
+        starsRatio: 0.2,
+        shelfCapacityRatio: 0.5,
+        inventoryKindsRatio: 0.11,
+        shopVisitsPerDay: 0,
+        daysSkippedRatio: 0,
+        earlyCloseRatio: 0,
+        relaxedMode: true,
+        daysSkipped: 0,
+        serviceDays: 10,
+        earlyCloses: 0,
+        relaxedModeSetting: true,
+        activity: createMockActivity({
+          totalServes: 50,
+          favoriteServeCount: 25,
+          correctServeCount: 50,
+          totalChats: 5,
+        }),
+      },
+    });
 
     const state = evaluateNarrativeState(mockInput);
 
@@ -480,14 +836,7 @@ describe('evaluateNarrativeState', () => {
   it('handles fresh save with minimal activity', () => {
     // Fresh save: no relationships, no recipes, no upgrades, no activity
     // Independence naturally emerges as dominant (no engagement yet)
-    const mockInput: NarrativeInput = {
-      relationships: { heartPoints: {}, heartPointsToday: {}, displayedHearts: {}, learnedPrefs: [], heartsBreadth: 0, uniqueNPCsServed: 0 },
-      recipes: { discoveredRecipes: [], totalRecipes: 8, hintCardsRead: 0, experimentalBrewCount: 0, wrenMysteryBrewCount: 0, wrenVisits: 0, wrenScenesSeen: 0 },
-      upgrades: { ownedUpgrades: [], upgradesOwned: 0, maxUpgrades: 7, shelfCapacity: 6, maxShelfCapacity: 12, inventoryKinds: 1, maxInventoryKinds: 9, shopVisits: 0 },
-      letters: { archivedLetters: [], lettersDelivered: [], lettersRead: [], lettersDismissed: [], townLettersDelivered: 0, maxLetters: 40 },
-      story: { chapter: 1, chapterEnteredDay: { 0: 1 }, marigoldMysteryLayer: 1, wrenCluesGathered: 0, seenScenes: [], flags: {}, trajectoryHint: null, endingAchieved: null, playthroughCount: 0, previousEndings: [], marigoldLettersDelivered: [], npcLettersDelivered: { fenwick: [], sela: [], bram: [], nia: [], wren: [] }, mysteryLettersDelivered: [], townLettersDelivered: [], branchLettersDelivered: [] },
-      activity: { day: 1, totalServes: 0, stars: 0, coins: 100, avgHearts: 0, favoriteServeRatio: 0, chatCount: 0, chatRatio: 0, journalOpensPerDay: 0, recipeDiscoveryRatio: 0, experimentalBrewCount: 0, experimentalBrewRatio: 0, wrenMysteryBrewCount: 0, wrenMysteryBrewRatio: 0, wrenVisits: 0, uniqueNPCsServed: 0, heartsBreadth: 0, lettersArchivedRatio: 0, townTabOpensPerDay: 0, upgradesOwnedRatio: 0, starsRatio: 0, shelfCapacityRatio: 0.5, inventoryKindsRatio: 0.11, shopVisitsPerDay: 0, daysSkippedRatio: 0, earlyCloseRatio: 0, relaxedMode: true, daysSkipped: 0, serviceDays: 1, earlyCloses: 0, relaxedModeSetting: true },
-    };
+    const mockInput = createMockNarrativeInput();
 
     const state = evaluateNarrativeState(mockInput);
 
@@ -519,6 +868,18 @@ describe('SaveData → NarrativeInput → NarrativeState pipeline', () => {
         trajectory_hint: 'care',
         marigold_mystery_layer: 3,
         wren_clues_gathered: 2,
+        activity_total_serves: 45,
+        activity_favorite_serves: 8,
+        activity_correct_serves: 37,
+        activity_total_chats: 5,
+        activity_total_brews: 45,
+        activity_experimental_brews: 0,
+        activity_wren_mystery_brews: 0,
+        activity_recipe_discoveries: 5,
+        activity_days_skipped: 0,
+        activity_early_closes: 0,
+        activity_letters_read: 3,
+        activity_letters_dismissed: 1,
       },
       upgrades: ['bigger_shelf', 'second_kettle', 'recipe_hints'],
     });

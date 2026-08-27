@@ -36,6 +36,8 @@ import { awardChat, awardCorrectServe, awardFavoriteServe } from '../sim/hearts.
 import { patienceMax } from '../sim/upgrades.js';
 import { writeSave } from '../save/store.js';
 import { playScene } from '../ui/scene.js';
+// Narrative activity events
+import { recordServe, recordChat, recordBrew, recordRecipeDiscovered, recordWrenMysteryBrew, recordWrenVisit } from '../narrative/activity-ledger.js';
 
 const WALK_IN_SEC = 2.2;
 const LINGER_SEC = 3.0;
@@ -61,6 +63,8 @@ export interface ServiceContext {
   economy: import('../sim/economy.js').EconomyState;
   inventory: Record<string, number>;
   reducedMotion: boolean;
+  /** Activity ledger for narrative system */
+  activityLedger: import('../narrative/activity-ledger.js').ActivityLedger;
 }
 
 export interface ServiceControllerDeps {
@@ -251,6 +255,11 @@ export class ServiceController {
     } else {
       this.deps.toast(STRINGS.service.chatted);
     }
+    // Record chat activity for narrative system
+    recordChat(ctx.activityLedger, {
+      npcId: active.characterId,
+      day: ctx.dayState.day,
+    });
   }
 
   // ---- Brew submission -------------------------------------------------------------
@@ -266,6 +275,12 @@ export class ServiceController {
     if (!active || active.servedThisVisit) {
       // Brewed with nobody waiting — practice pour.
       const result = resolveBrew(input, ctx.save.flags.discovered_recipes);
+      recordBrew(ctx.activityLedger, {
+        recipeId: result.recipeId ?? null,
+        experimental: result.isMurky,
+        wrenMystery: false,
+        day: ctx.dayState.day,
+      });
       this.deps.practicePour(result.isMurky);
       return;
     }
@@ -282,6 +297,11 @@ export class ServiceController {
     ) {
       const scene5 = WREN_SCENES.find((s) => s.id === 'wren_scene5') ?? null;
       if (scene5 && !ctx.save.flags.seen_scenes.includes(scene5.id)) {
+        // Record Wren mystery brew completion
+        recordWrenMysteryBrew(ctx.activityLedger, {
+          clueNumber: 3, // Final clue - resolution brew
+          day: ctx.dayState.day,
+        });
         this.serveCustomer('R008'); // the drink itself lands: coins/hearts/discovery
         playScene(scene5, ctx.save, ctx.heartLedger, { onClose: () => {} });
         return;
@@ -292,8 +312,30 @@ export class ServiceController {
     if (result.isMurky) {
       // Murky path (§2.4): polite decline, ingredients gone, no coins, no penalty.
       active.declinedMurky = true;
+      recordBrew(ctx.activityLedger, {
+        recipeId: null,
+        experimental: true,
+        wrenMystery: false,
+        day: ctx.dayState.day,
+      });
       this.deps.murkyDecline();
       return;
+    }
+
+    // Record brew before serving
+    recordBrew(ctx.activityLedger, {
+      recipeId: result.recipeId ?? null,
+      experimental: false,
+      wrenMystery: active.characterId === 'wren' && ctx.save.flags.wren_usual_revealed,
+      day: ctx.dayState.day,
+    });
+
+    // Record Wren visit if serving Wren
+    if (active.characterId === 'wren') {
+      recordWrenVisit(ctx.activityLedger, {
+        recipeId: result.recipeId as string,
+        day: ctx.dayState.day,
+      });
     }
 
     this.serveCustomer(result.recipeId as string);
@@ -360,6 +402,25 @@ export class ServiceController {
     this.servedCharacterIds.push(active.characterId); // debugState.servedCharacterIdsToday
     this.pendingJournalOpenRecipeId = justDiscovered && isRegular(active.characterId) ? recipeId : null;
     active.lingerSec = ctx.reducedMotion ? 0.6 : LINGER_SEC;
+
+    // Record serve activity for narrative system
+    recordServe(ctx.activityLedger, {
+      npcId: active.characterId,
+      recipeId,
+      favorite,
+      correct: true,
+      chatted: active.chatted,
+      day: ctx.dayState.day,
+    });
+
+    // Record recipe discovery if applicable
+    if (justDiscovered) {
+      recordRecipeDiscovered(ctx.activityLedger, {
+        recipeId,
+        source: 'brew',
+        day: ctx.dayState.day,
+      });
+    }
 
     // Coin arc FX + happy line (+favorite variant), star-up sparkles.
     this.deps.fx.coins.push({ x: 340, y: 150, t: 0 });

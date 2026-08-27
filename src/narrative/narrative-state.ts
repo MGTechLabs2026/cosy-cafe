@@ -44,6 +44,7 @@ const DEFAULT_DIMENSIONS: Record<NarrativeDimension, number> = {
 /** Compute care dimension: relationship depth + preferred serve + chat */
 function computeCare(input: NarrativeInput): number {
   const { relationships, activity } = input;
+  const act = activity.activity;
   
   // Heart breadth: how many NPCs have at least 1 heart
   const breadth = relationships.heartsBreadth / 5; // 0..1
@@ -52,11 +53,11 @@ function computeCare(input: NarrativeInput): number {
   const avgHearts = Object.values(relationships.displayedHearts).reduce((a, b) => a + b, 0) / 5;
   const heartsNorm = Math.min(avgHearts / 5, 1); // 0..1
   
-  // Chat engagement (ratio of chats to serves)
-  const chatRatio = activity.chatRatio;
+  // Chat engagement: REAL chat count from ledger
+  const chatRatio = act.totalServes > 0 ? act.totalChats / act.totalServes : 0;
   
-  // Favorite serve accuracy
-  const favoriteServeRatio = activity.favoriteServeRatio;
+  // Favorite serve accuracy: REAL favorite serve count from ledger
+  const favoriteServeRatio = act.totalServes > 0 ? act.favoriteServeCount / act.totalServes : 0;
   
   // Learned preferences count
   const prefRatio = Math.min(relationships.learnedPrefs.length / 5, 1);
@@ -73,6 +74,7 @@ function computeCare(input: NarrativeInput): number {
 /** Compute curiosity dimension: recipe discovery + experimental brews + Wren mystery */
 function computeCuriosity(input: NarrativeInput): number {
   const { recipes, activity, story } = input;
+  const act = activity.activity;
   
   // Recipe discovery ratio
   const discoveryRatio = recipes.discoveredRecipes.length / recipes.totalRecipes;
@@ -80,16 +82,16 @@ function computeCuriosity(input: NarrativeInput): number {
   // Hint cards read (R004-R007)
   const hintRatio = recipes.hintCardsRead / 4;
   
-  // Experimental brew ratio
-  const experimentalRatio = activity.experimentalBrewRatio;
+  // Experimental brew ratio: REAL experimental brew count from ledger
+  const experimentalRatio = act.totalBrews > 0 ? act.experimentalBrewCount / act.totalBrews : 0;
   
-  // Wren mystery brew ratio
-  const wrenMysteryRatio = activity.wrenMysteryBrewRatio;
+  // Wren mystery brew ratio: REAL Wren mystery brew count from ledger
+  const wrenMysteryRatio = act.totalBrews > 0 ? act.wrenMysteryBrewCount / act.totalBrews : 0;
   
   // Wren scenes seen
   const wrenSceneRatio = Math.min(recipes.wrenScenesSeen / 6, 1);
   
-  // Journal engagement (opens per day)
+  // Journal engagement (opens per day): REAL journal opens from ledger
   const journalRatio = Math.min(activity.journalOpensPerDay / 2, 1);
   
   return (
@@ -105,23 +107,26 @@ function computeCuriosity(input: NarrativeInput): number {
 /** Compute community dimension: town engagement + letter reading + diverse NPCs served */
 function computeCommunity(input: NarrativeInput): number {
   const { letters, activity, relationships } = input;
+  const act = activity.activity;
   
-  // Letters read ratio
+  // Letters read ratio: REAL letters read from ledger
   const lettersReadRatio = letters.lettersDelivered.length > 0
-    ? letters.lettersRead.length / letters.lettersDelivered.length
+    ? act.lettersReadCount / letters.lettersDelivered.length
     : 0;
   
   // Town letters delivered
   const townRatio = letters.townLettersDelivered / letters.maxLetters;
   
-  // Unique NPCs served breadth
-  const uniqueRatio = relationships.uniqueNPCsServed / 5;
+  // Unique NPCs served breadth: REAL from ledger servesByNpc
+  const uniqueNpcsServed = Object.keys(act.servesByNpc).length;
+  const uniqueRatio = uniqueNpcsServed / 5;
   
   // Hearts breadth
   const breadthRatio = relationships.heartsBreadth / 5;
   
-  // Town tab opens per day
-  const townTabRatio = Math.min(activity.townTabOpensPerDay / 1, 1);
+  // Town tab opens per day: REAL from ledger journalOpensByTab
+  const townTabOpens = act.journalOpensByTab['town'] ?? 0;
+  const townTabRatio = Math.min(activity.day > 0 ? townTabOpens / activity.day : 0, 1);
   
   return (
     lettersReadRatio * 0.3 +
@@ -135,6 +140,7 @@ function computeCommunity(input: NarrativeInput): number {
 /** Compute comfort dimension: café investment + consistency + relaxed pacing */
 function computeComfort(input: NarrativeInput): number {
   const { upgrades, activity, story } = input;
+  const act = activity.activity;
   
   // Upgrades owned ratio
   const upgradeRatio = upgrades.upgradesOwned / upgrades.maxUpgrades;
@@ -148,12 +154,12 @@ function computeComfort(input: NarrativeInput): number {
   // Stars ratio (consistency)
   const starsRatio = activity.starsRatio;
   
-  // Shop visits per day (engagement with café)
-  const shopRatio = Math.min(activity.shopVisitsPerDay / 3, 1);
+  // Shop visits per day (engagement with café): REAL from ledger
+  const shopVisits = act.upgradePurchaseCount + act.ingredientsPurchasedTotal;
+  const shopRatio = Math.min(activity.day > 0 ? shopVisits / activity.day : 0, 1);
   
-  // Relaxed mode / no early closes
-  const relaxedBonus = activity.relaxedMode ? 0.1 : 0;
-  const noEarlyCloseBonus = activity.earlyCloseRatio === 0 ? 0.1 : 0;
+  // Relaxed mode / no early closes: REAL from ledger
+  const noEarlyCloseBonus = act.earlyCloses === 0 ? 0.1 : 0;
   
   return (
     upgradeRatio * 0.25 +
@@ -161,26 +167,30 @@ function computeComfort(input: NarrativeInput): number {
     inventoryRatio * 0.15 +
     starsRatio * 0.15 +
     shopRatio * 0.15 +
-    relaxedBonus * 0.05 +
-    noEarlyCloseBonus * 0.05
+    noEarlyCloseBonus * 0.1
   );
 }
 
 /** Compute independence dimension: skipping days + early closes + self-directed play */
 function computeIndependence(input: NarrativeInput): number {
   const { activity, story } = input;
+  const act = activity.activity;
   
-  // Days skipped ratio
-  const skipRatio = activity.daysSkippedRatio;
+  // Days skipped ratio: REAL days skipped from ledger
+  const skipRatio = act.daysSkipped / 14;
   
-  // Early close ratio
-  const earlyCloseRatio = activity.earlyCloseRatio;
+  // Early close ratio: REAL early closes from ledger
+  const earlyCloseRatio = act.earlyCloses > 0 && activity.serviceDays > 0
+    ? act.earlyCloses / activity.serviceDays
+    : 0;
   
-  // Low chat engagement
-  const lowChatRatio = 1 - activity.chatRatio;
+  // Low chat engagement: REAL from ledger
+  const chatRatio = act.totalServes > 0 ? act.totalChats / act.totalServes : 0;
+  const lowChatRatio = 1 - chatRatio;
   
-  // Low favorite serve adherence
-  const lowFavoriteRatio = 1 - activity.favoriteServeRatio;
+  // Low favorite serve adherence: REAL from ledger
+  const favoriteServeRatio = act.totalServes > 0 ? act.favoriteServeCount / act.totalServes : 0;
+  const lowFavoriteRatio = 1 - favoriteServeRatio;
   
   // High chapter (later chapters = more independence)
   const chapterRatio = Math.min(story.chapter / 5, 1);

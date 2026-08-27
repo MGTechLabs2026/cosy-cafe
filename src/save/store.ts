@@ -47,6 +47,8 @@ export function isStorageAvailable(): boolean {
  * v3 → v4 (M4): adds settings.text_size default 100% (doc 05 §6 text-size).
  *
  * v4 → v5 (M5): adds narrative system flags with safe defaults.
+ *
+ * v5 → v6 (M6): adds activity ledger counters with safe defaults.
  */
 function migrateV1toV2(data: Record<string, unknown>): Record<string, unknown> {
   return {
@@ -125,13 +127,49 @@ function migrateV4toV5(data: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+function migrateV5toV6(data: Record<string, unknown>): Record<string, unknown> {
+  const flags = isRecord(data['flags']) ? data['flags'] : {};
+  return {
+    ...data,
+    flags: {
+      ...flags,
+      // v6 — Activity ledger counters with safe defaults
+      activity_total_serves: 0,
+      activity_favorite_serves: 0,
+      activity_correct_serves: 0,
+      activity_serves_by_npc: {},
+      activity_serves_by_recipe: {},
+      activity_total_chats: 0,
+      activity_chats_by_npc: {},
+      activity_total_brews: 0,
+      activity_experimental_brews: 0,
+      activity_wren_mystery_brews: 0,
+      activity_recipe_discoveries: 0,
+      activity_discovered_recipes: [],
+      activity_journal_opens_total: 0,
+      activity_journal_opens_by_tab: {},
+      activity_upgrade_purchases: 0,
+      activity_days_skipped: 0,
+      activity_early_closes: 0,
+      activity_letters_read: 0,
+      activity_letters_dismissed: 0,
+      activity_read_letter_ids: [],
+      activity_dismissed_letter_ids: [],
+      activity_wren_visits: 0,
+      activity_wren_mystery_clues: 0,
+      activity_ingredients_purchased: 0,
+      activity_version: 1,
+    },
+  };
+}
+
 /** Local structural guard (store.ts stays free of validator imports cycles). */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 type MigrationFn = (data: Record<string, unknown>) => Record<string, unknown>;
-const MIGRATIONS: readonly MigrationFn[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5];
+const MIGRATIONS: readonly MigrationFn[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6];
 
 function migrate(data: Record<string, unknown>): Record<string, unknown> {
   let current = data;

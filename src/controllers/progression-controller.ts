@@ -20,6 +20,8 @@ import {
 import type { HeartLedger } from '../sim/hearts.js';
 import { purchaseUpgrade, shelfCapacity } from '../sim/upgrades.js';
 import type { UpgradeId } from '../sim/upgrades.js';
+// Activity ledger for narrative system
+import { ActivityLedger, createActivityLedger } from '../narrative/activity-ledger.js';
 
 export interface ProgressionInit {
   save: SaveData;
@@ -35,6 +37,8 @@ export class ProgressionController {
   economy!: EconomyState;
   inventory: Inventory = createInitialInventory();
   heartLedger: HeartLedger;
+  /** Activity ledger for narrative system */
+  activityLedger: ActivityLedger;
 
   constructor(init: ProgressionInit) {
     this.save = init.save;
@@ -45,6 +49,34 @@ export class ProgressionController {
     };
     this.inventory = { ...createInitialInventory(), ...this.save.inventory };
     this.heartLedger = heartsFromSave(this.save.hearts ?? {}, this.save.heart_points_today ?? {});
+    // Create activity ledger from save flags
+    this.activityLedger = createActivityLedger({
+      totalServes: this.save.flags.activity_total_serves,
+      favoriteServeCount: this.save.flags.activity_favorite_serves,
+      correctServeCount: this.save.flags.activity_correct_serves,
+      servesByNpc: this.save.flags.activity_serves_by_npc,
+      servesByRecipe: this.save.flags.activity_serves_by_recipe,
+      totalChats: this.save.flags.activity_total_chats,
+      chatsByNpc: this.save.flags.activity_chats_by_npc,
+      totalBrews: this.save.flags.activity_total_brews,
+      experimentalBrewCount: this.save.flags.activity_experimental_brews,
+      wrenMysteryBrewCount: this.save.flags.activity_wren_mystery_brews,
+      recipeDiscoveryCount: this.save.flags.activity_recipe_discoveries,
+      discoveredRecipes: [...(this.save.flags.activity_discovered_recipes ?? this.save.flags.discovered_recipes ?? [])],
+      journalOpensTotal: this.save.flags.activity_journal_opens_total,
+      journalOpensByTab: this.save.flags.activity_journal_opens_by_tab,
+      upgradePurchaseCount: this.save.flags.activity_upgrade_purchases ?? this.save.upgrades.length,
+      daysSkipped: this.save.flags.activity_days_skipped,
+      earlyCloses: this.save.flags.activity_early_closes,
+      lettersReadCount: this.save.flags.activity_letters_read ?? this.save.flags.letters_read?.length ?? 0,
+      lettersDismissedCount: this.save.flags.activity_letters_dismissed ?? this.save.flags.letters_dismissed?.length ?? 0,
+      readLetterIds: [...(this.save.flags.activity_read_letter_ids ?? this.save.flags.letters_read ?? [])],
+      dismissedLetterIds: [...(this.save.flags.activity_dismissed_letter_ids ?? this.save.flags.letters_dismissed ?? [])],
+      wrenVisits: this.save.flags.activity_wren_visits,
+      wrenMysteryClues: this.save.flags.activity_wren_mystery_clues,
+      ingredientsPurchasedTotal: this.save.flags.activity_ingredients_purchased,
+      version: this.save.flags.activity_version ?? 1,
+    });
     // Playtest fix #3: a save that already owns the record player resumes with
     // music enabled (playback itself waits for the title-screen unlock).
     if (this.save.upgrades.includes('record_player')) {
@@ -99,6 +131,33 @@ export class ProgressionController {
     const heartSnapshot = heartsToSave(this.heartLedger);
     this.save.hearts = heartSnapshot.hearts;
     this.save.heart_points_today = heartSnapshot.heart_points_today;
+    // Persist activity ledger to save flags
+    const counters = this.activityLedger.getCounters();
+    this.save.flags.activity_total_serves = counters.totalServes;
+    this.save.flags.activity_favorite_serves = counters.favoriteServeCount;
+    this.save.flags.activity_correct_serves = counters.correctServeCount;
+    this.save.flags.activity_serves_by_npc = { ...counters.servesByNpc };
+    this.save.flags.activity_serves_by_recipe = { ...counters.servesByRecipe };
+    this.save.flags.activity_total_chats = counters.totalChats;
+    this.save.flags.activity_chats_by_npc = { ...counters.chatsByNpc };
+    this.save.flags.activity_total_brews = counters.totalBrews;
+    this.save.flags.activity_experimental_brews = counters.experimentalBrewCount;
+    this.save.flags.activity_wren_mystery_brews = counters.wrenMysteryBrewCount;
+    this.save.flags.activity_recipe_discoveries = counters.recipeDiscoveryCount;
+    this.save.flags.activity_discovered_recipes = [...counters.discoveredRecipes];
+    this.save.flags.activity_journal_opens_total = counters.journalOpensTotal;
+    this.save.flags.activity_journal_opens_by_tab = { ...counters.journalOpensByTab };
+    this.save.flags.activity_upgrade_purchases = counters.upgradePurchaseCount;
+    this.save.flags.activity_days_skipped = counters.daysSkipped;
+    this.save.flags.activity_early_closes = counters.earlyCloses;
+    this.save.flags.activity_letters_read = counters.lettersReadCount;
+    this.save.flags.activity_letters_dismissed = counters.lettersDismissedCount;
+    this.save.flags.activity_read_letter_ids = [...counters.readLetterIds];
+    this.save.flags.activity_dismissed_letter_ids = [...counters.dismissedLetterIds];
+    this.save.flags.activity_wren_visits = counters.wrenVisits;
+    this.save.flags.activity_wren_mystery_clues = counters.wrenMysteryClues;
+    this.save.flags.activity_ingredients_purchased = counters.ingredientsPurchasedTotal;
+    this.save.flags.activity_version = counters.version;
     writeSave(this.save);
   }
 
