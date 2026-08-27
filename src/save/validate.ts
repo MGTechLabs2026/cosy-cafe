@@ -1,7 +1,7 @@
 // save/validate.ts — doc 02 §7.1 schema validation
 // Hand-rolled validator (~1 KB per doc 08); no dependency. Fail-closed.
 
-export const SAVE_SCHEMA_VERSION = 4;
+export const SAVE_SCHEMA_VERSION = 5;
 export const SAVE_STORAGE_KEY = 'moonleaf_save_v1';
 
 // Shape mirrors doc 02 §7.1 exactly:
@@ -32,6 +32,33 @@ export interface SaveFlags {
   fenwick_chili_granted: boolean;
   /** M4 — tutorial step 4 (doc 05 §3.1): kettle auto-opened once this save. */
   kettle_auto_opened: boolean;
+
+  /** v5 — Narrative system flags */
+  /** Current narrative chapter (0–5) */
+  current_chapter: number;
+  /** Day each chapter was entered */
+  chapter_entered_day: Record<number, number>;
+  /** IDs of delivered letters */
+  letters_delivered: string[];
+  /** IDs of letters player actually opened */
+  letters_read: string[];
+  /** IDs of letters player dismissed without reading */
+  letters_dismissed: string[];
+  /** Per-chapter peak dimension */
+  dominant_dimension_history: string[];
+  /** Current trajectory hint */
+  trajectory_hint: 'care' | 'comfort' | 'curiosity' | 'community' | 'independence' | null;
+  /** Ending achieved */
+  ending_achieved?: 'keeper' | 'builder' | 'wanderer' | 'community' | undefined;
+  ending_day?: number | undefined;
+  /** Marigold mystery layer (1–5) */
+  marigold_mystery_layer: number;
+  /** Wren clues gathered (0–3) */
+  wren_clues_gathered: number;
+  /** Playthrough count for replay features */
+  playthrough_count: number;
+  /** Previously achieved endings */
+  previous_endings: string[];
 }
 
 export interface SaveSettings {
@@ -191,6 +218,35 @@ export function validateSaveData(input: unknown): ValidationResult {
   if (bramIntroDone !== undefined && typeof bramIntroDone !== 'boolean') return { ok: false };
   if (niaIntroDone !== undefined && typeof niaIntroDone !== 'boolean') return { ok: false };
 
+  // v5 narrative flags (optional for backwards compat, default false/0/empty)
+  const currentChapter = rawFlags['current_chapter'];
+  const chapterEnteredDay = rawFlags['chapter_entered_day'];
+  const lettersDelivered = rawFlags['letters_delivered'];
+  const lettersRead = rawFlags['letters_read'];
+  const lettersDismissed = rawFlags['letters_dismissed'];
+  const dominantDimensionHistory = rawFlags['dominant_dimension_history'];
+  const trajectoryHint = rawFlags['trajectory_hint'];
+  const endingAchieved = rawFlags['ending_achieved'];
+  const endingDay = rawFlags['ending_day'];
+  const marigoldMysteryLayer = rawFlags['marigold_mystery_layer'];
+  const wrenCluesGathered = rawFlags['wren_clues_gathered'];
+  const playthroughCount = rawFlags['playthrough_count'];
+  const previousEndings = rawFlags['previous_endings'];
+
+  if (currentChapter !== undefined && (!isFiniteNumber(currentChapter) || !Number.isInteger(currentChapter) || currentChapter < 0 || currentChapter > 5)) return { ok: false };
+  if (chapterEnteredDay !== undefined && !isRecord(chapterEnteredDay)) return { ok: false };
+  if (lettersDelivered !== undefined && !isStringArray(lettersDelivered)) return { ok: false };
+  if (lettersRead !== undefined && !isStringArray(lettersRead)) return { ok: false };
+  if (lettersDismissed !== undefined && !isStringArray(lettersDismissed)) return { ok: false };
+  if (dominantDimensionHistory !== undefined && !isStringArray(dominantDimensionHistory)) return { ok: false };
+  if (trajectoryHint !== undefined && trajectoryHint !== null && typeof trajectoryHint === 'string' && !['care', 'comfort', 'curiosity', 'community', 'independence'].includes(trajectoryHint)) return { ok: false };
+  if (endingAchieved !== undefined && typeof endingAchieved === 'string' && !['keeper', 'builder', 'wanderer', 'community'].includes(endingAchieved)) return { ok: false };
+  if (endingDay !== undefined && (!isFiniteNumber(endingDay) || !Number.isInteger(endingDay) || endingDay < 1)) return { ok: false };
+  if (marigoldMysteryLayer !== undefined && (!isFiniteNumber(marigoldMysteryLayer) || !Number.isInteger(marigoldMysteryLayer) || marigoldMysteryLayer < 1 || marigoldMysteryLayer > 5)) return { ok: false };
+  if (wrenCluesGathered !== undefined && (!isFiniteNumber(wrenCluesGathered) || !Number.isInteger(wrenCluesGathered) || wrenCluesGathered < 0 || wrenCluesGathered > 3)) return { ok: false };
+  if (playthroughCount !== undefined && (!isFiniteNumber(playthroughCount) || !Number.isInteger(playthroughCount) || playthroughCount < 0)) return { ok: false };
+  if (previousEndings !== undefined && !isStringArray(previousEndings)) return { ok: false };
+
   // settings: all fields with ranges.
   const rawSettings = input['settings'];
   if (!isRecord(rawSettings)) return { ok: false };
@@ -244,6 +300,20 @@ export function validateSaveData(input: unknown): ValidationResult {
         nia_intro_done: typeof rawFlags['nia_intro_done'] === 'boolean' ? rawFlags['nia_intro_done'] : false,
         fenwick_chili_granted: typeof rawFlags['fenwick_chili_granted'] === 'boolean' ? rawFlags['fenwick_chili_granted'] : false,
         kettle_auto_opened: typeof rawFlags['kettle_auto_opened'] === 'boolean' ? rawFlags['kettle_auto_opened'] : false,
+        // v5 narrative flags with safe defaults
+        current_chapter: typeof rawFlags['current_chapter'] === 'number' ? rawFlags['current_chapter'] : 0,
+        chapter_entered_day: (isRecord(rawFlags['chapter_entered_day']) ? rawFlags['chapter_entered_day'] : { 0: day }) as Record<number, number>,
+        letters_delivered: isStringArray(rawFlags['letters_delivered']) ? rawFlags['letters_delivered'] : (rawLetters ?? []),
+        letters_read: isStringArray(rawFlags['letters_read']) ? rawFlags['letters_read'] : [],
+        letters_dismissed: isStringArray(rawFlags['letters_dismissed']) ? rawFlags['letters_dismissed'] : [],
+        dominant_dimension_history: isStringArray(rawFlags['dominant_dimension_history']) ? rawFlags['dominant_dimension_history'] : [],
+        trajectory_hint: (rawFlags['trajectory_hint'] === 'care' || rawFlags['trajectory_hint'] === 'comfort' || rawFlags['trajectory_hint'] === 'curiosity' || rawFlags['trajectory_hint'] === 'community' || rawFlags['trajectory_hint'] === 'independence') ? rawFlags['trajectory_hint'] : null,
+        ending_achieved: (rawFlags['ending_achieved'] === 'keeper' || rawFlags['ending_achieved'] === 'builder' || rawFlags['ending_achieved'] === 'wanderer' || rawFlags['ending_achieved'] === 'community') ? rawFlags['ending_achieved'] : undefined,
+        ending_day: (typeof rawFlags['ending_day'] === 'number' && Number.isInteger(rawFlags['ending_day']) && rawFlags['ending_day'] >= 1) ? rawFlags['ending_day'] : undefined,
+        marigold_mystery_layer: (typeof rawFlags['marigold_mystery_layer'] === 'number' && Number.isInteger(rawFlags['marigold_mystery_layer']) && rawFlags['marigold_mystery_layer'] >= 1 && rawFlags['marigold_mystery_layer'] <= 5) ? rawFlags['marigold_mystery_layer'] : 1,
+        wren_clues_gathered: (typeof rawFlags['wren_clues_gathered'] === 'number' && Number.isInteger(rawFlags['wren_clues_gathered']) && rawFlags['wren_clues_gathered'] >= 0 && rawFlags['wren_clues_gathered'] <= 3) ? rawFlags['wren_clues_gathered'] : 0,
+        playthrough_count: (typeof rawFlags['playthrough_count'] === 'number' && Number.isInteger(rawFlags['playthrough_count']) && rawFlags['playthrough_count'] >= 0) ? rawFlags['playthrough_count'] : 0,
+        previous_endings: isStringArray(rawFlags['previous_endings']) ? rawFlags['previous_endings'] : [],
       },
       settings: { relaxed_mode: relaxed, reduced_motion: reducedMotion, master_vol: masterVol, text_size: textSize },
     },
@@ -276,21 +346,35 @@ export function createInitialSave(): SaveData {
     // Day-1 Marigold letter seeds the archive (journal Letters tab).
     letters: ['letter_marigold_1'],
     flags: {
-      discovered_recipes: ['R001', 'R002'],
-      learned_prefs: [],
-      seen_scenes: [],
-      wren_usual_revealed: false,
-      fenwick_arc_complete: false,
-      fenwick_epilogue_done: false,
-      wren_arc_complete: false,
-      wren_epilogue_done: false,
-      title_music_box_unlocked: false,
-      sela_intro_done: false,
-      bram_intro_done: false,
-      nia_intro_done: false,
-      fenwick_chili_granted: false,
-      kettle_auto_opened: false,
-    },
+            discovered_recipes: ['R001', 'R002'],
+            learned_prefs: [],
+            seen_scenes: [],
+            wren_usual_revealed: false,
+            fenwick_arc_complete: false,
+            fenwick_epilogue_done: false,
+            wren_arc_complete: false,
+            wren_epilogue_done: false,
+            title_music_box_unlocked: false,
+            sela_intro_done: false,
+            bram_intro_done: false,
+            nia_intro_done: false,
+            fenwick_chili_granted: false,
+            kettle_auto_opened: false,
+            // v5 — Narrative system flags
+            current_chapter: 0,
+            chapter_entered_day: { 0: 1 },
+            letters_delivered: ['letter_marigold_1'],
+            letters_read: [],
+            letters_dismissed: [],
+            dominant_dimension_history: [],
+            trajectory_hint: null,
+            // ending_achieved: omitted (optional)
+            // ending_day: omitted (optional)
+            marigold_mystery_layer: 1,
+            wren_clues_gathered: 0,
+            playthrough_count: 0,
+            previous_endings: [],
+          },
     settings: { relaxed_mode: true, reduced_motion: false, master_vol: 0.8, text_size: 100 },
   };
 }

@@ -45,6 +45,8 @@ export function isStorageAvailable(): boolean {
  * v2 → v3 (M3): adds arc progress flags with safe defaults.
  *
  * v3 → v4 (M4): adds settings.text_size default 100% (doc 05 §6 text-size).
+ *
+ * v4 → v5 (M5): adds narrative system flags with safe defaults.
  */
 function migrateV1toV2(data: Record<string, unknown>): Record<string, unknown> {
   return {
@@ -99,13 +101,37 @@ function migrateV3toV4(data: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+function migrateV4toV5(data: Record<string, unknown>): Record<string, unknown> {
+  const flags = isRecord(data['flags']) ? data['flags'] : {};
+  return {
+    ...data,
+    flags: {
+      ...flags,
+      // v5 — Narrative system flags with safe defaults
+      current_chapter: 0,
+      chapter_entered_day: { 0: (data['day'] as number) ?? 1 },
+      letters_delivered: (data['letters'] as string[]) ?? [],
+      letters_read: [],
+      letters_dismissed: [],
+      dominant_dimension_history: [],
+      trajectory_hint: null,
+      ending_achieved: undefined,
+      ending_day: undefined,
+      marigold_mystery_layer: 1,
+      wren_clues_gathered: 0,
+      playthrough_count: 0,
+      previous_endings: [],
+    },
+  };
+}
+
 /** Local structural guard (store.ts stays free of validator imports cycles). */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 type MigrationFn = (data: Record<string, unknown>) => Record<string, unknown>;
-const MIGRATIONS: readonly MigrationFn[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4];
+const MIGRATIONS: readonly MigrationFn[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5];
 
 function migrate(data: Record<string, unknown>): Record<string, unknown> {
   let current = data;
