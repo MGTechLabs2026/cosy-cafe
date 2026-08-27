@@ -1,7 +1,8 @@
-// tests/narrative-input.test.ts — tests for NarrativeInput adapter and evaluator
+// tests/narrative-input.test.ts — tests for NarrativeInput adapter, signals, evaluator, and state
 import { describe, it, expect } from 'vitest';
 import { createNarrativeInput, type NarrativeInput } from '../src/narrative/narrative-input';
-import { evaluateNarrativeState } from '../src/narrative/narrative-state';
+import { calculateAllSignals } from '../src/narrative/narrative-signals';
+import { evaluateNarrativeStateFromInput, type NarrativeState } from '../src/narrative/narrative-state';
 import { createEmptyCounters } from '../src/narrative/activity-ledger';
 
 function createMockSaveData(overrides: Partial<{
@@ -42,7 +43,6 @@ function createMockSaveData(overrides: Partial<{
     nia_intro_done: boolean;
     fenwick_chili_granted: boolean;
     kettle_auto_opened: boolean;
-    // v6 activity flags
     activity_total_serves: number;
     activity_favorite_serves: number;
     activity_correct_serves: number;
@@ -184,7 +184,6 @@ function createMockSaveData(overrides: Partial<{
       nia_intro_done: false,
       fenwick_chili_granted: false,
       kettle_auto_opened: false,
-      // v6 activity defaults
       activity_total_serves: 0,
       activity_favorite_serves: 0,
       activity_correct_serves: 0,
@@ -448,155 +447,195 @@ describe('createNarrativeInput', () => {
   });
 });
 
-describe('evaluateNarrativeState', () => {
-  it('evaluates state from NarrativeInput', () => {
-    const save = createMockSaveData({
-      day: 7,
-      stars: 2,
-      coins: 500,
-      total_serves: 30,
-      hearts: { fenwick: 3, sela: 2, bram: 1, nia: 1, wren: 1 },
-      heart_points_today: { fenwick: 0.5, sela: 0.25, bram: 0, nia: 0, wren: 0 },
-      flags: {
-        discovered_recipes: ['R001', 'R002', 'R003', 'R004', 'R005'],
-        seen_scenes: ['wren_1', 'wren_2'],
-        current_chapter: 1,
-        chapter_entered_day: { 0: 1, 1: 7 },
-        trajectory_hint: 'care',
-        marigold_mystery_layer: 2,
-        wren_clues_gathered: 1,
-        letters_delivered: ['letter_marigold_1', 'letter_fenwick_1', 'town_news_1'],
-        letters_read: ['letter_marigold_1', 'letter_fenwick_1'],
-        letters_dismissed: [],
-        activity_total_serves: 30,
-        activity_favorite_serves: 5,
-        activity_correct_serves: 25,
-        activity_total_chats: 3,
-        activity_total_brews: 30,
-      },
-      upgrades: ['bigger_shelf', 'second_kettle'],
-    });
-
-    const input = createNarrativeInput(save);
-    const state = evaluateNarrativeState(input);
-
-    expect(state.dimensions).toBeDefined();
-    expect(state.dominantDimension).toBeDefined();
-    expect(state.trajectory).toBeDefined();
-    expect(state.chapter).toBe(1);
-    expect(state.marigoldMysteryLayer).toBe(2);
-    expect(state.wrenCluesGathered).toBe(1);
-    expect(state.trajectoryLocked).toBe(false); // chapter 1 < 3
-  });
-
-  it('can run with mocked NarrativeInput without SaveData', () => {
-    // Direct mock of NarrativeInput - no SaveData construction needed
-    const mockInput = createMockNarrativeInput({
+describe('narrative signals', () => {
+  it('calculates relationship signals from input', () => {
+    const input = createMockNarrativeInput({
       relationships: {
         heartPoints: { fenwick: 2, sela: 1, bram: 0, nia: 0, wren: 0 },
-        heartPointsToday: { fenwick: 0, sela: 0, bram: 0, nia: 0, wren: 0 },
+        heartPointsToday: {},
         displayedHearts: { fenwick: 2, sela: 1, bram: 0, nia: 0, wren: 0 },
         learnedPrefs: ['fenwick'],
         heartsBreadth: 2,
         uniqueNPCsServed: 2,
       },
-      recipes: {
-        discoveredRecipes: ['R001', 'R002', 'R003', 'R004'],
-        totalRecipes: 8,
-        hintCardsRead: 1,
-        experimentalBrewCount: 0,
-        wrenMysteryBrewCount: 0,
-        wrenVisits: 2,
-        wrenScenesSeen: 2,
-      },
-      upgrades: {
-        ownedUpgrades: ['bigger_shelf'],
-        upgradesOwned: 1,
-        maxUpgrades: 7,
-        shelfCapacity: 9,
-        maxShelfCapacity: 12,
-        inventoryKinds: 3,
-        maxInventoryKinds: 9,
-        shopVisits: 1,
-      },
-      letters: {
-        archivedLetters: ['letter_marigold_1'],
-        lettersDelivered: ['letter_marigold_1', 'letter_fenwick_1'],
-        lettersRead: ['letter_marigold_1'],
-        lettersDismissed: [],
-        townLettersDelivered: 0,
-        maxLetters: 40,
-      },
-      story: {
-        chapter: 1,
-        chapterEnteredDay: { 0: 1, 1: 7 },
-        marigoldMysteryLayer: 2,
-        wrenCluesGathered: 1,
-        seenScenes: ['wren_1'],
-        flags: {},
-        trajectoryHint: 'care',
-        endingAchieved: null,
-        playthroughCount: 0,
-        previousEndings: [],
-        marigoldLettersDelivered: ['letter_marigold_1'],
-        npcLettersDelivered: { fenwick: ['letter_fenwick_1'], sela: [], bram: [], nia: [], wren: [] },
-        mysteryLettersDelivered: [],
-        townLettersDelivered: [],
-        branchLettersDelivered: [],
-      },
       activity: {
-        day: 7,
-        totalServes: 30,
-        stars: 2,
-        coins: 500,
-        avgHearts: 0.8,
-        favoriteServeRatio: 0.1,
+        day: 1,
+        totalServes: 10,
+        stars: 1,
+        coins: 200,
+        avgHearts: 0.6,
+        favoriteServeRatio: 0.3,
         chatCount: 3,
-        chatRatio: 0.1,
+        chatRatio: 0.3,
         journalOpensPerDay: 0.5,
-        recipeDiscoveryRatio: 0.5,
+        recipeDiscoveryRatio: 0.25,
         experimentalBrewCount: 0,
         experimentalBrewRatio: 0,
         wrenMysteryBrewCount: 0,
         wrenMysteryBrewRatio: 0,
-        wrenVisits: 2,
+        wrenVisits: 1,
         uniqueNPCsServed: 2,
         heartsBreadth: 2,
-        lettersArchivedRatio: 0.025,
+        lettersArchivedRatio: 0,
         townTabOpensPerDay: 0,
-        upgradesOwnedRatio: 0.14,
-        starsRatio: 0.4,
-        shelfCapacityRatio: 0.75,
+        upgradesOwnedRatio: 0,
+        starsRatio: 0.2,
+        shelfCapacityRatio: 0.5,
         inventoryKindsRatio: 0.33,
-        shopVisitsPerDay: 0.14,
+        shopVisitsPerDay: 0,
         daysSkippedRatio: 0,
         earlyCloseRatio: 0,
         relaxedMode: true,
         daysSkipped: 0,
-        serviceDays: 7,
+        serviceDays: 1,
         earlyCloses: 0,
         relaxedModeSetting: true,
         activity: createMockActivity({
-          totalServes: 30,
-          favoriteServeCount: 3,
-          correctServeCount: 27,
+          totalServes: 10,
           totalChats: 3,
-          totalBrews: 30,
+          favoriteServeCount: 3,
+          servesByNpc: { fenwick: 5, sela: 3, wren: 2 },
         }),
       },
     });
 
-    const state = evaluateNarrativeState(mockInput);
+    const signals = calculateAllSignals(input);
 
-    expect(state.dimensions).toBeDefined();
-    expect(state.dominantDimension).toBeDefined();
-    expect(state.trajectory).toBeDefined();
-    expect(state.chapter).toBe(1);
-    expect(state.trajectoryLocked).toBe(false);
+    expect(signals.relationships.heartsBreadth).toBeCloseTo(0.4, 1);
+    expect(signals.relationships.chatRatio).toBeCloseTo(0.3, 1);
+    expect(signals.relationships.favoriteServeRatio).toBeCloseTo(0.3, 1);
+    expect(signals.relationships.prefRatio).toBeCloseTo(0.2, 1);
+    // uniqueNpcsServed = 3/5 = 0.6 (fenwick, sela, wren in servesByNpc)
+    expect(signals.relationships.uniqueNpcsServed).toBeCloseTo(0.6, 1);
   });
 
-  it('computes care dimension from relationships', () => {
-    const mockInput = createMockNarrativeInput({
+  it('calculates activity signals from input', () => {
+    const input = createMockNarrativeInput({
+      activity: {
+        day: 10,
+        totalServes: 50,
+        stars: 3,
+        coins: 500,
+        avgHearts: 1.2,
+        favoriteServeRatio: 0.4,
+        chatCount: 8,
+        chatRatio: 0.16,
+        journalOpensPerDay: 1.5,
+        recipeDiscoveryRatio: 0.5,
+        experimentalBrewCount: 5,
+        experimentalBrewRatio: 0.1,
+        wrenMysteryBrewCount: 2,
+        wrenMysteryBrewRatio: 0.04,
+        wrenVisits: 5,
+        uniqueNPCsServed: 3,
+        heartsBreadth: 3,
+        lettersArchivedRatio: 0.1,
+        townTabOpensPerDay: 0.3,
+        upgradesOwnedRatio: 0.43,
+        starsRatio: 0.6,
+        shelfCapacityRatio: 0.75,
+        inventoryKindsRatio: 0.56,
+        shopVisitsPerDay: 1.2,
+        daysSkippedRatio: 0.14,
+        earlyCloseRatio: 0,
+        relaxedMode: true,
+        daysSkipped: 2,
+        serviceDays: 8,
+        earlyCloses: 0,
+        relaxedModeSetting: true,
+        activity: createMockActivity({
+          totalBrews: 50,
+          experimentalBrewCount: 5,
+          wrenMysteryBrewCount: 2,
+          totalChats: 8,
+          totalServes: 50,
+          lettersReadCount: 2,
+          upgradePurchaseCount: 3,
+          ingredientsPurchasedTotal: 12,
+          daysSkipped: 2,
+          journalOpensByTab: { town: 3, recipes: 5, regulars: 4, letters: 8 },
+        }),
+      },
+      letters: {
+        archivedLetters: [],
+        lettersDelivered: ['letter_marigold_1', 'letter_fenwick_1', 'town_news_1'],
+        lettersRead: ['letter_marigold_1', 'letter_fenwick_1'],
+        lettersDismissed: ['town_news_1'],
+        townLettersDelivered: 1,
+        maxLetters: 40,
+      },
+      upgrades: {
+        ownedUpgrades: ['bigger_shelf', 'second_kettle', 'recipe_hints'],
+        upgradesOwned: 3,
+        maxUpgrades: 7,
+        shelfCapacity: 9,
+        maxShelfCapacity: 12,
+        inventoryKinds: 5,
+        maxInventoryKinds: 9,
+        shopVisits: 15,
+      },
+    });
+
+    const signals = calculateAllSignals(input);
+
+    expect(signals.activity.experimentalBrewRatio).toBeCloseTo(0.1, 1);
+    expect(signals.activity.wrenMysteryBrewRatio).toBeCloseTo(0.04, 1);
+    expect(signals.activity.journalOpensPerDay).toBeCloseTo(0.75, 1);
+    expect(signals.activity.lettersReadRatio).toBeCloseTo(0.67, 1);
+    expect(signals.activity.townLetterRatio).toBeCloseTo(0.025, 1);
+    expect(signals.activity.shopVisitsPerDay).toBe(1); // capped at 1
+    expect(signals.activity.daysSkippedRatio).toBeCloseTo(0.14, 1);
+    expect(signals.activity.townTabOpensPerDay).toBeCloseTo(0.3, 1);
+  });
+
+  it('calculates progression signals from input', () => {
+    const input = createMockNarrativeInput({
+      activity: {
+        day: 10,
+        totalServes: 50,
+        stars: 3,
+        coins: 500,
+        avgHearts: 1.2,
+        favoriteServeRatio: 0.4,
+        chatCount: 8,
+        chatRatio: 0.16,
+        journalOpensPerDay: 1.5,
+        recipeDiscoveryRatio: 0.5,
+        experimentalBrewCount: 5,
+        experimentalBrewRatio: 0.1,
+        wrenMysteryBrewCount: 2,
+        wrenMysteryBrewRatio: 0.04,
+        wrenVisits: 5,
+        uniqueNPCsServed: 3,
+        heartsBreadth: 3,
+        lettersArchivedRatio: 0.1,
+        townTabOpensPerDay: 0.3,
+        upgradesOwnedRatio: 0.43,
+        starsRatio: 0.6,
+        shelfCapacityRatio: 0.75,
+        inventoryKindsRatio: 0.56,
+        shopVisitsPerDay: 1.2,
+        daysSkippedRatio: 0.14,
+        earlyCloseRatio: 0,
+        relaxedMode: true,
+        daysSkipped: 2,
+        serviceDays: 8,
+        earlyCloses: 0,
+        relaxedModeSetting: true,
+        activity: createMockActivity(),
+      },
+    });
+
+    const signals = calculateAllSignals(input);
+
+    expect(signals.progression.chapterProgress).toBeCloseTo(0, 1); // chapter 0
+    expect(signals.progression.notRelaxed).toBe(0); // relaxed mode is true
+  });
+});
+
+describe('narrative evaluator', () => {
+  it('evaluates state from signals', () => {
+    const input = createMockNarrativeInput({
       relationships: {
         heartPoints: { fenwick: 4, sela: 3, bram: 2, nia: 1, wren: 1 },
         heartPointsToday: {},
@@ -659,7 +698,7 @@ describe('evaluateNarrativeState', () => {
       },
     });
 
-    const state = evaluateNarrativeState(mockInput);
+    const state = evaluateNarrativeStateFromInput(input);
 
     // High relationship depth should yield high care
     expect(state.dimensions.care).toBeGreaterThan(0.5);
@@ -667,8 +706,8 @@ describe('evaluateNarrativeState', () => {
     expect(state.trajectory).toBe('relationship');
   });
 
-  it('computes curiosity dimension from discovery', () => {
-    const mockInput = createMockNarrativeInput({
+  it('evaluates curiosity dimension from discovery', () => {
+    const input = createMockNarrativeInput({
       relationships: { heartPoints: {}, heartPointsToday: {}, displayedHearts: {}, learnedPrefs: [], heartsBreadth: 0, uniqueNPCsServed: 0 },
       recipes: { discoveredRecipes: ['R001', 'R002', 'R003', 'R004', 'R005', 'R006', 'R007'], totalRecipes: 8, hintCardsRead: 4, experimentalBrewCount: 10, wrenMysteryBrewCount: 5, wrenVisits: 10, wrenScenesSeen: 5 },
       upgrades: { ownedUpgrades: [], upgradesOwned: 0, maxUpgrades: 7, shelfCapacity: 6, maxShelfCapacity: 12, inventoryKinds: 1, maxInventoryKinds: 9, shopVisits: 0 },
@@ -720,14 +759,14 @@ describe('evaluateNarrativeState', () => {
       },
     });
 
-    const state = evaluateNarrativeState(mockInput);
+    const state = evaluateNarrativeStateFromInput(input);
 
     expect(state.dimensions.curiosity).toBeGreaterThan(0.5);
     expect(state.trajectory).toBe('curiosity');
   });
 
-  it('computes comfort dimension from café investment', () => {
-    const mockInput = createMockNarrativeInput({
+  it('evaluates comfort dimension from café investment', () => {
+    const input = createMockNarrativeInput({
       relationships: { heartPoints: {}, heartPointsToday: {}, displayedHearts: {}, learnedPrefs: [], heartsBreadth: 1, uniqueNPCsServed: 1 },
       recipes: { discoveredRecipes: ['R001', 'R002'], totalRecipes: 8, hintCardsRead: 0, experimentalBrewCount: 0, wrenMysteryBrewCount: 0, wrenVisits: 0, wrenScenesSeen: 0 },
       upgrades: { ownedUpgrades: ['bigger_shelf', 'second_kettle', 'recipe_hints', 'title_music_box', 'comfort_furniture', 'autobrewer', 'express_service'], upgradesOwned: 7, maxUpgrades: 7, shelfCapacity: 12, maxShelfCapacity: 12, inventoryKinds: 9, maxInventoryKinds: 9, shopVisits: 20 },
@@ -774,14 +813,14 @@ describe('evaluateNarrativeState', () => {
       },
     });
 
-    const state = evaluateNarrativeState(mockInput);
+    const state = evaluateNarrativeStateFromInput(input);
 
     expect(state.dimensions.comfort).toBeGreaterThan(0.7);
     expect(state.trajectory).toBe('cafe');
   });
 
   it('locks trajectory at chapter 3', () => {
-    const mockInput = createMockNarrativeInput({
+    const input = createMockNarrativeInput({
       relationships: { heartPoints: { fenwick: 2 }, heartPointsToday: {}, displayedHearts: { fenwick: 2 }, learnedPrefs: [], heartsBreadth: 1, uniqueNPCsServed: 1 },
       recipes: { discoveredRecipes: ['R001'], totalRecipes: 8, hintCardsRead: 0, experimentalBrewCount: 0, wrenMysteryBrewCount: 0, wrenVisits: 0, wrenScenesSeen: 0 },
       upgrades: { ownedUpgrades: [], upgradesOwned: 0, maxUpgrades: 7, shelfCapacity: 6, maxShelfCapacity: 12, inventoryKinds: 1, maxInventoryKinds: 9, shopVisits: 0 },
@@ -828,26 +867,82 @@ describe('evaluateNarrativeState', () => {
       },
     });
 
-    const state = evaluateNarrativeState(mockInput);
+    const state = evaluateNarrativeStateFromInput(input);
 
     expect(state.trajectoryLocked).toBe(true);
   });
 
   it('handles fresh save with minimal activity', () => {
-    // Fresh save: no relationships, no recipes, no upgrades, no activity
-    // Independence naturally emerges as dominant (no engagement yet)
-    const mockInput = createMockNarrativeInput();
+    const input = createMockNarrativeInput();
 
-    const state = evaluateNarrativeState(mockInput);
+    const state = evaluateNarrativeStateFromInput(input);
 
     // Fresh save: independence is naturally highest (no engagement yet)
-    // This is expected behavior - player hasn't engaged with any system
     expect(state.dominantDimension).toBe('independence');
     expect(state.trajectory).toBe('curiosity');
   });
+
+  it('returns identical state for identical input (deterministic)', () => {
+    const input = createMockNarrativeInput({
+      activity: {
+        day: 5,
+        totalServes: 20,
+        stars: 2,
+        coins: 300,
+        avgHearts: 0.8,
+        favoriteServeRatio: 0.4,
+        chatCount: 5,
+        chatRatio: 0.25,
+        journalOpensPerDay: 0.5,
+        recipeDiscoveryRatio: 0.25,
+        experimentalBrewCount: 0,
+        experimentalBrewRatio: 0,
+        wrenMysteryBrewCount: 0,
+        wrenMysteryBrewRatio: 0,
+        wrenVisits: 1,
+        uniqueNPCsServed: 3,
+        heartsBreadth: 3,
+        lettersArchivedRatio: 0,
+        townTabOpensPerDay: 0,
+        upgradesOwnedRatio: 0,
+        starsRatio: 0.4,
+        shelfCapacityRatio: 0.5,
+        inventoryKindsRatio: 0.33,
+        shopVisitsPerDay: 0,
+        daysSkippedRatio: 0,
+        earlyCloseRatio: 0,
+        relaxedMode: true,
+        daysSkipped: 0,
+        serviceDays: 5,
+        earlyCloses: 0,
+        relaxedModeSetting: true,
+        activity: createMockActivity({
+          totalServes: 20,
+          favoriteServeCount: 8,
+          correctServeCount: 20,
+          totalChats: 5,
+        }),
+      },
+      relationships: {
+        heartPoints: { fenwick: 2, sela: 1, bram: 1, nia: 0, wren: 0 },
+        heartPointsToday: {},
+        displayedHearts: { fenwick: 2, sela: 1, bram: 1, nia: 0, wren: 0 },
+        learnedPrefs: [],
+        heartsBreadth: 3,
+        uniqueNPCsServed: 3,
+      },
+    });
+
+    const state1 = evaluateNarrativeStateFromInput(input);
+    const state2 = evaluateNarrativeStateFromInput(input);
+
+    expect(state1.dimensions).toEqual(state2.dimensions);
+    expect(state1.dominantDimension).toBe(state2.dominantDimension);
+    expect(state1.trajectory).toBe(state2.trajectory);
+  });
 });
 
-describe('SaveData → NarrativeInput → NarrativeState pipeline', () => {
+describe('SaveData → NarrativeInput → Signals → NarrativeState pipeline', () => {
   it('works end-to-end with real SaveData', () => {
     const save = createMockSaveData({
       day: 10,
@@ -886,9 +981,11 @@ describe('SaveData → NarrativeInput → NarrativeState pipeline', () => {
 
     // Full pipeline
     const input = createNarrativeInput(save);
-    const state = evaluateNarrativeState(input);
+    const signals = calculateAllSignals(input);
+    const state = evaluateNarrativeStateFromInput(input);
 
     expect(input).toBeDefined();
+    expect(signals).toBeDefined();
     expect(state).toBeDefined();
     expect(state.dimensions).toBeDefined();
     expect(state.dominantDimension).toBeDefined();

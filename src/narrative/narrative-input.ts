@@ -3,6 +3,8 @@
 
 import type { ActivityCounters } from './activity-ledger';
 
+export { type ActivityCounters } from './activity-ledger';
+
 export type NarrativeDimension =
   | 'care'
   | 'curiosity'
