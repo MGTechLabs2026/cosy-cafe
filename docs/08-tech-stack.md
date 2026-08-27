@@ -1,6 +1,6 @@
 # 08 · Moonleaf Café — Tech Stack & Architecture
 
-> Doc 08 of 08 · Status: Draft v0.1 · 2026-08-25 · Resolves the OPEN engine decision from README
+> Doc 08 of 08 · Status: Draft v0.1 · 2026-08-27 · Updated to match actual codebase
 > Stated priorities: **performance and size.** Everything else (dev speed, familiarity) is a tiebreaker, not a goal.
 
 ## 1. The Decision
@@ -11,7 +11,7 @@
 Layer          Choice                          Runtime cost (approx, gzip)
 ─────────────────────────────────────────────  ───────────────────────────
 Language       TypeScript (strict)             0 (compile-time)
-Build          Vite + terser                   0 (dev-time)
+Build          Vite + esbuild                  0 (dev-time)
 Renderer       Vanilla Canvas2D, own ~300 LOC  0 KB engine
 Game code      Own modules                     ~25–45 KB
 Text/UI        DOM (HTML/CSS), not canvas      browser-native
@@ -47,50 +47,96 @@ Why this wins on all three stated axes:
 | Axis | Win |
 |------|-----|
 | Size | No bitmap-font pipeline, no text-layout code in JS. Browser does text better than any engine, for free. WOFF2 subsets are tens of KB. |
-| Performance | DOM text updates touch a handful of nodes; the canvas never re-renders glyphs. Modals are display:none until opened — zero cost when closed. |
+| Performance | DOM text updates touch a handful of nodes; the canvas never re-renders glyphs. Modals are `display:none` until opened — zero cost when closed. |
 | Accessibility | Real text nodes = screen readers, selection, zoom, IME work natively. Doc 05 §6 requirements get satisfied by construction instead of by heroics. |
 
 ### 3.2 Rendering loop
 
 - Fixed-timestep simulation at **30 Hz** (patience drains, arrivals, brew timers) + render on every `requestAnimationFrame`. Deterministic sim makes tests and future replays trivial.
 - Backbuffer canvas locked at 480×270, composited via CSS `transform: scale(k)` where k is the largest **integer** ≤ available scale (DPR-aware). `image-rendering: pixelated`. Integer-only scaling honors doc 04 §1.2 and avoids shimmer.
-- Always-render-per-rAF: the room repaints every frame (fixes a flicker regression from the dirty-flag attempt). Still battery-friendly at 480×270; the GPU does the heavy lifting.
+- **Always-render-per-rAF:** the room repaints every frame (a flicker regression from an earlier dirty-flag attempt was fixed by reverting to per-frame rendering). Still battery-friendly at 480×270; the GPU does the heavy lifting.
 - Particles: preallocated pool, hard cap 40 live. Steam = recycled sprites, not objects.
 
 ### 3.3 Modules (post-refactor)
 
-```text
+```
 src/
   main.ts                 bootstrap, loop, scaling
-  render/                 scene.ts (room/sprite compositor), fx.ts (pooled particles),
-                          palette.ts, images.ts, tween.ts
-  sim/                    day.ts, brewing.ts, customers.ts, economy.ts,
-                          hearts.ts, upgrades.ts, shelf.ts      ← pure logic, no platform imports
-  controllers/            game-controller.ts (composition root),
-                          day-controller.ts, service-controller.ts,
-                          kettle-controller.ts, progression-controller.ts
-                          ← orchestration ONLY, no DOM/canvas/audio imports
-  ui/                     cafe-dom.ts (DOM plumbing), game.ts (thin compat layer),
-                          hud.ts, journal.ts, kettle.ts, shop.ts, recap.ts,
-                          scene.ts, settings.ts, textsize.ts
-  data/                   recipes.ts, strings.json, scenes.ts  ← content lives here
-  save/                   store.ts (localStorage), crypto.ts, validate.ts
-  audio/                  howl.ts (thin wrapper, gesture-gated unlock)
+  render/
+    draw.ts               backbuffer, palette rect/blit/particle primitives, room base
+    scale.ts              integer scale computation + CSS transform string
+    scene.ts              world-layer: customer sprites, order bubbles, patience candle, door sign, FX
+    images.ts             preloaded-image registry (room, sprites, portraits, drink icons)
+    fx.ts                 pooled particles (steam, heart puff, sparkle, cup slide, title snow)
+    palette.ts            32-color master palette + CSS converters
+    tween.ts              smoothstep tween, CountUp (coin count-up)
+  sim/
+    day.ts                day phase machine, inventory, starting stock
+    brewing.ts            recipe table, matching, resolveBrew, drink pricing
+    customers.ts          character defs, favorites, patience, daily schedule builder
+    economy.ts            coins/stars, payouts, star thresholds
+    hearts.ts             float heart points, daily cap, displayed hearts = floor(points)
+    upgrades.ts           upgrade defs, purchase logic, effect accessors (capacity, patience, brew speed)
+    shelf.ts              ingredient prices, weekly delivery, capacity check, Sela's cart rule
+  controllers/
+    game-controller.ts    composition root, app lifecycle, shared state refs, render loop, debug hooks
+    day-controller.ts     morning banner, door open, evening close, recap modal, next-day transition
+    service-controller.ts active customer session: arrivals, patience, chat, serve, teach beats, arc scenes
+    kettle-controller.ts  kettle panel state, stock gate, ingredient consumption, brew submission
+    progression-controller.ts economy runtime, hearts ledger, inventory, upgrades, save snapshots
+  ui/
+    cafe-dom.ts           DOM plumbing: banner, action bar, toast, canvas click routing
+    game.ts               thin compat layer — public entry point for tests + main.ts
+    hud.ts                top bar: day, coins, stars, settings, journal
+    journal.ts            4-tab overlay (recipes, regulars, town, letters)
+    kettle.ts             kettle panel DOM (base/ingredients/finish/BREW, A/B slots)
+    shop.ts               evening-market shop (upgrades + ingredients)
+    recap.ts              evening recap modal (coin count-up, discoveries, hearts, shop button)
+    scene.ts              dialogue/scene overlay (portrait + text, choices, typing animation)
+    settings.ts           settings overlay (toggles, text-size, export/import)
+    title.ts              title screen (Continue/New Game, gesture unlock)
+    title-snow.ts         juice: snowfall canvas behind title
+    textsize.ts           text-size + reduced-motion class on <html>
+    letter.ts             tutorial letter overlay
+  data/
+    recipes.ts            recipe view helpers (name, icon, combo from strings)
+    strings.ts            STRINGS object (inlined strings.json)
+    strings.json          single source of truth for all game text
+    scenes.ts             scene definitions + trigger logic
+  save/
+    store.ts              localStorage read/write, migration chain, import pipeline
+    crypto.ts             AES-GCM export/import (MLC1 wire format)
+    validate.ts           schema validation, SaveData/SaveFlags/SaveSettings types
+    key.ts                static AES-256 key + key id
+  audio/
+    howl.ts               Howler wrapper: SFX pool, gesture-gated unlock, streaming music with crossfade
+  version.ts              GAME_VERSION constant
 ```
 
-Rule: `sim/` is pure TypeScript with zero platform imports — every gameplay rule from doc 02 is unit-testable without a browser. `controllers/` orchestrates between pure sim and presentation (ui/render/audio/save) — no business rules live here.
+**Dependency direction (actual, by import):**
 
-### 3.4 Controller responsibility matrix
+```
+sim/                      ← pure TypeScript, zero platform imports
+  ↑
+controllers/              ← orchestration ONLY: imports sim/ + data/ + presentation/infra
+  ↑
+ui/        render/        ← presentation layer (DOM + Canvas)
+audio/      save/
+  ↑
+main.ts                   ← bootstrap, ties everything together
+```
 
-| Controller | Owns | Delegates to | Must NOT import |
-|------------|------|--------------|-----------------|
-| `GameController` | Composition root, app lifecycle, shared state refs, render loop | `DayController`, `ServiceController`, `KettleController`, `ProgressionController`, `ui/cafe-dom`, `render/*`, `audio/*`, `save/*` | — |
-| `DayController` | Morning banner, door open, evening close, recap modal, next-day transition, daily schedule | `sim/day.ts` (phase machine), `sim/customers.ts` (schedule build), `sim/shelf.ts` (delivery), `ui/cafe-dom` (banner/toast), `ui/recap`, `ui/shop` | DOM directly, Canvas, Audio, localStorage |
-| `ServiceController` | Active customer session: arrivals, patience, chat, serve → payout/hearts, teach beats, arc-scene triggers, visit retirement | `sim/customers.ts`, `sim/economy.ts`, `sim/hearts.ts`, `data/scenes.ts`, `ui/scene.ts` (playScene), `render/fx.ts` | DOM, Canvas, Audio, localStorage |
-| `KettleController` | Kettle panel UI state, ingredient stock gate, brew submission | `sim/brewing.ts` (resolveBrew, hasStock), `sim/day.ts` (inventory), `sim/upgrades.ts` (brewAnimSec) | DOM, Canvas, Audio, localStorage |
-| `ProgressionController` | Economy runtime, hearts ledger, inventory, shelf capacity, upgrades, save snapshots | `sim/economy.ts`, `sim/hearts.ts`, `sim/upgrades.ts`, `sim/day.ts`, `sim/shelf.ts`, `save/store.ts`, `save/crypto.ts` | DOM, Canvas, Audio |
+**Rule:** `sim/` is pure TypeScript with zero platform imports — every gameplay rule from doc 02 is unit-testable without a browser. `controllers/` orchestrates between pure sim and presentation (ui/render/audio/save) — no business rules live here. **Controllers DO import presentation/infrastructure modules** (DOM, Canvas, audio, save) to coordinate them; they don't contain gameplay rules themselves.
 
-Dependency direction: `sim/` → `controllers/` → `ui/` / `render/` / `audio/` / `save/`. Pure sim never imports browser APIs.
+### 3.4 Controller responsibility matrix (actual imports verified)
+
+| Controller | Owns (orchestrates) | Delegates to (sim/data) | Imports (presentation/infra) |
+|------------|---------------------|-------------------------|------------------------------|
+| `GameController` | Composition root, app lifecycle, shared state refs, per-frame render coordination, debug hook surface | `DayController`, `ServiceController`, `KettleController`, `ProgressionController` | `render/tween`, `render/scene`, `render/images`, `render/fx`, `ui/cafe-dom`, `ui/journal`, `ui/shop`, `ui/scene`, `ui/textsize`, `save/crypto`, `audio/howl` |
+| `DayController` | Morning banner, door open, evening close/recap, next-day transition, daily schedule init, weekly delivery | `sim/day` (phase machine), `sim/customers` (schedule), `sim/shelf` (delivery) | `audio/howl`, `ui/cafe-dom`, `ui/recap`, `ui/shop`, `data/strings`, `data/recipes` |
+| `ServiceController` | Active session: spawn/walk-in/patience/chat/serve/payout/hearts/teach beats/arc triggers/retire | `sim/customers`, `sim/economy`, `sim/hearts`, `data/scenes` | `audio/howl`, `render/images`, `render/tween`, `render/fx`, `render/scene`, `ui/scene`, `save/store` |
+| `KettleController` | Kettle panel state, stock gate, ingredient consumption, last-brew memory, brew submission | `sim/brewing` (resolveBrew), `sim/shelf` (stock), `sim/upgrades` (brewAnimSec, coffee base) | `ui/kettle`, `ui/cafe-dom`, `data/strings`, `data/recipes` |
+| `ProgressionController` | Economy runtime, hearts ledger, inventory, upgrades, shelf capacity, save snapshots, export | `sim/economy`, `sim/hearts`, `sim/upgrades`, `sim/day`, `sim/shelf` | `audio/howl`, `save/store`, `save/crypto`, `save/validate` |
 
 ### 3.5 Assets pipeline
 
@@ -98,6 +144,7 @@ Dependency direction: `sim/` → `controllers/` → `ui/` / `render/` / `audio/`
 - Audio: OGG Vorbis, music ~q4–5 (≈1–1.5 MB/track), SFX mono. Preload only the door-chime + click sounds; stream music after first user gesture (also satisfies autoplay policy).
 - Critical path to interactive title screen: **≤ 500 KB compressed** (HTML+JS+CSS+title art+font subsets). Everything else lazy-loads behind it.
 - Fonts: subsetting via `pyftsubset` (fonttools) — latin-basic WOFF2, ~15–25 KB per face. Two faces max (doc 04 §1.6).
+- All art loads at bootstrap (`preloadAllArt` in `render/images.ts`) so no in-game frame waits on disk.
 
 ## 4. Guardrails (enforced in CI, not aspirational)
 
@@ -114,7 +161,9 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 
 ## 5. Testing
 
-- **Vitest:** all of `sim/` (brew matching, economy, patience) + save round-trip/tamper gates from doc 06 §M1 run as plain unit tests — the crypto module is pure WebCrypto, mockable with a tiny inline polyfill for Node 20+ (globalThis.crypto exists).
+- **Vitest:** all of `sim/` (brew matching, economy, patience, hearts, shelf, upgrades) + save round-trip/tamper gates from doc 06 §M1 run as plain unit tests — the crypto module is pure WebCrypto, mockable with a tiny inline polyfill for Node 20+ (globalThis.crypto exists).
+- **Integration/smoke:** `tests/m2_smoke.test.ts` exercises full day cycles via debug hooks on the `GameController`.
+- **Content/migration:** `tests/m2_migration.test.ts` validates v1→v4 migration, export/import round-trips, tamper refusal.
 - **Playwright:** cross-browser import/export (Chromium/Firefox/WebKit), tutorial 90-second gate, reduced-motion audit.
 
 ## 6. Risks
@@ -137,3 +186,4 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 | 2026-08-25 | Initial stack decided: engine-less TS/Vite/Canvas2D + DOM UI + Howler; resolves README open question |
 | 2026-08-25 | **Amendment (M0 review):** minifier is Vite's built-in esbuild, not terser — the dependency-free constraint in the M0 brief wins over the table above; at ~13–26 KB bundle size terser's few-percent edge is irrelevant. Table row "Vite + terser" should read "Vite + esbuild". |
 | 2026-08-27 | **Orchestration refactor:** extracted `src/ui/game.ts` (~1100 LOC) into five controller modules under `src/controllers/` — `game-controller.ts` (composition root), `day-controller.ts`, `service-controller.ts`, `kettle-controller.ts`, `progression-controller.ts`. `ui/game.ts` retained as thin compatibility layer. Pure sim boundary enforced; zero behavior change; all 241 tests + typecheck + build pass. Updated stale doc statements (R008 status, Fenwick favorite, kettle auto-open, module map, dirty-flag claim, milestone table). |
+| 2026-08-27 | **Architecture documentation audit:** docs/08-tech-stack.md rewritten to match actual codebase. Corrected controller dependency model (controllers DO import presentation/infra modules), removed stale dirty-flag rendering claim, completed module map, documented real dependency direction, documented save architecture accurately. |

@@ -1,6 +1,6 @@
 # 06 · Moonleaf Café — MVP Scope & Roadmap
 
-> Doc 06 of 07 · Status: Draft v0.1 · 2026-08-25
+> Doc 06 of 07 · Status: Draft v0.1 · 2026-08-27 · Updated to match actual codebase
 > Scope is a fence, not a suggestion. Anything not listed here is post-MVP by default.
 
 ## 1. MVP Definition (one sentence)
@@ -11,16 +11,16 @@
 
 ### ✅ IN (MVP)
 - Day cycle: untimed prep → service → evening recap
-- Brewing: 3 bases × ingredients × finishes; **7 recipes** (R001–R007) + murky-brew failure path
-- **6 characters** (Fenwick, Sela, Bram, Nia, Wren, Mops) + generic travelers
+- Brewing: 3 bases × ingredients × finishes; **7 recipes** (R001–R007) available at start + murky-brew failure path; R008 (Wren's Usual) unlockable via arc resolution
+- **6 characters** (Fenwick, Sela, Bram, Nia, Wren + Mops the cat) + generic travelers
 - Patience system (relaxed default) · tips · perfect-serve bonus
 - Coins economy + **all 6 upgrades**
 - Progression dials: stars (0–5), hearts per character (0–5, capped/day), coins
 - Journal: recipes/regulars/town/letters tabs
-- Scenes: **2 full arcs minimum** (Fenwick "The Route" + Wren "The Usual"), other 4 characters get intro scenes only
+- Scenes: **2 full arcs minimum** (Fenwick "The Route" 6 scenes + Wren "The Usual" 6 scenes), other 4 characters get intro scenes only
 - Tutorial flow (doc 05 §3.1) · letters/notice board daily content for 14 days
-- Save: localStorage autosave + manual export/import string
-- Settings: relaxed mode, reduced motion, text size, 3 volume sliders
+- Save: localStorage autosave + manual export/import string (AES-GCM MLC1 format)
+- Settings: relaxed mode, reduced motion, text size (100/125/150%), 3 volume sliders
 - Accessibility baseline (doc 05 §6)
 
 ### ❌ OUT (never — see GDD §6)

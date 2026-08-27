@@ -1,6 +1,6 @@
 # 02 · Moonleaf Café — Systems Design
 
-> Doc 02 of 07 · Status: Draft v0.1 · 2026-08-25
+> Doc 02 of 07 · Status: Draft v0.1 · 2026-08-27 · Updated to match actual codebase
 > Every numeric value here is a **starting value**, not gospel — tune through playtests, and record changes in the Changelog at the bottom.
 
 ## 1. The Day Cycle
@@ -22,60 +22,71 @@
 The kettle is the one interaction verb. Depth comes from recipes, not mechanics.
 
 ### 2.1 The three-step brew
-1. **Pick a base** (water / milk / oat milk).
+1. **Pick a base** (water / milk / oat milk; coffee base unlocked by Coffee Machine upgrade).
 2. **Add up to 3 ingredients** from your shelf.
 3. **Choose finish:** hot / iced / foamed.
 
-→ Output is matched against the recipe book. Match = serve. No match = "Murky Brew" (see 2.4).
+→ Output is matched against the **known** recipe book only. Match = serve. No match = "Murky Brew" (see 2.4).
 
 ### 2.2 Recipe discovery — two paths
-- **Taught:** customers, letters, and notice-board tips hand you recipes directly.
-- **Experimented:** the kettle lets you try any combo; correct combos get discovered with a small sparkle + journal entry. A faint hum from the kettle signals you're within one ingredient of something new.
+- **Taught:** customers, letters, and notice-board tips hand you recipes directly (sets `flags.discovered_recipes`).
+- **Hinted:** every recipe also appears in the journal as a riddle card once *hinted* (e.g., *"Fenwick mutters about something bitter to survive mornings"*). Players who hate experimenting can simply wait until someone teaches them. Experimentation is never required to finish any arc.
 
-**Hint economy:** every recipe also appears in the journal as a riddle card once *hinted* (e.g., *"Fenwick mutters about something bitter to survive mornings"*). Players who hate experimenting can simply wait until someone teaches them. Experimentation is never required to finish any arc.
+**Important (M1 behavior):** the kettle lets you try any combo, but `resolveBrew` only matches against recipes already in `discovered_recipes`. Unknown recipes always produce Murky Brew even if the combo is "correct" on paper — discovery-by-experiment is a post-M1 nicety and M1 has no experiment hints.
 
-### 2.3 Starting recipe set
+### 2.3 Recipe table (R001–R008)
+
 | ID | Name | Combo | Notes |
 |----|------|-------|-------|
 | R001 | Black Tea | water + tea_leaves | Starting recipe |
 | R002 | Honey Milk | milk + honey | Starting recipe |
-| R003 | Moonleaf Tea | water + moonleaf | First taught recipe — Fenwick's order |
+| R003 | Moonleaf Tea | water + moonleaf | First taught recipe — Fenwick's order (day 1) |
 | R004 | Ember Cocoa | milk + cocoa + ember_chili | Bram's favorite |
 | R005 | Cloud Foam | milk + cloud_sugar, foamed | Sela's favorite |
 | R006 | Iced Berry Tisane | water + frostberries, iced | Summer unlock |
 | R007 | Root & Remedy Broth | water + ginger_root + sage | Winter unlock |
-| R008 | Cozy Comfort | milk + moonleaf + honey, hot | Wren's revealed usual (day 2+) |
-| R009–R012 | *(reserved)* | — | Post-MVP seasonal specials |
+| R008 | Wren's Usual | milk + honey + moonleaf, hot | Revealed after Wren's arc resolution scene (M3) |
+
+R009–R012 reserved for post-MVP seasonal specials.
 
 ### 2.4 Failure states
-There are none that punish. A non-recipe combination produces **Murky Brew**: the customer politely declines ("Oh… how inventive."), no coins, tiny reputation nudge downward only if repeated to the same customer twice in a day, cat sniffs it and walks away. Pour it out, try again. No inventory is consumed on failure beyond the ingredients used.
+There are none that punish. A non-recipe combination (or a correct combo for an undiscovered recipe) produces **Murky Brew**: the customer politely declines ("Oh… how inventive."), no coins, tiny reputation nudge downward only if repeated to the same customer twice in a day, cat sniffs it and walks away. **Ingredients are still consumed on a Murky Brew** (stock gate happens before brew resolution). Pour it out, try again.
 
 ### 2.5 Ingredient shelf
+
 | Ingredient | Buy price | Restock source |
 |-----------|-----------|----------------|
 | Tea leaves | 2 ¤ | Weekly delivery (auto) |
 | Honey | 3 ¤ | Weekly delivery (auto) |
 | Moonleaf | 6 ¤ | Sela's cart (from day 2) |
 | Cocoa | 4 ¤ | Weekly delivery (auto) |
-| Ember chili | 5 ¤ | Bram's gift after his first scene |
+| Ember chili | 5 ¤ | Weekly delivery (auto; M3: Bram's gift after his first scene) |
 | Cloud sugar | 7 ¤ | Sela's cart |
-| Frostberries | 5 ¤ | Summer only |
-| Ginger root | 3 ¤ | Winter only |
+| Frostberries | 5 ¤ | Weekly delivery (auto; seasonal label = lore in M2) |
+| Ginger root | 3 ¤ | Weekly delivery (auto; seasonal label = lore in M2) |
+| Sage | 3 ¤ | Weekly delivery (auto; spec-gap decision) |
 
-Starting stock: 10× tea leaves, 6× honey, 4× moonleaf. Shelf capacity starts at **6 slots** (upgradeable to 12).
+Starting stock: 10× tea leaves, 6× honey, 4× moonleaf. Shelf capacity starts at **6 slots** (upgradeable to 12 via Bigger Shelf, repeatable ×2).
+
+**Sela's cart rule (chosen option ii, deviation from doc):** moonleaf/cloud_sugar are purchasable from day 2 onward REGARDLESS of whether Sela visited that day. Simpler to explain ("the cart parks outside daily"), no dead-end mornings, and her visits stay purely social until arcs land.
+
+**Weekly delivery:** arrives morning of days 8 and 15: `(day-1) % 7 === 0 && day > 1`. Bundle quantities tuned for ~2 days of relevant recipes across full cast plus experimentation slack.
+
+**Capacity semantics:** counts DISTINCT ingredient KINDS currently stocked (>0 units); kinds already stocked can always be topped up.
 
 ## 3. Customers & Patience
 
 ### 3.1 Customer model
-Each arrival carries: `character_id`, `order` (recipe id), `patience`, `chat_topic` (optional).
+Each arrival carries: `character_id`, `order` (recipe id), `patience`, `chat_topic` (optional). Travelers ride the same shape: coin flow only, no bonds.
 
 ### 3.2 Patience — soft by design
-- Starts 100, drains ~0.8/sec while waiting (≈ 2 minutes of patience).
+- Starts 100 (115 with Window Bench upgrade), drains ~0.8/sec while waiting (≈ 2 minutes of patience).
 - **Never displays as an alarm.** UI shows a candle icon that slowly shortens; at low patience it flickers, but stays calm in color.
 - At zero: the customer says a kind goodbye ("I'll catch you tomorrow!") and leaves. **No penalty.** They may return later the same day.
-- **Relaxed Mode (default ON):** patience drains at half rate. Turning it OFF is optional and buried in settings, not promoted.
+- **Relaxed Mode (default ON):** patience drains at half rate (0.5×). Turning it OFF is optional and buried in settings, not promoted.
 
 ### 3.3 Daily flow (MVP pacing)
+
 | Days | Arrivals/day | Mix |
 |------|-------------|-----|
 | 1–2 | 4–5 | Tutorial-weighted: Marigold's letter, Fenwick, Bram |
@@ -83,25 +94,40 @@ Each arrival carries: `character_id`, `order` (recipe id), `patience`, `chat_top
 | 7–13 | 6–8 | Arc beats trigger, occasional travelers (generic sprites) fill gaps |
 | 14+ | 6–9 | Sandbox; arcs complete; seasons rotate décor |
 
+**Schedule determinism:** `buildDaySchedule(day, {wrenRevealed, seed})` is deterministic given (day, seed, wrenRevealed). Default seed = `day * 1013904223`. Teach beats mirror Fenwick's R003 moment: each regular's FIRST visit on/after day 3 teaches their favorite; afterwards they order it. Wren debuts day 2 with a "?" mystery; his first day-3+ visit reveals the usual (teaches R007) unless already revealed via the save flag.
+
+### 3.4 Cast & favorites (doc 03 §4)
+
+| Regular | Favorite |
+|---------|----------|
+| Fenwick | R004 (Ember Cocoa) |
+| Sela | R005 (Cloud Foam) |
+| Bram | R004 (Ember Cocoa) |
+| Nia | R006 (Iced Berry Tisane) |
+| Wren | R007 (Root & Remedy Broth) |
+
+Day-1 accepted script (preserved verbatim from M1): Fenwick teaches R003, then orders R003; Bram orders R002; Sela orders R002.
+
 ## 4. Economy
 
 Single currency: **coins (¤)**. Sources and sinks must stay roughly balanced so money never becomes the goal (P3).
 
 ### 4.1 Money flow (starting values)
-- **Drink price:** base 5 ¤ + 1 ¤ per extra ingredient. (Black Tea 6 ¤ · Ember Cocoa 7 ¤.)
+- **Drink price:** base 5 ¤ + 1 ¤ per ingredient. (Black Tea 6 ¤ · Ember Cocoa 7 ¤.)
 - **Daily costs:** none. Rent is paid off-screen by Aunt Marigold's legacy fund — this is a deliberate cozy choice; rent anxiety is not cozy.
 - **Tips:** +1 ¤ if you chat with the customer before serving.
 - **Perfect serve bonus:** +2 ¤ if it's the customer's favorite drink.
 
 ### 4.2 Upgrade track (curated slots, no free placement)
+
 | Upgrade | Cost | Effect |
 |---------|------|--------|
-| Second kettle | 60 ¤ | Two drinks brewing at once |
-| Window bench | 45 ¤ | Cat bed slot + +1 patience for everyone (they linger happily) |
-| Bigger shelf | 40 ¤ | +3 ingredient slots |
-| Coffee machine | 80 ¤ | Unlocks coffee bases (post-MVP menu expansion) |
-| Record player | 70 ¤ | New music layer + ambient tracks toggle |
-| Hearth expansion | 90 ¤ | Visual glow-up of the room + faster brew animation |
+| Second kettle | 60 ¤ | Two drinks brewing at once (A/B slots in kettle panel) |
+| Window bench | 45 ¤ | +15 starting patience (115 vs 100) — "they linger happily" |
+| Bigger shelf | 40 ¤ | +3 ingredient slots (repeatable ×2, max 12) |
+| Coffee machine | 80 ¤ | Unlocks `coffee` base in kettle (post-MVP menu expansion) |
+| Record player | 70 ¤ | Enables phase music tracks (prep/service/recap crossfade) |
+| Hearth expansion | 90 ¤ | Visual hearth glow + brew animation 1.6s → 1.0s |
 
 Intended pace: one upgrade every ~2 days early on, slowing to one per week. Upgrades should always feel like treats, never chores.
 
@@ -115,32 +141,77 @@ Progress is deliberately split so different player motivations each have a dial 
 | **Hearts** (per character, 0–5) | Correct favorite serves, chats, arc scene choices | Personal scenes, gifts (recipes, décor, ingredients), endings |
 | **Coins** | Drink sales + tips + perfect bonuses | Comfort upgrades only |
 
-Star thresholds: ★1 at 15 total serves · ★2 at 40 · ★3 at 75 · ★4 at 120 · ★5 at 180. Roughly one star per 3–4 days of active play.
+**Star thresholds:** ★1 at 15 total serves · ★2 at 40 · ★3 at 75 · ★4 at 120 · ★5 at 180. Roughly one star per 3–4 days of active play.
 
-Heart gains are capped at +1 heart per character per day, so bonding can't be grinded in one sitting — arcs breathe across days by design.
+**Heart system (doc 02 §5, sim/hearts.ts):**
+- Tracked as FLOAT heart POINTS; displayed hearts = `floor(points)`, clamped 0–5.
+- Reported values: favorite serve +1.0 · chat +0.25 · correct non-favorite serve +0.1.
+- Daily cap: +1.0 heart points per character per day (enforced in `awardHeartPoints`).
+- Travelers never earn hearts.
+- Morning reset via `resetHeartDay` clears `gainedToday` but keeps lifetime `points`.
 
 ## 6. Journal
 
 One key/tabbed screen, four tabs:
 
-1. **Recipes** — found recipes (brewable), hinted ones (riddle cards), plus a "close guesses" log of near-miss experiments.
-2. **Regulars** — portrait, likes/dislikes (written down automatically after you learn them), current hearts, arc progress marker.
+1. **Recipes** — found recipes (brewable cards), hinted ones (riddle cards with clue text from `service.taughtRXXXBody`), plus a "close guesses" log of near-miss experiments (post-MVP).
+2. **Regulars** — portrait, likes/dislikes (written down automatically after you learn them via `flags.learned_prefs`), current hearts (0–5, floor of points), arc progress marker.
 3. **Town** — map sketch of Hollowbrook Crossing, unlocked lore scraps, moon-phase widget (post-MVP).
-4. **Letters** — archive of mail and notice-board notes.
+4. **Letters** — archive of mail and notice-board notes (from `save.letters`).
 
 The journal auto-fills; nothing needs manual note-taking. It exists so experimentation feels safe — you can't lose a discovered fact.
+
+**Juice item 5 (doc 04 §3):** the journal "opens itself" to the new entry after a discovery serve — the visit beat ends, then the journal opens to the new card with a page-turn entrance (CSS; skipped under reduced motion).
 
 ## 7. Save Model
 
 Browser-first means saves must be defensive.
 
 ### 7.1 Primary save
-
 - Browser `localStorage` under a versioned key (`moonleaf_save_v1`).
 - Stored as plaintext JSON by design: players own their local save, and dev-tools inspection must stay easy during development. Encryption applies **only to the export string** (7.2).
-- **Autosave points:** evening recap only (single atomic write). Mid-service quitting loses at most one service — acceptable, and stated on the title screen footer.
-- **Schema:** `{version, day, coins, stars, inventory{}, upgrades[], flags{discovered_recipes[], learned_prefs[], seen_scenes[]}, settings{relaxed_mode, reduced_motion, master_vol}}`.
-- **Migration rule:** on load, if `version < current`, run migration functions oldest-first. Never hot-patch old keys silently.
+- **Autosave points:** evening recap only (single atomic write via `ProgressionController.snapshotIntoSave`). Mid-service quitting loses at most one service — acceptable, and stated on the title screen footer.
+- **Schema (v4, current):**
+
+```typescript
+interface SaveData {
+  version: number;                    // 4
+  day: number;                        // current day
+  coins: number;                      // ¤
+  stars: number;                      // 0–5
+  total_serves: number;               // lifetime correct serves
+  chatted_this_service: boolean;      // tip gate for current customer
+  inventory: Record<string, number>;  // ingredient kind counts
+  upgrades: string[];                 // owned upgrade ids (repeatable = multiple entries)
+  hearts: Record<string, number>;     // charId → lifetime float points
+  heart_points_today: Record<string, number>; // charId → points gained today
+  letters: string[];                  // mail archive ids in arrival order
+  flags: {
+    discovered_recipes: string[];     // recipe ids the player knows
+    learned_prefs: string[];          // regular ids whose favorite is known
+    seen_scenes: string[];            // scene ids already played
+    wren_usual_revealed: boolean;     // gates Wren's "?" mystery order
+    fenwick_arc_complete: boolean;    // M3 arc progress
+    fenwick_epilogue_done: boolean;
+    wren_arc_complete: boolean;
+    wren_epilogue_done: boolean;
+    title_music_box_unlocked: boolean;
+    sela_intro_done: boolean;
+    bram_intro_done: boolean;
+    nia_intro_done: boolean;
+    fenwick_chili_granted: boolean;   // M4 one-shot inventory grant
+    kettle_auto_opened: boolean;      // M4 tutorial step 4 fired
+  };
+  settings: {
+    relaxed_mode: boolean;
+    reduced_motion: boolean;
+    master_vol: number;               // 0–1
+    text_size: number;                // 100 | 125 | 150
+  };
+}
+```
+
+- **Migration rule:** on load, if `version < current`, run migration functions oldest-first (v1→v2→v3→v4). Never hot-patch old keys silently. Each migration adds new fields with safe defaults; existing fields are never rewritten.
 
 ### 7.2 Export / import — encrypted transfer codes
 
@@ -154,14 +225,12 @@ Export produces an **encrypted, tamper-evident text code**, not readable JSON. G
 | Secrecy from a determined attacker | ❌ explicit non-goal | Key ships in the JS bundle; this is tamper-resistance, not DRM. Player saves belong to players (P1). |
 
 #### Algorithm
-
 - **AES-GCM with a 256-bit key** via Web Crypto (`crypto.subtle`) — built into every target browser, no dependency, works offline. GCM gives confidentiality *and* integrity in one step.
 - **Fresh random 12-byte IV per export** (`crypto.getRandomValues`). Never reuse an IV with the same key.
-- **Key:** single app key compiled into the bundle (`SAVE_KEY` constant). A 1-byte **key id** is embedded in the code format so keys can rotate later without orphaning old exports.
+- **Key:** single app key compiled into the bundle (`SAVE_KEY_HEX` in `save/key.ts`). A 1-byte **key id** (0x01) is embedded in the code format so keys can rotate later without orphaning old exports.
 - Requires a secure context (itch.io serves HTTPS — satisfied). If `crypto.subtle` is unavailable, disable Export/Import buttons with a tooltip instead of falling back to unencrypted output — never ship a downgrade path that trains players to accept plaintext codes.
 
 #### Wire format
-
 ```
 MLC1.<key_id>.<iv_b64url>.<ciphertext_b64url>
 ```
@@ -171,7 +240,6 @@ MLC1.<key_id>.<iv_b64url>.<ciphertext_b64url>
 - Base64URL only (no `+/=`) so codes survive chat apps, email, and notes apps unmangled.
 
 #### Import pipeline (strict order, fail closed)
-
 1. Trim input; verify `MLC1` prefix → else "not a save code" error.
 2. Parse segments; decode IV + ciphertext.
 3. `key_id` known? Unknown → "made with a different version of the game."
@@ -195,14 +263,12 @@ Every validation gate happens **in memory**; the live localStorage save is touch
 All failures leave the current save untouched and return the player to Settings. No red alerts, no console-style dumps.
 
 #### Testing gates (add to M1 exit criteria)
-
 - Round-trip: export → import → byte-identical state.
 - Tamper: flip any character in the code → import must refuse (auth must catch it, not JSON parse).
 - Cross-device: export in Chrome → import in Firefox/Safari.
 - Old-format fixture: an `MLC1` code with `version: 1` migrates correctly after decryption.
 
 ## 8. Difficulty Philosophy
-
 - There is no difficulty curve, only a *comfort curve*: systems appear one at a time (day 1: brew; day 2: menu setting; day 3: chatting; day 4+: upgrades).
 - Relaxed Mode default ON. The alternative ("Standard") exists solely for players who want patience to mean something; it is never required for any content or ending.
 - Numbers above were chosen so a distracted player still succeeds: ~2 min patience vs. a ~30 sec average serve loop gives huge margin.
@@ -212,3 +278,4 @@ All failures leave the current save untouched and return the player to Settings.
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-08-25 | Initial values set | Baseline for playtest build M1 |
+| 2026-08-27 | Recipe R008 renamed from "Cozy Comfort" to "Wren's Usual"; favorite table corrected (Fenwick=R004); Sela's cart rule documented as chosen option ii; Murky Brew consumes ingredients; save schema updated to v4 with text_size; migration chain documented | Matches actual codebase |
