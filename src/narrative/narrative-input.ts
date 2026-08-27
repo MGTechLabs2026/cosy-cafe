@@ -506,3 +506,54 @@ export function createNarrativeInput(save: {
 
   return result;
 }
+
+/**
+ * Narrow read-only context required for letter eligibility + priority.
+ * Derived ONLY from NarrativeInput (which is the single SaveData→narrative boundary).
+ * LetterScheduler consumes this instead of raw SaveData.
+ */
+export interface LetterContext {
+  /** Current in-game day */
+  day: number;
+  /** Current chapter (from narrative input) */
+  chapter: number;
+  /** Total stars earned */
+  stars: number;
+  /** Owned upgrade ids */
+  upgradesOwned: string[];
+  /** Discovered recipe ids */
+  discoveredRecipes: string[];
+  /** Scene ids the player has seen */
+  seenScenes: string[];
+  /** Displayed (floored) hearts per NPC */
+  heartsByNpc: Record<string, number>;
+  /** Narrative flags (booleans only) */
+  flags: Record<string, boolean>;
+  /** Letter ids already delivered */
+  lettersDelivered: string[];
+  /** Letter ids already read */
+  lettersRead: string[];
+  /** Total serves (used only for legacy compatibility) */
+  totalServes: number;
+  /** Days skipped (real activity-ledger value) */
+  daysSkipped: number;
+}
+
+/** Build LetterContext from NarrativeInput — the ONLY place SaveData shape is translated for letters. */
+export function createLetterContext(input: NarrativeInput): LetterContext {
+  const act = input.activity.activity;
+  return {
+    day: input.activity.day,
+    chapter: input.story.chapter,
+    stars: input.activity.stars,
+    upgradesOwned: input.upgrades.ownedUpgrades,
+    discoveredRecipes: input.recipes.discoveredRecipes,
+    seenScenes: input.story.seenScenes,
+    heartsByNpc: input.relationships.displayedHearts,
+    flags: input.story.flags,
+    lettersDelivered: input.letters.lettersDelivered,
+    lettersRead: input.letters.lettersRead,
+    totalServes: act.totalServes,
+    daysSkipped: input.activity.daysSkipped,
+  };
+}

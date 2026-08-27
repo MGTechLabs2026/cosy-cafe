@@ -1,7 +1,7 @@
 // src/narrative/story-definitions.ts — narrative content definitions
 // All narrative content data: letters, chapters, endings, trajectories
+// Pure content/data layer. No SaveData, no game state, no UI.
 
-import type { SaveData } from '../save/validate.js';
 import type { NarrativeState } from './narrative-state.js';
 
 export type NarrativeDimension =
@@ -591,108 +591,4 @@ export function getEndingConfig(ending: EndingId): EndingConfig | undefined {
 
 export function getAllEndingIds(): EndingId[] {
   return ENDING_CONFIGS.map(e => e.id);
-}
-
-// Dimension alignment scoring for letter prioritization
-export function dimensionAlignment(letter: NarrativeLetter, state: NarrativeState): number {
-  if (!letter.requires.dimension_min) return 0;
-  
-  let score = 0;
-  for (const [dim, threshold] of Object.entries(letter.requires.dimension_min)) {
-    const value = state.dimensions[dim as NarrativeDimension] ?? 0;
-    if (value >= threshold) {
-      score += (value - threshold) * 10; // Bonus for exceeding threshold
-    }
-  }
-  return score;
-}
-
-export function checkEligibility(letter: NarrativeLetter, save: SaveData, narrativeState: NarrativeState): boolean {
-  const req = letter.requires;
-  const flags = save.flags as unknown as Record<string, unknown>;
-  const day = save.day;
-  const chapter = flags['current_chapter'] as NarrativeChapter ?? 0;
-  
-  // Day range
-  if (req.day_min !== undefined && day < req.day_min) return false;
-  if (req.day_max !== undefined && day > req.day_max) return false;
-  
-  // Chapter range
-  if (req.chapter_min !== undefined && chapter < req.chapter_min) return false;
-  if (req.chapter_max !== undefined && chapter > req.chapter_max) return false;
-  
-  // Hearts per NPC
-  if (req.hearts_min) {
-    for (const [npc, minHearts] of Object.entries(req.hearts_min)) {
-      const displayedHearts = Math.floor((save.hearts[npc] ?? 0) + 1e-9);
-      if (displayedHearts < minHearts) return false;
-    }
-  }
-  
-  // Dimension thresholds
-  if (req.dimension_min) {
-    for (const [dim, threshold] of Object.entries(req.dimension_min)) {
-      if ((narrativeState.dimensions[dim as NarrativeDimension] ?? 0) < threshold) return false;
-    }
-  }
-  
-  // Required flags
-  if (req.flags_required) {
-    for (const flag of req.flags_required) {
-      if (!flags[flag]) return false;
-    }
-  }
-  
-  // Forbidden flags
-  if (req.flags_forbidden) {
-    for (const flag of req.flags_forbidden) {
-      if (flags[flag]) return false;
-    }
-  }
-  
-  // Required scenes
-  if (req.scenes_seen) {
-    for (const scene of req.scenes_seen) {
-      if (!save.flags.seen_scenes.includes(scene)) return false;
-    }
-  }
-  
-  // Required recipes
-  if (req.recipes_discovered !== undefined) {
-    if (typeof req.recipes_discovered === 'number') {
-      // The requirement is a number (min recipes)
-      if (save.flags.discovered_recipes.length < req.recipes_discovered) return false;
-    } else if (Array.isArray(req.recipes_discovered)) {
-      for (const recipe of req.recipes_discovered) {
-        if (!save.flags.discovered_recipes.includes(recipe)) return false;
-      }
-    }
-  }
-  
-  // Required upgrades
-  if (req.upgrades_owned) {
-    for (const upgrade of req.upgrades_owned) {
-      if (!save.upgrades.includes(upgrade)) return false;
-    }
-  }
-  
-  // Min stars
-  if (req.min_stars !== undefined && save.stars < req.min_stars) return false;
-  
-  // Min upgrades
-  if (req.min_upgrades !== undefined && save.upgrades.length < req.min_upgrades) return false;
-  
-  // Min days skipped
-  if (req.min_days_skipped !== undefined) {
-    // Approximate days skipped
-    const expectedServes = save.day * 5;
-    const actualServes = save.total_serves;
-    const daysSkipped = Math.max(0, Math.floor((expectedServes - actualServes) / 5));
-    if (daysSkipped < req.min_days_skipped) return false;
-  }
-  
-  // Already delivered (for consumed letters)
-  if (letter.consumed && save.flags.letters_delivered?.includes(letter.id)) return false;
-  
-  return true;
 }

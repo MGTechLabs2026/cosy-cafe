@@ -150,15 +150,20 @@ main.ts                   ← bootstrap, ties everything together
 
 ### 3.5 Narrative Module Responsibilities
 
-| Module | Responsibility | Imports |
-|--------|---------------|---------|
-| `narrative-state.ts` | Compute 5 dimensions (CARE, CURIOSITY, COMMUNITY, COMFORT, INDEPENDENCE) from save state | `sim/hearts`, `sim/economy`, `sim/upgrades`, `sim/customers`, `save/validate` |
-| `narrative-evaluator.ts` | Eligibility checks, threshold evaluation, dimension alignment scoring | `narrative-state`, `story-definitions` |
-| `narrative-scheduler.ts` | Chapter advancement, beat triggering, convergence enforcement | `narrative-evaluator`, `story-definitions` |
-| `letter-scheduler.ts` | Letter selection (mandatory + optional), priority sorting, delivery caps | `narrative-evaluator`, `story-definitions` |
-| `story-definitions.ts` | All narrative content: letter configs, chapter beats, ending definitions, trajectory rules | (data only — no imports) |
-| `ending-evaluator.ts` | Final ending scoring, tiebreaking, validity guarantee | `narrative-state`, `story-definitions` |
-| `narrative-hooks.ts` | Integration surface for controllers (onServe, onChat, onUpgrade, etc.) | `narrative-state`, `narrative-evaluator` |
+| Module | Responsibility | Imports (narrative-internal) |
+|--------|---------------|------------------------------|
+| `narrative-input.ts` | **ONLY** SaveData → `NarrativeInput` adapter; also `createLetterContext` | `activity-ledger` (types only) |
+| `narrative-signals.ts` | Pure: `NarrativeInput` → measurable signals | `narrative-input` (types) |
+| `narrative-evaluator.ts` | Pure: signals → 5 dimensions + trajectory (`NarrativeState`) | `narrative-signals` (types) |
+| `narrative-state.ts` | Thin facade combining signals + evaluator | `narrative-signals`, `narrative-evaluator` |
+| `story-definitions.ts` | PURE CONTENT: letters, chapters, endings, trajectories | `narrative-state` (types only) |
+| `narrative-scheduler.ts` | Chapter advancement, beat triggering, convergence (pure) | `narrative-state`, `story-definitions` (types) |
+| `story-progress.ts` | Typed `StoryProgress` model + `createStoryProgressFromSave` adapter | (types only) |
+| `letter-scheduler.ts` | Letter selection, priority, caps — **pure, consumes `LetterContext`** | `narrative-state`, `story-definitions` (types) |
+| `ending-evaluator.ts` | Pure: `NarrativeState` + progress → `EndingId` (deterministic) | `narrative-state`, `story-definitions`, `story-progress` (types) |
+| `activity-ledger.ts` + `activity-events.ts` | Records real gameplay events (counters only; no narrative rules) | — |
+
+**Single SaveData boundary:** only `narrative-input.ts` (and `story-progress.ts`) may read `SaveData`. No other narrative module imports `save/validate` or `sim/*`. All evaluation functions are pure (identical input → identical output).
 
 ### 3.6 Assets pipeline
 

@@ -263,24 +263,25 @@ export class NarrativeScheduler {
   }
 }
 
-export function createStoryProgress(saveData: {
-  flags: Record<string, unknown>;
-  upgrades: string[];
-  letters: string[];
-  seen_scenes: string[];
-}): StoryProgress {
-  const flags: Record<string, boolean> = {};
-  for (const [k, v] of Object.entries(saveData.flags)) {
-    if (typeof v === 'boolean') flags[k] = v;
-  }
-  
+/**
+ * Build the scheduler's lightweight progress view from already-extracted
+ * narrative flags (NOT raw SaveData — the save boundary lives in
+ * createNarrativeInput / createStoryProgressFromSave).
+ */
+export function createSchedulerStoryProgress(
+  flags: Record<string, boolean>,
+  upgradesOwned: string[],
+  lettersDelivered: string[],
+  lettersRead: string[],
+  scenesSeen: string[],
+): StoryProgress {
   return {
     consumedBeats: [],
     completedArcs: [],
     flags,
-    upgradesOwned: Object.fromEntries(saveData.upgrades.map(u => [u, true])),
-    lettersDelivered: (saveData.flags as Record<string, unknown>)['letters_delivered'] as string[] ?? [],
-    lettersRead: (saveData.flags as Record<string, unknown>)['letters_read'] as string[] ?? [],
-    scenesSeen: saveData.seen_scenes ?? [],
+    upgradesOwned: Object.fromEntries(upgradesOwned.map(u => [u, true])),
+    lettersDelivered,
+    lettersRead,
+    scenesSeen,
   };
 }

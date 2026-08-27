@@ -33,7 +33,7 @@ npm run dev        # dev server on http://localhost:5173
 | `npm run dev`       | Vite dev server (port 5173, strict)           |
 | `npm run build`     | Typecheck (`tsc --noEmit`) + production build to `dist/` |
 | `npm run preview`   | Serve the production build locally            |
-| `npm test`          | Run the Vitest suite (241 tests)              |
+| `npm test`          | Run the Vitest suite (337 tests)              |
 | `npm run typecheck` | TypeScript only                               |
 
 ## itch.io Release
@@ -55,10 +55,12 @@ src/
   save/      Save model + AES-GCM export/import (MLC1 wire format)
   sim/       Simulation: day cycle, brewing, customers, economy, hearts, upgrades, shelf
   ui/        DOM screens, HUD, flows (cafe-dom, game, hud, journal, kettle, shop, recap, scene, settings, title, letter, textsize)
-docs/        Design docs 01–08 (read 01-gdd-core.md first)
+docs/        Design docs 01–09 (read 01-gdd-core.md first)
 scripts/     itch.io packaging + dist verification
 tests/       Vitest suites per system + milestone gates
 ```
+
+> **Narrative system** lives under `src/narrative/` (10 modules). It consumes a pure read-model (`NarrativeInput`) adapted from `SaveData` and never touches gameplay state directly — see [09 · Narrative System](docs/09-narrative-system.md).
 
 ## Design Docs
 
@@ -72,6 +74,7 @@ Full game design lives in [`docs/`](docs/README.md):
 - [06 · MVP Scope & Roadmap](docs/06-mvp-scope-roadmap.md) — what ships first
 - [07 · itch.io Release Plan](docs/07-itchio-release-plan.md) — launch checklist
 - [08 · Tech Stack & Architecture](docs/08-tech-stack.md) — why no engine, module map, guardrails
+- [09 · Narrative System](docs/09-narrative-system.md) — behavior-driven narrative, dimensions, letters, arcs, endings
 
 Pillars win arguments: if a feature fights a pillar, the feature changes or dies.
 

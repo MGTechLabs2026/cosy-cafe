@@ -261,28 +261,25 @@ interface NarrativeLetter {
 ### Letter Scheduler Algorithm
 
 ```typescript
-function scheduleLetters(save: SaveData, narrativeState: NarrativeState): LetterDelivery[] {
-  // 1. Collect all eligible letters
-  const eligible = ALL_LETTERS.filter(l => 
-    checkEligibility(l, save, narrativeState)
+// ctx: LetterContext — pure read-model derived from NarrativeInput (never raw SaveData)
+function scheduleLetters(ctx: LetterContext, narrativeState: NarrativeState): LetterDelivery[] {
+  // 1. Collect all eligible letters (pure checkEligibility on ctx + state)
+  const eligible = ALL_LETTERS.filter(l =>
+    letterScheduler.checkEligibility(l, narrativeState, ctx)
   );
-  
-  // 2. Separate mandatory vs optional
-  const mandatory = eligible.filter(l => l.mandatory);
-  const optional = eligible.filter(l => !l.mandatory);
-  
-  // 3. Sort mandatory by chapter → priority
-  mandatory.sort((a, b) => a.chapter - b.chapter || b.priority - a.priority);
-  
-  // 4. Sort optional by dimension alignment → priority
-  optional.sort((a, b) => {
-    const aScore = dimensionAlignment(a, narrativeState);
-    const bScore = dimensionAlignment(b, narrativeState);
-    return bScore - aScore || b.priority - a.priority;
-  });
-  
-  // 5. Apply caps (max 1 letter/day, max 3/chapter from same source)
-  return selectDelivery(mandatory, optional, save);
+
+  // 2. Score by priority (mandatory +1000, chapter-match +50, dimension alignment, trajectory emphasis)
+  const scored = eligible.map(l => ({
+    l,
+    score: letterScheduler.calculatePriorityScore(l, narrativeState),
+    reason: letterScheduler.getReason(l),
+  }));
+
+  // 3. Sort descending by score (deterministic)
+  scored.sort((a, b) => b.score - a.score);
+
+  // 4. Apply caps (max 1 letter/day, max 3/chapter from same source) and return
+  return letterScheduler.selectNextLetters(narrativeState, ctx, 1);
 }
 ```
 
@@ -455,20 +452,18 @@ choice: {
 ### Ending Evaluation (Day 14 Evening)
 
 ```typescript
-function evaluateEnding(save: SaveData, narrativeState: NarrativeState): Ending {
-  const scores = {
-    keeper: scoreKeeper(narrativeState, save),
-    builder: scoreBuilder(narrativeState, save),
-    wanderer: scoreWanderer(narrativeState, save),
-    community: scoreCommunity(narrativeState, save)
-  };
-  
-  // Tie-breaking: prioritize ending matching highest dimension
-  const primaryDim = highestDimension(narrativeState);
-  const tiebreaker = endingForDimension(primaryDim);
-  
-  return maxBy(scores, (v, k) => v + (k === tiebreaker ? 0.1 : 0));
-}
+// Pure evaluation — no SaveData mutation, no UI, no economy/relationship changes.
+const evaluator = new EndingEvaluator(ENDING_CONFIGS);
+const result = evaluator.evaluate(narrativeState, {
+  chapter, stars, daysSkipped, completedArcs, flags, upgradesOwned,
+});
+// result.ending: EndingId  ("keeper" | "builder" | "wanderer" | "community")
+// result.scores: Record<EndingId, number>
+// result.primaryDimension: NarrativeDimension | null
+
+// Deterministic tie-break: the ending whose tiebreaker_dimension === dominant
+// dimension receives +0.1. No Math.random() for critical selection.
+const ending = result.ending;  // always one of the 4 valid endings
 ```
 
 ### Ending Content
@@ -557,59 +552,103 @@ interface NarrativeFlags {
 
 ---
 
-### Implementation Architecture (Refactored)
+### Implementation Architecture (Final — post Batches 1-6)
 
 ### Module Structure
 
 ```
 src/narrative/
-  narrative-input.ts        # Adapter: SaveData → NarrativeInput (read model)
-  narrative-state.ts        # Compute 5 dimensions from NarrativeInput
-  story-definitions.ts      # Letter definitions, chapter config, endings
-  narrative-evaluator.ts    # Eligibility, scoring, thresholds (future)
-  narrative-scheduler.ts    # Chapter advancement, beat triggering (future)
-  letter-scheduler.ts       # Letter selection, delivery, caps (future)
-  ending-evaluator.ts       # Final ending determination (future)
-  narrative-hooks.ts        # Controller integration points (future)
+  narrative-input.ts        # Adapter: SaveData -> NarrativeInput (read model) + LetterContext
+  narrative-signals.ts      # Pure: NarrativeInput -> measurable signals
+  narrative-evaluator.ts    # Pure: signals -> 5 dimensions + trajectory (NarrativeState)
+  narrative-state.ts        # Thin facade combining signals + evaluator
+  story-definitions.ts      # PURE CONTENT: letters, chapters, endings, trajectories (no logic)
+  narrative-scheduler.ts    # Chapter advancement, beat triggering, convergence (pure)
+  letter-scheduler.ts       # Letter selection, priority, caps (pure; consumes LetterContext)
+  story-progress.ts         # Typed StoryProgress model (beats, arcs, flags) + save adapter
+  ending-evaluator.ts       # Pure: NarrativeState + StoryProgress -> EndingId
+  activity-ledger.ts        # ActivityLedger: records real gameplay events (no narrative rules)
+  activity-events.ts        # Typed activity event definitions
 ```
 
-### Data Flow (Refactored)
+### Dependency Direction (enforced)
 
 ```
-Save State (source)
-    ↓
-createNarrativeInput(save) → NarrativeInput (read-only model)
-    ↓
-evaluateNarrativeState(input) → NarrativeState (5 dimensions + derived)
-    ↓
-LetterScheduler.select(narrativeState, narrativeInput) → LetterDelivery[]
-    ↓
-DayController delivers via UI/letter.ts
-    ↓
-Player reads → sets flags.read
-    ↓
-Next day → recompute
+GAMEPLAY (Hearts / Economy / Recipes / Service / Upgrades)
+    |   (controllers record real events)
+    v
+ActivityLedger (counters only)
+    |
+    v
+createNarrativeInput(save) -> NarrativeInput   <- ONLY SaveData boundary
+    |                                      \
+    |                                       v
+    |                              createLetterContext(input) -> LetterContext
+    v
+NarrativeSignals (pure)
+    v
+NarrativeEvaluator (pure) -> NarrativeState
+    |
+    +----------------------------+
+    v                            v
+LetterScheduler              NarrativeScheduler
+ (consumes LetterContext)    (consumes NarrativeState + StoryProgress)
+    |                            |
+    +------------+---------------+
+                 v
+        Existing Scene/UI (delivers letter/scene)
+                 v
+        StoryProgress (typed, updated on delivery)
+                 v
+        EndingEvaluator (pure) -> EndingId
 ```
 
-### Key Architecture Decision: Adapter Pattern
+### Key Architecture Decisions
 
-The narrative system consumes a **read model** (`NarrativeInput`) rather than directly accessing `SaveData`. 
+1. **Single SaveData boundary.** Only `createNarrativeInput` (and `createLetterContext` derived from it, and `createStoryProgressFromSave`) may read `SaveData`. No other narrative module imports `SaveData` or touches `save.*` fields.
+2. **Pure functions.** Signal calculation, dimension evaluation, letter eligibility, letter priority, chapter scheduling, and ending evaluation are all pure: identical input -> identical output, no hidden mutation.
+3. **Story content is data.** All prose/definitions live in `story-definitions.ts`. Engine code contains no story text and no `if (...) return "Fenwick says..."` blocks.
+4. **No forbidden dependencies.** Narrative modules contain zero DOM/`document`/`window` access, zero UI rendering, zero controller mutation, and zero economy/heart/recipe/upgrade mutation.
+5. **Read-only dimensions.** NarrativeState is an immutable result; the evaluator never mutates input.
 
-**Benefits:**
-- **Testability**: NarrativeEvaluator can run with plain mocked `NarrativeInput` without constructing full `SaveData`
-- **Isolation**: Narrative logic has no direct dependency on SaveData structure
-- **Single Source of Truth**: The adapter (`createNarrativeInput`) is the ONLY place that translates SaveData
-- **Future-Proof**: SaveData changes only require adapter updates, not narrative logic changes
+### Letter Scheduler (actual signature)
+
+```typescript
+class LetterScheduler {
+  // ctx is a pure read-model derived from NarrativeInput (LetterContext) — never raw SaveData
+  checkEligibility(letter: NarrativeLetter, state: NarrativeState, ctx: LetterContext): boolean
+  getEligibleLetters(state: NarrativeState, ctx: LetterContext): NarrativeLetter[]
+  selectNextLetters(state: NarrativeState, ctx: LetterContext, max: number): LetterDelivery[]
+  // priority = base + mandatory(+1000) + chapter-match(+50) + dimensionAlignment + trajectoryEmphasis
+  // caps: max 1/day, max 3/chapter per source
+}
+```
+
+### Ending Evaluator (actual signature)
+
+```typescript
+class EndingEvaluator {
+  // Pure: from narrative state + story progress -> ending id
+  evaluate(state: NarrativeState, progress: {
+    chapter: number; stars: number; daysSkipped: number;
+    completedArcs: string[]; flags: Record<string, boolean>;
+    upgradesOwned: Record<string, boolean>;
+  }): EndingResult   // { ending: EndingId, scores, primaryDimension }
+
+  // Deterministic tie-break: dominant dimension ending gets +0.1.
+  // No Math.random() for critical selection.
+}
+```
 
 ### Integration Points
 
 | Existing Controller | Narrative Hook |
 |---------------------|----------------|
-| `GameController` | `onDayBegin` → advance chapter, schedule letters |
-| `DayController` | `onMorning` → compute narrative state, deliver mail |
-| `ServiceController` | `onServe` / `onChat` / `onArcBeat` → update dimension signals |
-| `ProgressionController` | `onUpgrade` / `onRecipeDiscovery` → curiosity/comfort signals |
-| `KettleController` | `onExperimentalBrew` → independence/curiosity signal |
+| `GameController` | `onDayBegin` -> advance chapter, schedule letters |
+| `DayController` | `onMorning` -> compute narrative state, deliver mail; records day-skipped |
+| `ServiceController` | `onServe` / `onChat` / `onArcBeat` -> ActivityLedger (real events) |
+| `ProgressionController` | `onUpgrade` / `onRecipeDiscovery` -> ActivityLedger; owns ActivityLedger |
+| `KettleController` | `onExperimentalBrew` -> ActivityLedger (curiosity/independence) |
 
 ---
 
@@ -721,18 +760,21 @@ Complete specification for a behavior-driven narrative layer that:
 6. **Letters reactive** — priority by dimension alignment
 7. **Deterministic** — same save = same narrative
 
-### 7. Planned Implementation Modules (Refactored)
+### 7. Planned Implementation Modules (Final — all shipped)
 
 | Module | Responsibility | Status |
 |--------|----------------|--------|
-| `narrative-input.ts` | Adapter: SaveData → NarrativeInput | ✅ Done (Batch 1) |
-| `narrative-state.ts` | Compute 5 dimensions from NarrativeInput | ✅ Done (Batch 1) |
-| `story-definitions.ts` | All narrative content data (letters, chapters, endings) | ⏳ Future |
-| `narrative-evaluator.ts` | Eligibility, scoring, thresholds | ⏳ Future |
-| `narrative-scheduler.ts` | Chapter advancement, beat triggering | ⏳ Future |
-| `letter-scheduler.ts` | Letter selection, delivery, caps | ⏳ Future |
-| `ending-evaluator.ts` | Final ending determination | ⏳ Future |
-| `narrative-hooks.ts` | Controller integration points | ⏳ Future |
+| `narrative-input.ts` | Adapter: SaveData → NarrativeInput + LetterContext | ✅ Done (Batch 1) |
+| `narrative-signals.ts` | Pure signal derivation from NarrativeInput | ✅ Done (Batch 2) |
+| `narrative-evaluator.ts` | Pure 5-dimension + trajectory evaluation | ✅ Done (Batch 3) |
+| `narrative-state.ts` | Thin facade combining signals + evaluator | ✅ Done (Batch 3) |
+| `story-definitions.ts` | PURE CONTENT: letters, chapters, endings, trajectories | ✅ Done (Batch 3) |
+| `activity-ledger.ts` + `activity-events.ts` | Real gameplay event recording (no heuristics) | ✅ Done (Batch 2) |
+| `narrative-scheduler.ts` | Chapter advancement, beat triggering, convergence | ✅ Done (Batch 4) |
+| `letter-scheduler.ts` | Letter selection, priority, caps (pure, LetterContext) | ✅ Done (Batch 4) |
+| `story-progress.ts` | Typed StoryProgress model + save adapter | ✅ Done (Batch 5) |
+| `ending-evaluator.ts` | Final ending determination (pure, deterministic) | ✅ Done (Batch 5) |
+| Save schema v6 | Activity ledger flags + migration | ✅ Done (Batch 2) |
 
 ### 8. Risks / Unresolved Decisions
 
