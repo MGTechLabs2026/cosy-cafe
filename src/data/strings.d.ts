@@ -73,6 +73,14 @@ export interface Strings {
     deliveryArrived: string;
     shelfLineLabel: string;
   };
+  mailbox: {
+    title: string;
+    singleHint: string;
+    multipleHint: string;
+    listLabel: string;
+    dayLine: string;
+    continue: string;
+  };
   kettle: {
     title: string;
     base: string;
@@ -199,13 +207,7 @@ export interface Strings {
     townSketch: string;
     loreScraps: string[];
   };
-  letters: Record<
-    | 'letter_marigold_1'
-    | 'board_day2_hint'
-    | 'board_wren_riddle'
-    | 'marigold_delivery',
-    LetterEntry
-  >;
+  letters: Record<string, LetterEntry>;
   shelf: {
     title: string;
     stockTemplate: string;

@@ -361,6 +361,17 @@ function clickButton(id: string): void {
 }
 
 /**
+ * Open the café for the day. A scheduled narrative letter may be pending at the
+ * start of a day (mailbox) and blocks the morning banner until the player
+ * continues — so dismiss the mailbox first, then open the door (Batch 3:
+ * doc 10 BUG-01 morning flow).
+ */
+function openMorning(): void {
+  clickButton('mailbox-continue'); // continue past any morning mailbox
+  clickButton('btn-open-door'); // morning banner → open doors
+}
+
+/**
  * Serve the active customer. Stock is ensured through the SAME public surface
  * the game exposes for state injection in tests — the debug save snapshot —
  * by pre-seeding a generous inventory BEFORE the day starts.
@@ -396,7 +407,7 @@ describe('M2 smoke — PASS lines', () => {
     expect(s0.discovered).toEqual(expect.arrayContaining(['R001', 'R002']));
 
     // Open doors → schedule carries Fenwick's R001→teach-R003 beat first.
-    (document.getElementById('btn-open-door') as unknown as { click(): void } | null)?.click();
+    openMorning();
     const s1 = debugState() as {
       phase: string;
       schedule: { characterId: string; orderRecipeId: string; teachesRecipeId: string | null }[];
@@ -430,7 +441,7 @@ describe('M2 smoke — PASS lines', () => {
 
     startNewGameFromLoadedSave();
 
-    clickButton('btn-open-door');
+    openMorning();
 
     // Serve everyone their scheduled drink; Wren's mystery resolves to R002 here
     // (any KNOWN recipe satisfies him pre-reveal — near-miss rule, doc 05 §3.1).
@@ -466,7 +477,7 @@ describe('M2 smoke — PASS lines', () => {
     writeSave(save);
     startNewGameFromLoadedSave();
 
-    clickButton('btn-open-door');
+    openMorning();
     debugSpawnNow();
     tickGame(3.0, 0);
     expect((debugState() as { stars: number }).stars).toBe(0); // 14 serves → ☆0
@@ -486,7 +497,7 @@ describe('M2 smoke — PASS lines', () => {
     expect(debugBrewAnimSec()).toBeGreaterThan(0);
 
     // Grant coins through legit play: serve the whole day-1 script.
-    (document.getElementById('btn-open-door') as unknown as { click(): void } | null)?.click();
+    openMorning();
     serveActiveWith('R001');
     tickGame(0.7, 100);
     serveActiveWith('R003');
@@ -531,7 +542,7 @@ describe('M2 smoke — PASS lines', () => {
 
   it('PASS: save/reload continuity — upgrades/day/hearts survive loadSave()', () => {
     startNewGame();
-    (document.getElementById('btn-open-door') as unknown as { click(): void } | null)?.click();
+    openMorning();
 
     // Serve + chat to earn hearts, then close the day.
     debugChat();
@@ -563,7 +574,7 @@ describe('M2 smoke — PASS lines', () => {
 
   it('PASS: out-of-stock brew blocks with inline message, inventory untouched', () => {
     startNewGame();
-    (document.getElementById('btn-open-door') as unknown as { click(): void } | null)?.click();
+    openMorning();
 
     // Wren mystery aside: brew R006 with zero frostberries.
     const before = (debugState() as { inventory: Record<string, number> }).inventory['frostberries'];

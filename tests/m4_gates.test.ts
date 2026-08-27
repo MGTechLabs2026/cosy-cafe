@@ -269,6 +269,17 @@ function clickButton(id: string): void {
   if (el) el.click();
 }
 
+/**
+ * Open the café for the day. A scheduled narrative letter may be pending at the
+ * start of a day (mailbox), which blocks the morning banner until the player
+ * reads/closes it — so dismiss the mailbox first, then open the door (Batch 3:
+ * doc 10 BUG-01 morning flow).
+ */
+function openMorning(): void {
+  clickButton('mailbox-continue'); // continue past any morning mailbox
+  clickButton('btn-open-door'); // morning banner → open doors
+}
+
 function bootFromSave(save: SaveData): void {
   writeSave(save);
   const canvas = makeFake('game-canvas') as unknown as HTMLCanvasElement;
@@ -332,7 +343,7 @@ describe('M4 gate D1 — 90-second tutorial gate', () => {
     // Player action 1: New Game → letter overlay appears; player skips it.
     // (main.ts shows the letter on new game; skipping is one click.)
     // Player action 2: Open the door (morning banner).
-    clickButton('btn-open-door');
+    openMorning();
 
     // The first arrival is scripted Fenwick ordering R001 (accepted day-1
     // script). One player action: brew his order at the kettle.
@@ -415,7 +426,7 @@ describe('M4 gate D2 — Fenwick arc end-to-end', () => {
         break;
       }
       if (st.phase === 'prep') {
-        clickButton('btn-open-door');
+        openMorning();
         continue;
       }
       if (st.phase === 'recap') {
@@ -462,7 +473,7 @@ describe('M4 gate D2 — Fenwick arc end-to-end', () => {
         activeMystery: boolean;
       };
       if (st.phase === 'prep') {
-        clickButton('btn-open-door');
+        openMorning();
         continue;
       }
       if (st.phase === 'recap') {
@@ -520,7 +531,7 @@ describe('M4 gate D3 — Wren "Ah. There she is." beat', () => {
     };
     bootFromSave(save);
 
-    clickButton('btn-open-door');
+    openMorning();
 
     // Serve arrivals until Wren himself is at the counter (his visit carries
     // the resolution window). Other regulars get their scheduled drink.
@@ -642,7 +653,7 @@ describe('M4 gate D5 — Esc closes every overlay', () => {
 
     // Recap: serve out the whole day-1 script first (the door guard politely
     // refuses to close while customers are still due), then Esc continues.
-    clickButton('btn-open-door');
+    openMorning();
     for (let i = 0; i < 8; i++) {
       debugSpawnNow();
       tickGame(3.0, 0);

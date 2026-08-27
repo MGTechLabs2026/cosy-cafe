@@ -22,6 +22,7 @@ import {
 } from '../ui/cafe-dom.js';
 import { showRecap } from '../ui/recap.js';
 import { openShop, closeShop } from '../ui/shop.js';
+import { showMailbox, markLetterRead } from '../ui/mailbox.js';
 // Narrative activity events
 import { recordDaySkipped } from '../narrative/activity-ledger.js';
 // Narrative runtime integration (Batch 2 — wires schedulers into the lifecycle)
@@ -79,30 +80,50 @@ export class DayController {
     // the autosave at recap persists it. Idempotent per day.
     advanceNarrative(ctx.save, ctx.activityLedger);
 
-    // Playtest fix #3: morning/prep carries the calm track.
-    playMusicForPhase('prep');
+    // Post-advance morning sequence: calm music, weekly delivery, banner.
+    // Runs immediately when there is no pending mail; deferred until the
+    // player closes the mailbox otherwise (Batch 3 — non-blocking mailbox).
+    const proceed = (): void => {
+      // Playtest fix #3: morning/prep carries the calm track.
+      playMusicForPhase('prep');
 
-    if (isDeliveryDay(ctx.dayState.day)) {
-      // Weekly auto-delivery (doc 02 §2.5): arrives mornings of days 8 and 15.
-      applyDelivery(ctx.inventory);
-      showToast(this.toastEl(), STRINGS.morning.deliveryArrived);
+      if (isDeliveryDay(ctx.dayState.day)) {
+        // Weekly auto-delivery (doc 02 §2.5): arrives mornings of days 8 and 15.
+        applyDelivery(ctx.inventory);
+        showToast(this.toastEl(), STRINGS.morning.deliveryArrived);
+      }
+
+      showMorningBanner(this.bannerEl(), {
+        day: ctx.dayState.day,
+        shelfLine: stockedShelfLine(ctx.inventory),
+        onOpenDoors: () => this.openDoors(),
+        onSleepIn: () => {
+          playClick();
+          // Record day skipped activity for narrative system
+          recordDaySkipped(ctx.activityLedger, {
+            day: ctx.dayState.day,
+          });
+          this.finishDay(0, false);
+        },
+      });
+
+      this.deps.syncHud();
+    };
+
+    // Morning mailbox (Batch 3): only when the scheduler queued unread letters.
+    const pending = ctx.save.flags.pending_narrative_letters;
+    if (pending && pending.length > 0) {
+      showMailbox(ctx.save, pending, {
+        // Persist read state now so a browser refresh can't resurrect it.
+        onRead: (letterId: string) => {
+          markLetterRead(ctx.save, letterId);
+          this.deps.onAutosave();
+        },
+        onDone: proceed,
+      });
+    } else {
+      proceed();
     }
-
-    showMorningBanner(this.bannerEl(), {
-      day: ctx.dayState.day,
-      shelfLine: stockedShelfLine(ctx.inventory),
-      onOpenDoors: () => this.openDoors(),
-      onSleepIn: () => {
-        playClick();
-        // Record day skipped activity for narrative system
-        recordDaySkipped(ctx.activityLedger, {
-          day: ctx.dayState.day,
-        });
-        this.finishDay(0, false);
-      },
-    });
-
-    this.deps.syncHud();
   }
 
   openDoors(): void {

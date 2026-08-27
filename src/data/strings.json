@@ -50,6 +50,14 @@
     "deliveryArrived": "The weekly delivery is on the shelf.",
     "shelfLineLabel": "Shelf"
   },
+  "mailbox": {
+    "title": "Morning Post",
+    "singleHint": "A letter arrived for you.",
+    "multipleHint": "{count} letters arrived for you.",
+    "listLabel": "Letters",
+    "dayLine": "Day {day}",
+    "continue": "Continue to the café"
+  },
   "kettle": {
     "title": "The Kettle",
     "base": "Base",
@@ -311,6 +319,98 @@
     "marigold_delivery": {
       "title": "Standing order — Hollowbrook suppliers",
       "body": "Weekly basket, paid ahead: tea leaves, honey, cocoa, ember chili, frostberries, ginger root, sage. \"Keep the shelf honest\" — M."
+    },
+    "marigold_ch0_welcome": {
+      "title": "A Letter from Aunt Marigold",
+      "body": "Dear one,\n\nThe café keys are yours now. The kettle remembers every hand that stirred it. Trust your nose, trust the regulars, and don't worry about perfection — the best cups come from caring.\n\nI'll write when the moon turns.\n\nWith love,\nAunt Marigold"
+    },
+    "marigold_ch2_revelation": {
+      "title": "A Letter from Aunt Marigold",
+      "body": "Dearest,\n\nYou've lasted a week. The pass still stands, the chime still rings, and the regulars have started to mean something to you — I can tell.\n\nThe café was never about the coffee. It was about the chair you pull out for someone who needs to sit. Keep pulling it out.\n\nWith love,\nAunt Marigold"
+    },
+    "marigold_ch4_final": {
+      "title": "A Letter from Aunt Marigold",
+      "body": "Dear one,\n\nThe mountain knows your name now. So do I.\n\nWhatever you choose at season's end — keep, pass on, share, or close gently — choose it the way you'd brew a cup: with attention, and take your time.\n\nYou are allowed to become something different.\n\nWith love,\nAunt Marigold"
+    },
+    "fenwick_ch1_intro": {
+      "title": "A Note from Fenwick",
+      "body": "Kid,\n\nHeard you're minding the cafe. Good. Marigold worried it'd sit empty.\n\nMy route takes me past most days. I'll be in for the warm one. Don't make it fancy."
+    },
+    "fenwick_memory_promise": {
+      "title": "A Note from Fenwick",
+      "body": "Been thinking on what you said. About staying.\n\nThe road's not going anywhere. Neither am I, probably. If you ever need a courier who knows every step by heart, you've got one.\n\nThat's a promise, not a boast."
+    },
+    "fenwick_ch3_reflection": {
+      "title": "A Note from Fenwick",
+      "body": "Tore up the transfer papers this morning. Burned them in the hearth.\n\nSupervisor wasn't pleased. Told him the mountain keeps its courier. Reckon he understood more than he let on.\n\nThanks for the cup that day. It was the right one."
+    },
+    "sela_ch1_intro": {
+      "title": "A Note from Sela",
+      "body": "Friend,\n\nMy cart wheels creak up the Vessany road, but they get me here. The café window is the warmest stop on the route.\n\nIf you ever want the story of this town, ask the regulars. They've been keeping it longer than the council has."
+    },
+    "sela_belonging_offer": {
+      "title": "A Note from Sela",
+      "body": "My elders sent three letters. I haven't opened the last two.\n\nBut here, by your window, with the cat and the steam — I think I finally know what they'd say. 'Come home.'\n\nMaybe home learned to follow me."
+    },
+    "wren_ch1_intro": {
+      "title": "A Note from Old Wren",
+      "body": "You have her eyes, you know. Marigold's.\n\nI'll have my usual. And when you're ready, I'll tell you about the letters she never sent. There were more than the ones you've found."
+    },
+    "wren_first_clue_letter": {
+      "title": "A Clue from Old Wren",
+      "body": "First thing she taught me: the memory isn't in the recipe. It's in the making.\n\nHoney. Milk. A whisper of moonleaf. Simmer it long. That's the shape of a morning she missed, and the one you might find again.\n\nRead it slow."
+    },
+    "wren_childhood_photo": {
+      "title": "A Gift from Old Wren",
+      "body": "Found this in the bottom of a tin. Two small hands around a cup, laughing at the steam.\n\nThat was you. That was her. That was a long time before the will, before the café, before any of this weighed anything.\n\nKeep it. It's lighter than it looks."
+    },
+    "bram_ch1_intro": {
+      "title": "A Note from Bram",
+      "body": "Hot. Strong. Don't care what.\n\nFixed your door bracket on the way in. Loose hardware keeps a man up at night. So does a chime that won't ring. Different problem, same fix. Maybe."
+    },
+    "bram_renovation_offer": {
+      "title": "A Note from Bram",
+      "body": "Expanded the hearth like you asked. Warmer now. The kettle's quicker.\n\nElsie always said a bigger fire meant more chairs pulled out. She'd like that you're the one pulling them.\n\nHammer's by the shelf if anything else rattles."
+    },
+    "nia_ch1_intro": {
+      "title": "A Note from Nia",
+      "body": "Oh, this place is a WONDER. Gears in the grinder, steam in the pipes, possibilities!\n\nI built you a kettle that whistles in a minor key when the brew's nearly right. Warmth isn't a variable you optimize. It's the thing you build around. Remember that."
+    },
+    "town_ch1_welcome": {
+      "title": "From the Town Council",
+      "body": "Welcome to Hollowbrook, steward.\n\nThe cafe has been the heart of the high road for forty years. If there's anything the town can do — a delivery, a notice board, a warm word — say the word at the well.\n\nWe're glad the light's on again."
+    },
+    "town_ch3_market_day": {
+      "title": "From the Town Council",
+      "body": "Market day comes Saturday. Stalls by the well, music after dusk, and a kettle of something free for whoever pulls up a chair.\n\nThe whole town fits in your front window on nights like that. Mind the crowds — and mind the quiet after."
+    },
+    "town_ch3_council_proposal": {
+      "title": "From the Town Council",
+      "body": "We've a proposal, if you'll hear it.\n\nThe old grain store by the bridge could be a community room — recipes shared, letters read aloud, the chime heard by more than the regulars.\n\nNo pressure. Some things are worth building slow. The cafe proved that."
+    },
+    "mystery_ch1_strange_note": {
+      "title": "A Strange Note",
+      "body": "No signature. No address. Just a scrap tucked behind the sugar jar:\n\n'She left more than the keys. Look where the moon touches the water. One clue for every cup you brew with care.'\n\nYou slip it into your apron. It feels like the beginning of something."
+    },
+    "mystery_ch2_ledger_hint": {
+      "title": "A Hint in the Ledger",
+      "body": "The old accounts ledger has a margin note in Marigold's hand:\n\n'Clue the second — the leaf that grows only where the moonlight pools. Ask the one who remembers every sip.'\n\nWren, then. Of course it's Wren."
+    },
+    "mystery_ch3_basement_key": {
+      "title": "A Key in the Basement",
+      "body": "Behind the third shelf in the basement, a hook you'd never noticed. On it, a small brass key and a tag: 'For the room that remembers.'\n\nClue the third. The café has been keeping secrets longer than you've been keeping it."
+    },
+    "marigold_ch2_hidden_recipe": {
+      "title": "A Letter from Aunt Marigold",
+      "body": "Dearest,\n\nFive recipes now, have you? Good. The sixth was never written down — only brewed, on a night the moon was full and the pass was quiet.\n\nWhen you're ready, the water will tell you. It told me.\n\nWith love,\nAunt Marigold"
+    },
+    "reactive_murky_brew_tip": {
+      "title": "A Note on the Brew",
+      "body": "The last cup came out murky — a little too much of this, not quite enough of that.\n\nNo harm in it. The regulars don't mind a cloudy cup now and then; it means someone's experimenting. That's half the point of a kettle.\n\nTry it again tomorrow. The water will wait."
+    },
+    "reactive_ingredient_low": {
+      "title": "A Note on the Shelf",
+      "body": "Running low on something behind the counter — frostberries, or was it the ginger? Hard to tell at this hour.\n\nThe standing order keeps the shelf honest, but a careful steward counts twice. Tomorrow's a good day to restock.\n\nTake your time. The mountain isn't going anywhere."
     }
   },
   "shelf": {
