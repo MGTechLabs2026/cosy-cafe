@@ -12,6 +12,7 @@ import { hasCoffeeBase } from '../sim/upgrades.js';
 import { openKettle, closeKettle } from '../ui/kettle.js';
 import type { KettleState } from '../ui/kettle.js';
 import { showToast } from '../ui/cafe-dom.js';
+import { playOverlayEnter } from '../ui/overlay-anim.js';
 
 /** Kettle bases before the coffee machine (oat milk stays post-MVP). */
 const BASE_BASES: readonly BaseType[] = ['water', 'milk'];
@@ -64,6 +65,7 @@ export class KettleController {
         closeKettle();
       },
     });
+    playOverlayEnter(document.getElementById('kettle-overlay'));
   }
 
   private state(): KettleState {

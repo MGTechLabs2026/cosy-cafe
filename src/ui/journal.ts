@@ -13,6 +13,7 @@ import type { RegularId } from '../sim/customers.js';
 import { displayedHearts } from '../sim/hearts.js';
 import type { HeartLedger } from '../sim/hearts.js';
 import type { SaveData } from '../save/validate.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export interface JournalHints {
   /** recipeId → riddle copy key suffix under journal.riddles (strings.json). */
@@ -119,6 +120,7 @@ function openJournalInternal(
   renderTabs(overlay, save, hearts, hints);
   renderTab(overlay, tab, save, hearts, hints, highlightRecipeId);
   overlay.classList.remove('hidden');
+  playOverlayEnter(overlay);
 }
 
 export function closeJournal(): void {

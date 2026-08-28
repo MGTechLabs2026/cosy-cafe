@@ -3,6 +3,7 @@
 
 import { STRINGS, format } from '../data/strings.js';
 import { CountUp } from '../render/tween.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export interface RecapData {
   day: number;
@@ -123,6 +124,7 @@ export function showRecap(
   overlay.appendChild(panel);
   app.appendChild(overlay);
   continueBtn.focus();
+  playOverlayEnter(overlay);
 
   const tick = (): void => {
     if (!countUp) return;

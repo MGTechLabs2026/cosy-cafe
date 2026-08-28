@@ -346,6 +346,42 @@ html.reduced-motion .page-turn {
   padding: 16px;
 }
 
+/*
+ * Cozy overlay enter (docs/11): soft backdrop fade + a gentle panel settle,
+ * never a hard cut. Applied via the `.overlay-anim` class (toggled by
+ * playOverlayEnter() in ui/overlay-anim.ts) so it replays reliably even for
+ * overlays whose node is reused (kettle/journal/shop). Recreated overlays
+ * (mailbox/letter/scene/recap/ending/settings) also call it on show. Reduced
+ * motion collapses every animation to instant via the rules at the bottom.
+ */
+.overlay-anim {
+  animation: overlay-in 0.22s ease-out both;
+}
+
+.overlay-anim .panel {
+  animation: panel-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .overlay.hidden,
 .hidden {
   display: none !important;
@@ -540,6 +576,20 @@ html.reduced-motion .page-turn {
   border-radius: 4px;
   font-size: 0.88rem;
   text-align: center;
+  /* Calm entrance (docs/11): ease up + in instead of popping. Reduced motion
+     collapses to an instant appear; the `.hidden` toggle still controls removal. */
+  animation: toast-in 0.24s ease-out both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* ---- Kettle panel chips ---- */

@@ -653,16 +653,27 @@ describe('M4 gate D5 — Esc closes every overlay', () => {
 
     // Recap: serve out the whole day-1 script first (the door guard politely
     // refuses to close while customers are still due), then Esc continues.
+    // Each arrival now walks out gracefully (~0.8s) after serving, so we drain
+    // the queue by polling: brew anyone waiting, else pull the next arrival,
+    // and stop once two consecutive polls find nobody left.
     openMorning();
-    for (let i = 0; i < 8; i++) {
-      debugSpawnNow();
-      tickGame(3.0, 0);
-      const cur = debugState() as { hasActive: boolean; activeOrder: string | null };
-      if (!cur.hasActive) break;
-      const input = recipeInputs[cur.activeOrder ?? 'R001'];
-      if (input) debugBrew(input);
-      tickGame(0.7, 100);
+    let emptyStreak = 0;
+    for (let i = 0; i < 60; i++) {
+      const st = debugState() as { hasActive: boolean; activeOrder: string | null };
+      if (st.hasActive) {
+        const input = recipeInputs[st.activeOrder ?? 'R001'];
+        if (input) debugBrew(input);
+        tickGame(1.2, 100); // serve + a little linger; walk-out finishes later
+        emptyStreak = 0;
+      } else {
+        debugSpawnNow();
+        tickGame(2.5, 0); // let the next arrival walk in
+        emptyStreak++;
+        if (emptyStreak >= 2) break; // two empty polls → schedule drained
+      }
     }
+    // Ensure the last figure has left the counter before closing.
+    tickGame(1.5, 100);
     debugCloseDay();
     expect(document.getElementById('recap-overlay')).not.toBeNull();
     pressKey('Escape'); // autosave-point semantics preserved: Esc = Continue

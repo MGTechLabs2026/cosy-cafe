@@ -10,6 +10,7 @@ import type { SaveData } from '../save/validate.js';
 import type { HeartLedger } from '../sim/hearts.js';
 import type { RegularId } from '../sim/customers.js';
 import type { ActivityLedger } from '../narrative/activity-ledger.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export interface SceneLine {
   /** Character speaking (for portrait + name) */
@@ -190,6 +191,7 @@ function ensureOverlay(): HTMLDivElement {
 
   overlay.appendChild(panel);
   app.appendChild(overlay);
+  playOverlayEnter(overlay);
 
   // Click handler for advancing dialogue
   overlay.addEventListener('click', handleOverlayClick);

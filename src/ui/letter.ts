@@ -2,6 +2,7 @@
 // Skippable modal, ≤100 words, shown once on a new game before morning.
 
 import { STRINGS } from '../data/strings.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export function showLetterOverlay(onDone: () => void): void {
   const app = document.getElementById('app');
@@ -47,6 +48,7 @@ export function showLetterOverlay(onDone: () => void): void {
   panel.appendChild(btnRow);
   overlay.appendChild(panel);
   app.appendChild(overlay);
+  playOverlayEnter(overlay);
 
   const finish = (): void => {
     overlay.remove();

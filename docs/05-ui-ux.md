@@ -205,9 +205,29 @@ Error-state rule: the player can always recover without losing progress or feeli
 - [ ] **Letter read/dismiss flow intuitive**
 - [ ] **Journal Letters tab shows read status clearly**
 
-## 9. UI Changelog
+## 9. Motion & Animation (see doc 11 for the full language)
+
+The café's motion is governed by doc 11 (Animation & Motion Guidelines). Summary
+of what changed in the animation/UX polish pass:
+
+- **Overlays settle in, never hard-cut.** Kettle, journal, shop, settings,
+  mailbox, letter, scene, recap, and ending now fade + gently scale in
+  (`overlay-in` 0.22 s / `panel-in` 0.26 s) via `playOverlayEnter()` in
+  `ui/overlay-anim.ts`. Reused overlay nodes re-animate every open.
+- **Customers walk out gracefully.** After serving (or a kind low-patience
+  goodbye) the figure eases back toward the door (~0.8 s) instead of vanishing.
+- **Toasts ease up + in** (calm entrance) instead of popping.
+- **Motion bands:** micro 80–160 ms · short 160–280 ms · medium 300–700 ms ·
+  long 700–1400 ms. **Easing:** `easeOutQuad` / `easeOutCubic` (enter) /
+  `easeInCubic` (exit) / `easeInOutCubic` (physical) / capped `easeOutBack`
+  (tiny celebratory spring only). No `linear`, `elastic`, or aggressive bounce.
+- **Reduced motion** collapses every animation to an instant rest (in-game toggle
+  + `prefers-reduced-motion`); same information, less movement.
+
+## 10. UI Changelog
 
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-08-25 | Initial UI spec | Baseline for M1 |
 | 2026-08-27 | Added §3.5 Morning Mail & Letter System, §3.6 Narrative Debug | Doc 09 narrative system integration |
+| 2026-08-28 | Added §9 Motion & Animation; linked doc 11 (Animation & Motion Guidelines) | Animation/UX polish pass: overlays settle in, customers walk out, toast eases in, cozy motion language defined |

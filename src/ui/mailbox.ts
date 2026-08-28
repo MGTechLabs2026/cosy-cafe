@@ -11,6 +11,7 @@
 // It does NOT mutate the save, the scheduler, or narrative semantics.
 
 import { STRINGS } from '../data/strings.js';
+import { playOverlayEnter } from './overlay-anim.js';
 import type { SaveData } from '../save/validate.js';
 
 /** Display sender for each letter source (cozy, no new content systems). */
@@ -177,6 +178,7 @@ export function showMailbox(
   panel.appendChild(btnRow);
   overlay.appendChild(panel);
   app.appendChild(overlay);
+  playOverlayEnter(overlay);
 
   // Single letter: show it directly. Multiple: show the list first.
   if (views.length === 1 && views[0]) {

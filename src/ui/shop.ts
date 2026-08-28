@@ -16,6 +16,7 @@ import {
   shelfPrice,
 } from '../sim/shelf.js';
 import type { IngredientId, Inventory } from '../sim/day.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export interface ShopHooks {
   getCoins: () => number;
@@ -84,6 +85,7 @@ export function openShop(hooks: ShopHooks): void {
   const overlay = ensureOverlay();
   render(overlay);
   overlay.classList.remove('hidden');
+  playOverlayEnter(overlay);
 }
 
 export function closeShop(): void {

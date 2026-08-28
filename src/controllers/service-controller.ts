@@ -41,6 +41,8 @@ import { recordServe, recordChat, recordBrew, recordRecipeDiscovered, recordWren
 
 const WALK_IN_SEC = 2.2;
 const LINGER_SEC = 3.0;
+/** Graceful walk-out after serving / a kind goodbye (doc 11: cozy departure). */
+const WALK_OUT_SEC = 0.8;
 
 const FENWICK_CHILI_GIFT_COUNT = 4;
 
@@ -54,6 +56,10 @@ interface ActiveCustomer extends Customer {
   declinedMurky: boolean;
   orderIcon: HTMLImageElement | null;
   mysteryOrder: boolean;
+  /** True once the visit has ended and the figure is walking back to the door. */
+  leaving: boolean;
+  /** Reverse progress 0→1 while leaving (eased into walkT). */
+  leaveTween: Tween;
 }
 
 export interface ServiceContext {
@@ -151,17 +157,37 @@ export class ServiceController {
     }
 
     if (this.active) {
+      if (this.active.leaving) {
+        // Cozy departure: ease back toward the door, then retire (no pop-out).
+        tickTween(this.active.leaveTween, dtSec);
+        if (this.active.leaveTween.done) this.retireActive(this.active.patience <= 0 && !this.active.servedThisVisit);
+        return;
+      }
       if (!this.active.entering) tickTween(this.active.walkTweeen, dtSec);
       if (this.active.walkTweeen.done && !this.active.servedThisVisit) {
         tickPatience(this.active, dtSec, ctx.save.settings.relaxed_mode ? RELAXED_PATIENCE_MULTIPLIER : 1);
         if (this.active.patience <= 0) {
-          this.retireActive(true);
+          this.beginLeave();
         }
       }
       if (this.active && this.active.servedThisVisit) {
         this.active.lingerSec -= dtSec;
-        if (this.active.lingerSec <= 0) this.retireActive(false);
+        if (this.active.lingerSec <= 0) this.beginLeave();
       }
+    }
+  }
+
+  /** Start the graceful walk-out (idempotent). Cheap, calm, never blocking. */
+  private beginLeave(): void {
+    const a = this.active;
+    if (!a || a.leaving) return;
+    a.leaving = true;
+    a.served = a.servedThisVisit; // hold the warm expression while leaving
+    a.leaveTween = startTween(0, 1, this.deps.getContext().reducedMotion ? 0.01 : WALK_OUT_SEC);
+    // Kind goodbye line the moment they turn to leave (cozy, never punitive).
+    if (!a.servedThisVisit && a.patience <= 0) {
+      const who = isRegular(a.characterId) ? displayName(a.characterId) : '';
+      this.deps.toast(who ? `${who}: ${STRINGS.service.patienceOut}` : STRINGS.service.patienceOut);
     }
   }
 
@@ -191,6 +217,8 @@ export class ServiceController {
       declinedMurky: false,
       orderIcon: img,
       mysteryOrder: mystery,
+      leaving: false,
+      leaveTween: startTween(0, 1, ctx.reducedMotion ? 0.01 : WALK_OUT_SEC),
     };
 
     playDoorChime(); // arrival cue (audio) + door animation handled visually
@@ -443,10 +471,8 @@ export class ServiceController {
     if (!finished) return;
     const ctx = this.deps.getContext();
 
-    if (leavingKindPatience) {
-      const who = isRegular(finished.characterId) ? displayName(finished.characterId) : '';
-      this.deps.toast(who ? `${who}: ${STRINGS.service.patienceOut}` : STRINGS.service.patienceOut);
-    }
+    // NOTE: the kind-goodbye toast is shown at beginLeave() (the moment the
+    // figure turns to go), not here — retiring is purely cleanup now.
     this.applyTeachBeatIfDue();
 
     // Check for scene triggers after the customer visit ends (served or left)
@@ -517,13 +543,18 @@ export class ServiceController {
     const ctx = this.deps.getContext();
     const active = this.active;
     if (!active) return null;
+    // Effective walk progress: rises 0→1 on arrival, then eases back 1→0 while
+    // leaving so the figure walks calmly toward the door (no pop-out).
+    const effectiveWalkT = active.leaving
+      ? 1 - active.leaveTween.value
+      : active.walkTweeen.value;
     return {
-      walkT: active.walkTweeen.value,
+      walkT: effectiveWalkT,
       served: active.servedThisVisit,
-      leaving: !active.servedThisVisit && active.patience <= 0,
+      leaving: active.leaving,
       patience: active.patience,
-      showChatIcon: !active.chatted && active.walkTweeen.done,
-      bubbleVisible: active.walkTweeen.done,
+      showChatIcon: !active.chatted && active.walkTweeen.done && !active.leaving,
+      bubbleVisible: active.walkTweeen.done && !active.leaving,
       bubbleImage: active.orderIcon,
       characterId: active.characterId,
       mysteryOrder: active.mysteryOrder && !mysteryStillHidden,

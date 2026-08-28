@@ -11,6 +11,7 @@
 
 import { STRINGS } from '../data/strings.js';
 import type { EndingId } from '../narrative/story-definitions.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export interface EndingView {
   id: EndingId;
@@ -118,6 +119,7 @@ export function showEnding(id: EndingId, hooks: EndingHooks): void {
   panel.appendChild(btnRow);
   overlay.appendChild(panel);
   app.appendChild(overlay);
+  playOverlayEnter(overlay);
 
   const finish = (): void => {
     overlay.remove();

@@ -12,6 +12,7 @@ import type { SaveData } from '../save/validate.js';
 import { SAVE_STORAGE_KEY, loadSave, writeSave } from '../save/store.js';
 import { TEXT_SIZES } from '../save/validate.js';
 import { GAME_VERSION } from '../version.js';
+import { playOverlayEnter } from './overlay-anim.js';
 
 export interface SettingsHooks {
   /** Fired after a successful import+replace so controllers can reload state. */
@@ -273,6 +274,7 @@ export function openSettings(hooks: SettingsHooks): void {
 
   overlay.appendChild(panel);
   app.appendChild(overlay);
+  playOverlayEnter(overlay);
 }
 
 /** Preview-before-replace modal: "Day N · ¤X · ★★ — Replace?" with Cancel prominent. */
