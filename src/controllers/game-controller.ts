@@ -35,6 +35,7 @@ import { ProgressionController } from './progression-controller.js';
 import { KettleController } from './kettle-controller.js';
 import { ServiceController, HINTED_RECIPES, setServiceToastFn } from './service-controller.js';
 import { DayController } from './day-controller.js';
+import { createInitialMopsState, tickMops, petMops } from '../sim/mops.js';
 
 export interface GameInit {
   saveData: SaveData;
@@ -77,6 +78,10 @@ export class GameController {
   private service: ServiceController;
   private kettle: KettleController;
   private day: DayController;
+  private mopsState: import('../sim/mops.js').MopsState;
+  private mopsDoorChimeMs = -1;
+  private mopsMurkyBrewMs = -1;
+  private mopsChooseCustomerMs = -1;
 
   constructor(init: GameInit) {
     this.init = init;
@@ -92,6 +97,7 @@ export class GameController {
     this.dayState = { day: this.save.day, phase: 'prep' };
     this.fx = createSceneFx();
     this.coinCount = new CountUp(this.progression.economy.coins, 18);
+    this.mopsState = createInitialMopsState();
 
     // Text size applies globally the moment a game boots (doc 05 §6); persisted
     // in the save so it survives reload.
@@ -348,13 +354,15 @@ export class GameController {
         serviceOpen: this.dayState.phase === 'service',
         prepPhase: this.dayState.phase === 'prep',
         customer: visual,
-        mopsAsleep: true,
         kettleGlint: this.dayState.phase === 'prep' && !this.kettle.everOpened,
         journalPulse: this.dayState.day === 1 && this.dayState.phase === 'prep',
         reducedMotion: this.reducedMotion,
         timeMs,
         hasWindowBench: this.save.upgrades.includes('window_bench'),
         hasHearthExpansion: this.save.upgrades.includes('hearth_expansion'),
+        mopsState: this.mopsState,
+        murkyBrewMs: this.mopsMurkyBrewMs,
+        chooseCustomerMs: this.mopsChooseCustomerMs,
       },
       this.fx,
       dtSec,

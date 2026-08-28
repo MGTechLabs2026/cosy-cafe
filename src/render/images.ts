@@ -76,6 +76,24 @@ export function mopsSprite(): HTMLImageElement {
   return loadImage(assetUrl('assets/pets/mops_sit.png'));
 }
 
+export function mopsSpriteFor(stateName: string): HTMLImageElement | null {
+  switch (stateName) {
+    case 'sleep':
+      return loadImage(assetUrl('assets/pets/mops_sleep.png'));
+    case 'stretch':
+      return loadImage(assetUrl('assets/pets/mops_stretch.png'));
+    case 'walk':
+      return loadImage(assetUrl('assets/pets/mops_walk.png'));
+    case 'look':
+      return loadImage(assetUrl('assets/pets/mops_look.png'));
+    case 'idle':
+    case 'pet':
+    case 'sniff':
+    default:
+      return loadImage(assetUrl('assets/pets/mops_idle.png'));
+  }
+}
+
 export function cafeRoom(): HTMLImageElement {
   return loadImage(assetUrl('assets/backgrounds/cafe_room.png'));
 }

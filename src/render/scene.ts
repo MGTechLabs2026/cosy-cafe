@@ -15,6 +15,7 @@ import {
   cafeRoom,
   characterSprite,
   mopsSprite,
+  mopsSpriteFor,
   opaqueBounds,
 } from './images.js';
 import {
@@ -463,6 +464,12 @@ export interface SceneInput {
   /** M2 upgrades: window bench (Mops moves some days) + hearth glow. */
   hasWindowBench: boolean;
   hasHearthExpansion: boolean;
+  /** Mops state from sim/mops.ts. */
+  mopsState: import('../sim/mops.js').MopsState | null;
+  /** Murky-brew event timestamp for sniff reaction. */
+  murkyBrewMs: number;
+  /** Customer-choose event timestamp. */
+  chooseCustomerMs: number;
 }
 
 /** Module-level juice state for the served-cup steam cadence. */
@@ -500,37 +507,26 @@ export function drawSceneLayer(c: CanvasRenderingContext2D, input: SceneInput, f
     c.strokeRect(GAME_WIDTH - 44.5, 96.5, 36, 30);
   }
 
-  // Mops — real sprite at 2× (doc 04 crispness), grounded by opaque bounds
-  // beside the hearth with a contact shadow. With the window bench owned he
-  // naps there on odd days (doc 03 §4: "sleeps in new furniture within a day").
-  if (input.mopsAsleep) {
-    const benchDay = input.hasWindowBench && Math.floor(input.timeMs / 60000) % 2 === 1;
-    const groundY = benchDay ? 128 : 246;
-    const centerX = benchDay ? GAME_WIDTH - 150 : GAME_WIDTH - 96;
+  // Mops — state-driven sprite + ambient behaviors.
+  const mopsState = input.mopsState ?? null;
+  if (mopsState) {
+    const img = mopsSpriteFor(mopsState.name);
+    const b = img && img.complete && img.naturalWidth > 0 ? opaqueBounds(img) : null;
+    const groundY = mopsState.groundY;
+    const centerX = Math.round(mopsState.x);
     ellipseShadow(c, centerX, groundY + 1, 20, 5);
-    const img = mopsSprite();
-    const b = opaqueBounds(img);
-    if (img.complete && img.naturalWidth > 0 && b) {
+    if (img && b) {
       const SCALE = 2;
       const dw = (b.maxX - b.minX + 1) * SCALE;
       const dh = (b.maxY - b.minY + 1) * SCALE;
-      c.drawImage(
-        img,
-        b.minX,
-        b.minY,
-        b.maxX - b.minX + 1,
-        b.maxY - b.minY + 1,
-        Math.round(centerX - dw / 2),
-        Math.round(groundY - dh),
-        dw,
-        dh,
-      );
-      if (!input.reducedMotion && Math.sin(input.timeMs / 900) > 0.6) {
-        rect(c, centerX + 16, groundY - dh - 8, 3, 3, Palette.textMuted); // zzz
-        rect(c, centerX + 22, groundY - dh - 15, 3, 3, Palette.textMuted);
+      const bob = mopsState.name === 'sleep' && !input.reducedMotion ? Math.round(Math.sin(input.timeMs / 900) * 1.2) : 0;
+      const drawY = Math.round(groundY - dh) + bob;
+      c.drawImage(img, b.minX, b.minY, b.maxX - b.minX + 1, b.maxY - b.minY + 1, Math.round(centerX - dw / 2), drawY, dw, dh);
+      if (mopsState.name === 'sleep' && !input.reducedMotion && Math.sin(input.timeMs / 900) > 0.6) {
+        rect(c, centerX + 16, drawY - 8, 3, 3, Palette.textMuted);
+        rect(c, centerX + 22, drawY - 15, 3, 3, Palette.textMuted);
       }
     } else {
-      // Loading fallback: placeholder blob.
       rect(c, centerX - 10, groundY - 12, 18, 11, Palette.accentWarm);
       rect(c, centerX + 6, groundY - 16, 6, 6, Palette.accentWarm);
     }

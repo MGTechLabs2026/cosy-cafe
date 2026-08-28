@@ -28,6 +28,11 @@ Generated with PixelLab MCP (`create_image_pixen`, 1 generation each). All PNGs 
 | File | State | Job ID | QA |
 |------|-------|--------|-----|
 | mops_sit.png (24×24) | sit/sleep base | 0ea2d55a-e179-4e25-a251-d8bc9be2d326 | ✅ pass (v1 at 16×16 failed spec — no visible tail, owl-like; v2 regenerated at 24×24) |
+| mops_idle.png (24×24) | idle, alert awake eyes | 21ce2420-01dd-4c1e-a39c-3a4caa4c04ac | ✅ pass |
+| mops_sleep.png (24×24) | curled asleep, tail clearly visible | 77ea72a8-c880-4fc2-8148-2d22627af4e6 | ✅ pass |
+| mops_stretch.png (24×24) | stretch, legs extended, tail behind | 8fe93c7b-efd9-4b97-8448-85c2af776433 | ✅ pass |
+| mops_walk.png (24×24) | walk, one paw lifted, tail raised | e4769c27-08d3-4a6f-b852-fbad1a2d401d | ✅ pass |
+| mops_look.png (24×24) | look away, head turned, tail to side | ff2892df-d80b-414f-af32-cc26a0a8cbb9 | ✅ pass |
 
 ## Counter Sprites — 32×48 (`assets/sprites/`)
 
