@@ -189,6 +189,9 @@ export class GameController {
 
   /** Recap Continue / sleep-in rollover → next prep + autosave (doc 02 §7.1). */
   private rollToNextMorning(): void {
+    // The shop opens from the recap; closing it here guarantees no shop UI
+    // lingers into the next day when the player continues (doc 05 §3.3).
+    closeShop();
     beginNextDay(this.dayState);
     // Sync the save object so the persisted day increments (old monolith
     // used a shared reference; we keep them in sync explicitly).
@@ -214,6 +217,9 @@ export class GameController {
    * re-implemented here), then presents it. Day 15 is NEVER reached.
    */
   private resolveRun(): void {
+    // Ending also follows a recap Continue — close any open shop first so it
+    // does not linger behind the ending overlay.
+    closeShop();
     const ending = evaluateEndingForRun(this.save);
     if (ending) {
       // Persist the chosen ending into the StoryProgress flags (idempotent).
