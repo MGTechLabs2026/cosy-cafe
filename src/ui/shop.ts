@@ -102,8 +102,12 @@ function render(overlay: HTMLElement): void {
   const panel = overlay.querySelector<HTMLElement>('.shop-panel');
   if (!panel) return;
 
-  // Rebuild everything below the title (title + close stay).
-  overlay.querySelectorAll('.shop-section, .note.shop-note').forEach((n) => n.remove());
+  // Rebuild everything below the title + close button. openShop() calls render()
+  // on EVERY open, so if we leave stale nodes behind the previous day's rows
+  // stack above the new day's rows (the shop then shows day-1 state on day 2).
+  // The panel's first two children are the persistent close button and title;
+  // drop everything after them and rebuild fresh from the current hooks.
+  while (panel.children.length > 2) panel.removeChild(panel.lastChild as Node);
 
   // Ingredients first (up) — the everyday restock the player reaches for.
   const ingHeading = document.createElement('h3');
