@@ -346,6 +346,15 @@ html.reduced-motion .page-turn {
   padding: 16px;
 }
 
+/* The evening-market shop opens FROM the recap (doc 05 §3.3) and must always
+   paint in front of it. Both share .overlay's z-index:40, but the recap node is
+   recreated and re-appended to #app every day while the shop node persists from
+   its first open — so from day 2 the younger recap node wins the paint order.
+   Give the shop its own higher layer so it sits above the recap everywhere. */
+#shop-overlay {
+  z-index: 60;
+}
+
 /*
  * Cozy overlay enter (docs/11): soft backdrop fade + a gentle panel settle,
  * never a hard cut. Applied via the `.overlay-anim` class (toggled by
