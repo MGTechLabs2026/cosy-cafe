@@ -628,6 +628,14 @@ html.reduced-motion .page-turn {
   cursor: not-allowed;
 }
 
+/* Known-recipe chips in the kettle: a quiet reference list, visually
+   distinct from the active toggle chips (no selected-state fill). */
+.chip-recipe {
+  background: #1e1a28;
+  color: var(--color-text-soft);
+  border-style: dashed;
+}
+
 /* ---- Recap modal (count-up coins) ---- */
 
 .recap-coins-label {

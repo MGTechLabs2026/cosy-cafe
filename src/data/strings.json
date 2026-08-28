@@ -63,6 +63,7 @@
     "base": "Base",
     "ingredients": "Ingredients (up to 3)",
     "finish": "Finish",
+    "knownRecipes": "Known recipes",
     "hot": "Hot",
     "iced": "Iced",
     "foamed": "Foamed",

@@ -9,7 +9,9 @@
 // brews (out of stock, shelf semantics) surface as the panel's inline note.
 
 import { STRINGS } from '../data/strings.js';
+import { recipeToView } from '../data/recipes.js';
 import type { BaseType, BrewInput, FinishType, IngredientType } from '../sim/brewing.js';
+import { getRecipe } from '../sim/brewing.js';
 
 export interface KettleHooks {
   onBrew: (input: BrewInput) => void;
@@ -95,6 +97,14 @@ function ensurePanel(): HTMLElement {
   finishRow.className = 'option-row';
   finishRow.id = 'kettle-finishes';
 
+  const recipesLabel = document.createElement('h3');
+  recipesLabel.textContent = STRINGS.kettle.knownRecipes;
+  recipesLabel.id = 'kettle-recipes-label';
+  recipesLabel.className = 'hidden';
+  const recipesRow = document.createElement('div');
+  recipesRow.className = 'option-row option-row-wrap';
+  recipesRow.id = 'kettle-recipes';
+
   const stockNote = document.createElement('p');
   stockNote.className = 'note note-warn hidden';
   stockNote.id = 'kettle-stock-note';
@@ -129,6 +139,8 @@ function ensurePanel(): HTMLElement {
   panel.appendChild(ingRow);
   panel.appendChild(finishLabel);
   panel.appendChild(finishRow);
+  panel.appendChild(recipesLabel);
+  panel.appendChild(recipesRow);
   panel.appendChild(stockNote);
   panel.appendChild(btnRow);
   overlay.appendChild(panel);
@@ -244,6 +256,37 @@ function renderDraft(): void {
         renderDraft();
       });
       finEl.appendChild(b);
+    }
+  }
+
+  // Known recipes — tap a recipe to load its combo into the active slot
+  // (a cozy "I already know this one" shortcut). Hidden when none known yet.
+  const recEl = overlay.querySelector<HTMLDivElement>('#kettle-recipes');
+  const recLabel = overlay.querySelector<HTMLHeadingElement>('#kettle-recipes-label');
+  if (recEl) {
+    recEl.replaceChildren();
+    const known = stateRef.knownRecipeIds;
+    const show = known.length > 0;
+    if (recLabel) recLabel.classList.toggle('hidden', !show);
+    if (show) {
+      for (const id of known) {
+        const view = recipeToView(id);
+        if (!view) continue;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip chip-recipe';
+        b.setAttribute('aria-label', `${STRINGS.kettle.knownRecipes}: ${view.name}`);
+        b.textContent = view.name;
+        // Title shows the combo so the player learns the build at a glance.
+        b.title = view.combo;
+        b.addEventListener('click', () => {
+          const r = getRecipe(id);
+          if (!r) return;
+          drafts[activeSlot] = { base: r.base, ingredients: [...r.ingredients], finish: r.finish };
+          renderDraft();
+        });
+        recEl.appendChild(b);
+      }
     }
   }
 

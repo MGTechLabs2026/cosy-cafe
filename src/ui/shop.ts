@@ -105,16 +105,7 @@ function render(overlay: HTMLElement): void {
   // Rebuild everything below the title (title + close stay).
   overlay.querySelectorAll('.shop-section, .note.shop-note').forEach((n) => n.remove());
 
-  const upgradesHeading = document.createElement('h3');
-  upgradesHeading.className = 'shop-section-heading';
-  upgradesHeading.textContent = STRINGS.shop.upgradesHeading;
-  panel.appendChild(upgradesHeading);
-
-  const owned = hooksRef.getOwnedUpgrades();
-  for (const upgrade of UPGRADES) {
-    panel.appendChild(upgradeRow(upgrade.id, owned));
-  }
-
+  // Ingredients first (up) — the everyday restock the player reaches for.
   const ingHeading = document.createElement('h3');
   ingHeading.className = 'shop-section-heading';
   ingHeading.textContent = STRINGS.shop.ingredientsHeading;
@@ -137,6 +128,17 @@ function render(overlay: HTMLElement): void {
     closed.className = 'note shop-note';
     closed.textContent = STRINGS.shop.cartClosed;
     panel.appendChild(closed);
+  }
+
+  // Upgrades second (down) — the bigger, occasional purchases.
+  const upgradesHeading = document.createElement('h3');
+  upgradesHeading.className = 'shop-section-heading';
+  upgradesHeading.textContent = STRINGS.shop.upgradesHeading;
+  panel.appendChild(upgradesHeading);
+
+  const owned = hooksRef.getOwnedUpgrades();
+  for (const upgrade of UPGRADES) {
+    panel.appendChild(upgradeRow(upgrade.id, owned));
   }
 
   const closeBtn = document.createElement('button');

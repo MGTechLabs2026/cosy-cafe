@@ -86,6 +86,7 @@ export interface Strings {
     base: string;
     ingredients: string;
     finish: string;
+    knownRecipes: string;
     hot: string;
     iced: string;
     foamed: string;
