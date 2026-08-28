@@ -1,7 +1,7 @@
 // src/narrative/activity-ledger.ts — records and queries player activity events
 // Pure TypeScript, zero platform imports. No narrative rules — only data recording.
 
-import type { ActivityEvent, ServeEvent, ChatEvent, BrewEvent, RecipeDiscoveredEvent, JournalOpenedEvent, UpgradePurchasedEvent, DaySkippedEvent, EarlyCloseEvent, IngredientsPurchasedEvent, LetterReadEvent, LetterDismissedEvent, WrenMysteryBrewEvent, WrenVisitEvent } from './activity-events';
+import type { ActivityEvent, ServeEvent, ChatEvent, BrewEvent, RecipeDiscoveredEvent, JournalOpenedEvent, UpgradePurchasedEvent, DaySkippedEvent, EarlyCloseEvent, IngredientsPurchasedEvent, LetterReadEvent, LetterDismissedEvent, WrenMysteryBrewEvent, WrenVisitEvent, SelfDirectedChoiceEvent, CommunityBeatEvent } from './activity-events';
 
 /** Compact counter state for persistence (replaces full event history in save) */
 export interface ActivityCounters {
@@ -45,10 +45,21 @@ export interface ActivityCounters {
   // Wren specific
   wrenVisits: number;
   wrenMysteryClues: number;
-  
+
+  // Legitimate wanderer signal: distinct self-directed-choice beats the player
+  // explicitly took (e.g. Wren's "old road" beat). NOT pacing/engagement.
+  independentChoiceCount: number;
+  // De-duplicated beat ids so re-watching a scene doesn't re-credit.
+  independentChoiceBeats: string[];
+
+  // Legitimate community signal: distinct community-building beats the player
+  // performed (e.g. bringing two NPCs together). Distinct from mere breadth.
+  communityBeatCount: number;
+  communityBeatIds: string[];
+
   // Shop
   ingredientsPurchasedTotal: number;
-  
+
   // Version for migration
   version: number;
 }
@@ -79,6 +90,10 @@ export function createEmptyCounters(): ActivityCounters {
     dismissedLetterIds: [],
     wrenVisits: 0,
     wrenMysteryClues: 0,
+    independentChoiceCount: 0,
+    independentChoiceBeats: [],
+    communityBeatCount: 0,
+    communityBeatIds: [],
     ingredientsPurchasedTotal: 0,
     version: 1,
   };
@@ -172,6 +187,22 @@ export class ActivityLedger {
       }
       case 'wren_visit': {
         this.counters.wrenVisits += 1;
+        break;
+      }
+      case 'self_directed_choice': {
+        // De-duplicate per beat so a scene's choice can't be farmed by
+        // re-triggering it. Only novel beats raise the count.
+        if (!this.counters.independentChoiceBeats.includes(event.beatId)) {
+          this.counters.independentChoiceBeats.push(event.beatId);
+          this.counters.independentChoiceCount += 1;
+        }
+        break;
+      }
+      case 'community_beat': {
+        if (!this.counters.communityBeatIds.includes(event.beatId)) {
+          this.counters.communityBeatIds.push(event.beatId);
+          this.counters.communityBeatCount += 1;
+        }
         break;
       }
     }
@@ -307,9 +338,13 @@ export class ActivityLedger {
   
   /** Serialize for save */
   toSave(): ActivityCounters {
-    return { ...this.counters };
+    return {
+      ...this.counters,
+      independentChoiceBeats: [...this.counters.independentChoiceBeats],
+      communityBeatIds: [...this.counters.communityBeatIds],
+    };
   }
-  
+
   /** Load from save */
   static fromSave(data: Partial<ActivityCounters>): ActivityLedger {
     return new ActivityLedger(data);
@@ -384,4 +419,14 @@ export function recordLetterRead(ledger: ActivityLedger, event: Omit<LetterReadE
 /** Record a letter dismissed event */
 export function recordLetterDismissed(ledger: ActivityLedger, event: Omit<LetterDismissedEvent, 'type' | 'timestamp'>): void {
   ledger.record({ ...event, type: 'letter_dismissed', timestamp: Date.now() });
+}
+
+/** Record a deliberate self-directed choice (the legitimate wanderer signal). */
+export function recordSelfDirectedChoice(ledger: ActivityLedger, event: Omit<SelfDirectedChoiceEvent, 'type' | 'timestamp'>): void {
+  ledger.record({ ...event, type: 'self_directed_choice', timestamp: Date.now() });
+}
+
+/** Record a deliberate community-building action (strong community signal). */
+export function recordCommunityBeat(ledger: ActivityLedger, event: Omit<CommunityBeatEvent, 'type' | 'timestamp'>): void {
+  ledger.record({ ...event, type: 'community_beat', timestamp: Date.now() });
 }

@@ -37,20 +37,24 @@ export interface ActivitySignals {
   daysSkippedRatio: number;
   /** 0..1 — early closes per service day */
   earlyCloseRatio: number;
-  /** 0..1 — town tab opens per day */
+  /** town tab opens per day */
   townTabOpensPerDay: number;
-  /** 0..1 — upgrades owned ratio */
+  /** upgrades owned ratio */
   upgradesOwnedRatio: number;
-  /** 0..1 — stars ratio */
+  /** stars ratio */
   starsRatio: number;
-  /** 0..1 — shelf capacity ratio */
+  /** shelf capacity ratio */
   shelfCapacityRatio: number;
-  /** 0..1 — inventory kinds ratio */
+  /** inventory kinds ratio */
   inventoryKindsRatio: number;
   /** chat ratio (chats per serve) */
   chatRatio: number;
   /** favorite serve ratio */
   favoriteServeRatio: number;
+  /** Legitimate wanderer signal: distinct self-directed-choice beats taken. */
+  independentChoiceCount: number;
+  /** Community-building beats performed (distinct from mere breadth). */
+  communityBeatCount: number;
 }
 
 /** Progression signals derived from input */
@@ -146,7 +150,10 @@ export function calculateActivitySignals(input: NarrativeInput): ActivitySignals
   
   const chatRatio = act.totalServes > 0 ? act.totalChats / act.totalServes : 0;
   const favoriteServeRatio = act.totalServes > 0 ? act.favoriteServeCount / act.totalServes : 0;
-  
+
+  const independentChoiceCount = act.independentChoiceCount ?? 0;
+  const communityBeatCount = act.communityBeatCount ?? 0;
+
   return {
     experimentalBrewRatio,
     wrenMysteryBrewRatio,
@@ -163,6 +170,8 @@ export function calculateActivitySignals(input: NarrativeInput): ActivitySignals
     inventoryKindsRatio,
     chatRatio,
     favoriteServeRatio,
+    independentChoiceCount,
+    communityBeatCount,
   };
 }
 

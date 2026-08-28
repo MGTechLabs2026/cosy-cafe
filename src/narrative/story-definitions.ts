@@ -373,6 +373,49 @@ export const ALL_LETTERS: readonly NarrativeLetter[] = [
     content_id: 'letters.mystery.ch3.basement_key',
   },
 
+  // ---- WANDERER FEEDBACK LETTERS (genuine self-direction acknowledged) ----
+  {
+    id: 'wren_old_road_letter',
+    source: 'wren',
+    chapter: 3,
+    category: 'branch',
+    requires: { day_min: 6, day_max: 10, chapter_min: 3, flags_required: ['chose_old_road'] },
+    priority: 88,
+    mandatory: false,
+    skippable: true,
+    consumed: true,
+    sets_flags: ['wren_old_road_letter_delivered'],
+    content_id: 'wren_old_road_letter',
+  },
+  {
+    id: 'wren_path_letter',
+    source: 'wren',
+    chapter: 4,
+    category: 'branch',
+    requires: { day_min: 11, day_max: 12, chapter_min: 4, flags_required: ['chose_old_road'], dimension_min: { independence: 0.5 } },
+    priority: 90,
+    mandatory: false,
+    skippable: true,
+    consumed: true,
+    sets_flags: ['wren_path_letter_delivered'],
+    content_id: 'wren_path_letter',
+  },
+
+  // ---- COMMUNITY FEEDBACK LETTER (gathering acknowledged) ----
+  {
+    id: 'sela_gathering_letter',
+    source: 'sela',
+    chapter: 3,
+    category: 'branch',
+    requires: { day_min: 8, day_max: 10, chapter_min: 3, flags_required: ['chose_community_night'] },
+    priority: 88,
+    mandatory: false,
+    skippable: true,
+    consumed: true,
+    sets_flags: ['sela_gathering_letter_delivered'],
+    content_id: 'sela_gathering_letter',
+  },
+
   // ---- BRANCH LETTERS (trajectory-specific) ----
   {
     id: 'marigold_hidden_recipe_note',
@@ -499,8 +542,18 @@ export const ENDING_CONFIGS: readonly EndingConfig[] = [
   {
     id: 'wanderer',
     theme: 'Autonomy / Independence',
-    min_dimensions: { independence: 0.5 },
-    required_arcs: ['wren_arc_complete'],
+    // Reachable via a genuine self-directed choice (the Wren "old road" beat)
+    // recorded as the chose_old_road flag. Independence is NOT inferred from
+    // pacing, so a calm/skipping player never drifts here. A SINGLE deliberate
+    // self-directed beat (worth 0.5) clears the threshold — this is the minimum
+    // real signal, kept deliberately non-grindy (Phase 11 P1 Calm). The Wren
+    // arc remains a narrative thread but is NOT a hard gate: requiring
+    // wren_arc_complete (set only at Wren scene 5, needing ~4 Wren hearts) would
+    // force grinding and contradict the non-grindy mandate, so it is intentionally
+    // omitted. The chose_old_road flag itself already requires reaching Wren
+    // scene 3 (genuine engagement), so the path is still behavior-driven.
+    min_dimensions: { independence: 0.25 },
+    required_flags: ['chose_old_road'],
     tiebreaker_dimension: 'independence',
     final_scene: 'door_sign_closed',
     final_letter: 'letters.ending.wanderer',
@@ -510,8 +563,17 @@ export const ENDING_CONFIGS: readonly EndingConfig[] = [
   {
     id: 'community',
     theme: 'Community / Legacy',
-    min_dimensions: { community: 0.6 },
-    required_flags: ['town_ch3_market_day_delivered', 'sela_ch1_intro_delivered', 'bram_ch1_intro_delivered', 'nia_ch1_intro_delivered'],
+    // Breadth of connection (not depth of care). Reachable by a player who
+    // serves many regulars, opens the town view, and takes at least one
+    // deliberate community-building beat. Distinct from Keeper: Keeper needs
+    // *care* (depth); Community needs *breadth + a gathering action*.
+    min_dimensions: { community: 0.5 },
+    required_flags: [
+      'chose_community_night',
+      'sela_ch1_intro_delivered',
+      'bram_ch1_intro_delivered',
+      'nia_ch1_intro_delivered',
+    ],
     tiebreaker_dimension: 'community',
     final_scene: 'townsfolk_gathered',
     final_letter: 'letters.ending.community',

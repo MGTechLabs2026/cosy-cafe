@@ -82,3 +82,51 @@ reaching it is effectively impossible. Fixing it (out of scope here) would mean
 lowering/redistributing the community thresholds, making hearts accrue from
 normal serves, or surfacing a visible trajectory indicator — i.e. an ending-
 design change, not a code fix.
+
+---
+
+## POST-FIX UPDATE (2026-08-28)
+
+This diagnostic was the *before* snapshot. The Community ending has since been
+made genuinely reachable. Full detail in `docs/09-narrative-system.md`.
+
+**Previous problem:** `community` was gated by near-invisible signals
+(read-every-letter, favorite-serve all 5 NPCs, open town tab daily) and capped
+at `community >= 0.6`, so it was practically unreachable; it also overlapped
+with Care (Keeper) because both rewarded heart depth.
+
+**Root cause (now fixed):**
+- `computeCommunity` was redefined as **breadth of social participation**,
+  distinct from Care (depth to one person):
+  `uniqueNpcsServed*0.30 + heartsBreadth*0.30 + townTabOpensPerDay*0.15
+   + townLetterRatio*0.125 + lettersReadRatio*0.125`. It no longer rewards
+  `avgHearts`/`favoriteServeRatio` (Care's depth signals), so high-Care/low-
+  breadth players correctly fall to Keeper instead of Community.
+- A `community_beat` activity event is recorded when the player takes the Wren
+  "town-night / gathering" beat in `wren_scene2` (a calm, optional choice).
+- The Community config was relaxed and made behavior-specific:
+  `min_dimensions: { community: 0.5 }` + `required_flags:
+  ['chose_community_night', 'sela_ch1_intro_delivered', 'bram_ch1_intro_delivered',
+  'nia_ch1_intro_delivered']`. The old `community >= 0.6` +
+  `town_ch3_market_day_delivered` gate (grindy/invisible) was removed. The
+  `chose_community_night` flag requires reaching Wren scene 2, so the path stays
+  behavior-driven.
+- Pacing actions remain NEUTRAL — they never feed `community`, so a calm player
+  is never pushed into (or blocked from) Community.
+
+**New player-facing feedback:** branch letter `sela_gathering_letter` (Chapter 3)
+acknowledges the gathering choice.
+
+**New Chrome result (post-fix):**
+- Build boots clean; no console errors (one benign "long frame" startup warning).
+- Real-pipeline integration tests (no mocks) prove reachability deterministically:
+  breadth (serve many NPCs) + `chose_community_night` + NPC intro flags =>
+  Community; high-Care/low-breadth => Keeper (not Community); Community does not
+  require a hidden checklist (open-town-tab 5× is no longer needed); specific
+  identity beats Keeper fallback.
+- Automated 14-day headless traversal to the *specific* scene-2 choice is limited
+  by the same pre-existing Wren-heart constraint noted in the Wanderer diagnostic
+  (`chatWithActive` is debug-only; Wren's favorite is taught at scene 5). The
+  Community *ending logic* is fully verified reachable via the integration tests.
+
+**Verdict post-fix:** `REACHABLE (behavior-driven, non-grindy, distinct from Keeper, deterministic)`.

@@ -67,16 +67,33 @@ function computeCuriosity(signals: NarrativeSignals): number {
   );
 }
 
-/** Compute COMMUNITY dimension: town engagement + letter reading + diverse NPCs served */
+/**
+ * Compute COMMUNITY dimension: BREADTH of social participation.
+ *
+ * This is deliberately distinct from CARE (depth of attention to an
+ * individual). Community answers: "Did the player make the café a place where
+ * MANY people connect?" — so it is built from breadth signals only:
+ *   - uniqueNpcsServed    — how many distinct regulars the player served
+ *   - heartsBreadth       — how many regulars reached a displayed heart
+ *                            (breadth of connection, NOT depth per person)
+ *   - townTabOpensPerDay  — engages the town / community view
+ *   - townLetterRatio     — reads town-facing mail (community world-building)
+ *   - lettersReadRatio    — stays present for delivered story (light, non-gating)
+ *
+ * Deliberately EXCLUDES avgHearts and favoriteServeRatio — those are CARE's
+ * depth signals (the "I remember what THIS person needs" story). A player who
+ * favours one person deeply scores Care, not Community; a player who brings
+ * many people in scores Community, not Care.
+ */
 function computeCommunity(signals: NarrativeSignals): number {
   const { relationships, activity } = signals;
-  
+
   return (
-    activity.lettersReadRatio * 0.3 +
-    activity.townLetterRatio * 0.2 +
-    relationships.uniqueNpcsServed * 0.2 +
-    relationships.heartsBreadth * 0.15 +
-    activity.townTabOpensPerDay * 0.15
+    relationships.uniqueNpcsServed * 0.30 +
+    relationships.heartsBreadth * 0.30 +
+    activity.townTabOpensPerDay * 0.15 +
+    activity.townLetterRatio * 0.125 +
+    activity.lettersReadRatio * 0.125
   );
 }
 
@@ -113,27 +130,36 @@ function computeComfort(signals: NarrativeSignals): number {
 /**
  * Compute INDEPENDENCE dimension: intentional, self-directed agency.
  *
- * Independence is CURRENTLY UNDER-INSTRUMENTED. The game records no reliable
- * signal of a player making a self-directed / unconventional / opt-out choice
- * (all ending branches are equally valid; there is no "decline obligation" event).
+ * Independence is fed ONLY by deliberate self-directed choices the player
+ * explicitly makes in the story — the canonical one being the recurring Wren
+ * "old road" beat, where the player chooses to pursue a personal direction
+ * (the wider world / their own path) rather than stay close to routine. Each
+ * such choice is recorded as a `self_directed_choice` activity event and adds
+ * 0.5 to the dimension; a SINGLE deliberate choice clears the Wanderer threshold
+ * of 0.25, so the path is non-grindy and reachable by any player who takes one
+ * genuine self-directed beat (the canonical Wren "old road" scene). The Wanderer
+ * path is therefore legitimately reachable by a player who chooses their own
+ * direction — and unreachable by anyone who merely took a break.
  *
- * Per the design principle "respecting the player's pacing must NOT become a
- * hidden personality judgment", the following are NOT evidence of independence:
+ * Per the P1 Calm principle "respecting the player's pacing must NOT become a
+ * hidden personality judgment", the following remain NOTHING — they never feed
+ * independence:
  *   - skipped days (sleep-ins)        → NEUTRAL (pacing, not personality)
  *   - early closes                    → NEUTRAL
  *   - low chat frequency              → NEUTRAL (not a social penalty)
  *   - low favorite-serving frequency  → NEUTRAL
  *   - not playing relaxed mode        → NEUTRAL
+ *   - short sessions                  → NEUTRAL
  *
- * Therefore independence is intentionally a near-zero baseline. This is
- * preferred over false inference. The `wanderer` ending remains reachable only
- * if a future build records genuine self-directed-choice signals; until then it
- * is intentionally hard to hit (it must not be silently assigned to a player who
- * merely took a break). `daysSkipped` is still surfaced to the ending evaluator
- * as neutral pacing data, but does not feed the dimension.
+ * A player who stays present and tends the café never loses Community or gains
+ * a false "wanderer" label from inactivity.
  */
-function computeIndependence(_signals: NarrativeSignals): number {
-  return 0;
+function computeIndependence(signals: NarrativeSignals): number {
+  // One deliberate self-directed choice is worth 0.5; the Wanderer ending
+  // threshold is 0.25, so a single genuine beat qualifies (non-grindy,
+  // behavior-driven). Pacing actions are never counted here.
+  const count = signals.activity.independentChoiceCount ?? 0;
+  return Math.min(1, count * 0.5);
 }
 
 /** Get dominant dimension (highest score) */

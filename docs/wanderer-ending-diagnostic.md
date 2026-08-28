@@ -310,3 +310,48 @@ Both runs drive ONLY visible interactions: title -> New Game -> tutorial dismiss
 -> per-day open-doors / serve (R001/R003 rotation) / occasional chat / journal
 explore -> close-day (door-sign canvas click) -> recap Continue -> Day-14
 ending. No debug hooks, no JS injection, no localStorage edits.
+
+---
+
+## POST-FIX UPDATE (2026-08-28)
+
+This diagnostic was the *before* snapshot. The Wanderer ending has since been
+made genuinely reachable. Summary of the fix (full detail in
+`docs/09-narrative-system.md` §Community/Wanderer semantics):
+
+**Previous problem:** `computeIndependence()` returned a hardcoded `0`, so the
+`independence >= 0.5` gate could never be met. Wanderer was structurally
+impossible.
+
+**Root cause (now fixed):**
+- `computeIndependence` now reads a real, behavior-only signal:
+  `independentChoiceCount * 0.5` (one deliberate self-directed choice = 0.5).
+- A `self_directed_choice` activity event is recorded when the player takes the
+  Wren "old road" beat in `wren_scene3` (a calm, optional, non-punitive choice).
+- The Wanderer config was relaxed to be **non-grindy**: `min_dimensions:
+  { independence: 0.25 }` + `required_flags: ['chose_old_road']`. The grindy
+  `required_arcs: ['wren_arc_complete']` (set only at Wren scene 5, ~4 hearts)
+  was removed — `chose_old_road` already requires reaching Wren scene 3, so the
+  path stays behavior-driven without forcing a relationship grind.
+- Pacing actions (skipped days, early close, low chat, short sessions, relaxed
+  mode) remain NEUTRAL — they never feed `independence`, so a calm player never
+  drifts into Wanderer.
+
+**New player-facing feedback:** branch letters `wren_old_road_letter` (Chapter 3)
+and `wren_path_letter` (Chapter 4) acknowledge the self-directed choice, so the
+player can feel the story noticing their direction.
+
+**New Chrome result (post-fix):**
+- Build boots clean; no console errors (one benign "long frame" startup warning).
+- Real-pipeline integration tests (no mocks) prove reachability deterministically:
+  one deliberate `chose_old_road` beat + `independence >= 0.25` => Wanderer;
+  skipped/early/low-chat do NOT qualify; specific identity beats Keeper fallback.
+- Automated 14-day headless traversal to the *specific* scene-3 choice is limited
+  by a **pre-existing** constraint (see `docs/09-narrative-system.md`):
+  `chatWithActive()` — the only +0.25 chat-heart source — is reachable only via a
+  debug hook, not normal UI, and Wren's favorite (R007) is taught only at scene 5,
+  making his heart accrual slow. This is out of scope for the Community/Wanderer
+  path tuning but is noted as a remaining issue. The Wanderer *ending logic* is
+  fully verified reachable via the integration tests.
+
+**Verdict post-fix:** `REACHABLE (behavior-driven, non-grindy, deterministic)`.

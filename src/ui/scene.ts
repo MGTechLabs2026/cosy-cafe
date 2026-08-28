@@ -9,6 +9,7 @@ import { portraitSprite } from '../render/images.js';
 import type { SaveData } from '../save/validate.js';
 import type { HeartLedger } from '../sim/hearts.js';
 import type { RegularId } from '../sim/customers.js';
+import type { ActivityLedger } from '../narrative/activity-ledger.js';
 
 export interface SceneLine {
   /** Character speaking (for portrait + name) */
@@ -44,6 +45,13 @@ export interface SceneDef {
   beats: SceneBeat[];
   /** Called when scene completes (sets flags, grants rewards, etc.) */
   onComplete?: (save: SaveData, hearts: HeartLedger) => void;
+  /**
+   * Called when a choice beat is answered. `optionIndex` is 0 for the first
+   * option, 1 for the second. Lets scene content record a player's deliberate
+   * choice (e.g. a community-bonding or self-directed decision) WITHOUT
+   * mutating the scene's onComplete signature. Pure callers may omit this.
+   */
+  onChoice?: (save: SaveData, hearts: HeartLedger, optionIndex: number, ledger: ActivityLedger) => void;
 }
 
 interface SceneHooks {
@@ -52,6 +60,10 @@ interface SceneHooks {
 
 let hooksRef: SceneHooks | null = null;
 let escHandler: ((e: KeyboardEvent) => void) | null = null;
+/** Live save + heart ledger for the currently-playing scene (so onChoice can record signals). */
+let currentSceneSave: SaveData | null = null;
+let currentSceneHearts: HeartLedger | null = null;
+let currentSceneLedger: ActivityLedger | null = null;
 
 // Typing animation state
 let currentScene: SceneDef | null = null;
@@ -372,9 +384,20 @@ function showChoice(choice: { promptKey: string; options: [SceneChoice, SceneCho
 }
 
 /** Handle choice selection */
-function handleChoice(_choiceIndex: number, option: SceneChoice): void {
+function handleChoice(choiceIndex: number, option: SceneChoice): void {
   const container = document.getElementById('scene-choice-container');
   if (container) container.classList.add('hidden');
+
+  // Let the scene record the deliberate choice (e.g. community / independence
+  // signals) before the flavor text resolves. The current scene + save are in
+  // module scope for the lifetime of the overlay.
+  if (currentScene && currentScene.onChoice && hooksRef) {
+    // hooksRef carries the live save/hearts via playScene's onClose closure
+    // only; we stash the save+hearts on the module scope when playing.
+    if (currentSceneSave && currentSceneHearts && currentSceneLedger) {
+      currentScene.onChoice(currentSceneSave, currentSceneHearts, choiceIndex, currentSceneLedger);
+    }
+  }
 
   // Show flavor text
   const dialogueEl = document.getElementById('scene-dialogue');
@@ -410,6 +433,9 @@ function completeScene(): void {
     hooksRef.onClose();
   }
   currentScene = null;
+  currentSceneSave = null;
+  currentSceneHearts = null;
+  currentSceneLedger = null;
   currentBeatIndex = 0;
   currentLineIndex = 0;
   isTyping = false;
@@ -430,6 +456,7 @@ export function playScene(
   save: SaveData,
   hearts: HeartLedger,
   hooks: SceneHooks,
+  ledger?: ActivityLedger,
 ): void {
   // Check if already seen
   if (save.flags.seen_scenes.includes(scene.id)) {
@@ -439,6 +466,9 @@ export function playScene(
 
   hooksRef = hooks;
   currentScene = scene;
+  currentSceneSave = save;
+  currentSceneHearts = hearts;
+  currentSceneLedger = ledger ?? null;
   currentBeatIndex = 0;
   currentLineIndex = 0;
 
@@ -488,6 +518,9 @@ export function closeScene(): void {
     escHandler = null;
   }
   currentScene = null;
+  currentSceneSave = null;
+  currentSceneHearts = null;
+  currentSceneLedger = null;
   currentBeatIndex = 0;
   currentLineIndex = 0;
   isTyping = false;

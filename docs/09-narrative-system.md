@@ -119,13 +119,16 @@ Five hidden narrative dimensions. **NOT visible stats.** Computed from existing 
 | **CURIOSITY** | Drive to explore & discover | Recipe discoveries, experimental brews, hint-card reads, journal (recipes/lore) opens, Wren mystery interactions | YES |
 | **COMMUNITY** | Breadth of social participation | Unique NPCs served, hearts breadth, letter reading, town-tab engagement, multiple arcs | YES |
 | **COMFORT** | Investment in the café as home | Upgrades owned, shelf capacity, inventory kinds, staying open (no early close) | YES |
-| **INDEPENDENCE** | Intentional self-directed agency | **Under-instrumented** — see note below | PARTIAL |
+| **INDEPENDENCE** | Intentional self-directed agency | `self_directed_choice` events (Wren "old road" beat) recorded in the ActivityLedger; each deliberate choice adds 0.5 | YES (behavior-only) |
 
-> **INDEPENDENCE is currently under-instrumented.** The game records no reliable
-> signal of a player making a self-directed / unconventional / opt-out choice (every
-> ending branch is equally valid; there is no "decline obligation" event). Therefore
-> independence is intentionally a **near-zero baseline** and must NOT be inferred from
-> pacing. It remains in the model so a future build can feed it genuine choice signals.
+> **INDEPENDENCE is now instrumented from genuine self-directed choices, NOT pacing.**
+> The game records a `self_directed_choice` activity event whenever the player takes
+> a deliberate, optional, non-punitive self-direction beat (the canonical one being
+> Wren's "old road" choice in `wren_scene3`). Each such beat adds 0.5 to the
+> dimension, so a SINGLE deliberate choice clears the Wanderer threshold of 0.25 —
+> the path is non-grindy and behavior-driven. Skipped days, early closes, low chat,
+> short sessions, relaxed mode, and low engagement are explicitly NOT counted (P1
+> Calm: pacing must never become a hidden personality judgment).
 
 ### Computation Rules
 
@@ -149,10 +152,14 @@ CURIOSITY = 0.25 * recipeDiscoveryRatio + 0.20 * experimentalBrewRatio
           + 0.15 * hintCardRatio       + 0.10 * journalOpensPerDay
           (exploration & discovery — never "more gameplay = more curiosity")
 
-COMMUNITY = 0.20 * uniqueNPCsServed/5 + 0.20 * heartsBreadth/5
-          + 0.20 * lettersReadRatio    + 0.20 * townLetterRatio
-          + 0.20 * townTabOpensPerDay
-          (breadth of social participation — distinct from CARE's depth)
+COMMUNITY = 0.30 * uniqueNPCsServed/5 + 0.30 * heartsBreadth/5
+          + 0.15 * townTabOpensPerDay  + 0.125 * townLetterRatio
+          + 0.125 * lettersReadRatio
+          (breadth of social participation — DISTINCT FROM CARE:
+           CARE rewards depth to ONE person (avgHearts/favoriteServe);
+           COMMUNITY rewards breadth across MANY people + a gathering action.
+           It deliberately excludes avgHearts/favoriteServeRatio so a
+           high-Care/low-breadth player correctly falls to Keeper, not Community.)
 
 COMFORT   = 0.35 * upgradesOwnedRatio + 0.25 * shelfCapacityRatio
           + 0.20 * inventoryKindsRatio + 0.10 * starsRatio
@@ -160,17 +167,29 @@ COMFORT   = 0.35 * upgradesOwnedRatio + 0.25 * shelfCapacityRatio
           (café as home — built ONLY from deliberate café-investment signals.
            Stars are a minor coziness hint; shop visits / progression timers excluded.)
 
-INDEPENDENCE = 0   (intentionally neutral — under-instrumented)
-          Skipped days, early closes, low chat, low favorite-serving, and
-          non-relaxed play are NOT evidence. See note above.
+INDEPENDENCE = 0.5 * independentChoiceCount   (capped at 1.0)
+          One deliberate self_directed_choice adds 0.5 → a SINGLE genuine
+          beat clears the Wanderer threshold of 0.25. Skipped days, early
+          closes, low chat, low favorite-serving, short sessions, and
+          non-relaxed play are NOT evidence. Pacing is neutral.
 ```
 
-> **Wanderer ending** requires `independence ≥ 0.5` and the Wren arc. Because
-> independence is currently ~0, the wanderer ending is intentionally hard to reach
-> until genuine self-directed-choice signals exist — it must not be silently
-> assigned to a player who merely skipped days or played short sessions. When no
-> ending meets its minimum dimension thresholds, the deterministic neutral fallback
-> is **keeper** (belonging / continuity — the calm, P1-aligned default).
+> **Wanderer ending** requires `independence ≥ 0.25` AND the `chose_old_road` flag
+> (set when the player takes Wren's "old road" self-directed beat in `wren_scene3`).
+> The grindy `wren_arc_complete` requirement (set only at Wren scene 5, ~4 hearts) was
+> intentionally removed so the path is non-grindy; `chose_old_road` already requires
+> genuine engagement (reaching Wren scene 3). When no ending meets its minimum
+> dimension thresholds, the deterministic neutral fallback is **keeper** (belonging /
+> continuity — the calm, P1-aligned default).
+
+**Ending competition (Phase 10):** an ending only qualifies if it meets ALL of its
+`min_dimensions` AND `required_flags` AND `required_arcs` (flags/arcs are HARD gates,
+not just score modifiers). Among qualifying endings, the selection prefers a
+*qualifying non-Keeper* ending whose defining dimension is its dominant dimension —
+a small identity-confidence bonus (+0.05) breaks near-ties in favor of the player's
+actual verified behavior, so a strongly-expressed Community/Wanderer/B(uilder) beats
+the generic Keeper fallback. Keeper remains the safe neutral default when no specific
+identity is strongly expressed.
 
 ---
 
@@ -475,8 +494,12 @@ choice: {
 |--------|-----------|------------|----------------------|
 | **THE KEEPER** | Preserve | Belonging / Continuity | CARE ≥ 0.5, COMMUNITY ≥ 0.4, Fenwick arc complete |
 | **THE BUILDER** | Expand | Competence / Creation | COMFORT ≥ 0.6, STARS ≥ 4, Upgrades ≥ 4 |
-| **THE WANDERER** | Release | Autonomy / Independence | INDEPENDENCE ≥ 0.5, days skipped ≥ 3, Wren arc complete |
-| **THE COMMUNITY KEEPER** | Transform | Community / Legacy | COMMUNITY ≥ 0.6, Town letters ≥ 3, All NPC intros done |
+| **THE WANDERER** | Release | Autonomy / Independence | INDEPENDENCE ≥ 0.25, chose_old_road flag, (Wren engagement implied by the flag) |
+| **THE COMMUNITY KEEPER** | Transform | Community / Legacy | COMMUNITY ≥ 0.5, chose_community_night flag + Sela/Bram/Nia intro letters delivered |
+
+> Note: `days skipped` / `early close` / low activity are NOT Wanderer signals — they
+> are pacing-neutral and never feed any dimension (P1 Calm). The Wanderer gate is a
+> genuine self-directed choice (`chose_old_road`), not a measure of how little you played.
 
 ### Ending Evaluation (Day 14 Evening)
 

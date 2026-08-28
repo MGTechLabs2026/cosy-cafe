@@ -303,7 +303,7 @@ export class ServiceController {
           day: ctx.dayState.day,
         });
         this.serveCustomer('R008'); // the drink itself lands: coins/hearts/discovery
-        playScene(scene5, ctx.save, ctx.heartLedger, { onClose: () => {} });
+        playScene(scene5, ctx.save, ctx.heartLedger, { onClose: () => {} }, ctx.activityLedger);
         return;
       }
     }
@@ -458,7 +458,7 @@ export class ServiceController {
           onClose: () => {
             // Scene completed, continue with next arrival
           },
-        });
+        }, ctx.activityLedger);
       }
     }
 

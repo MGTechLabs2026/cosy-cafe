@@ -484,8 +484,9 @@ describe('M3 — String-key completeness (every referenced key exists in strings
           }
         }
         if (beat.choice) {
-          // Choice keys are like 'fenwick.scene1.choicePrompt'
-          const charNs = 'fenwick' as keyof typeof STRINGS; // Most choices under fenwick/wren
+          // Choice keys are like 'fenwick.scene1.choicePrompt' or 'wren.scene3.choicePrompt'
+          const choiceParts = beat.choice.promptKey.split('.');
+          const charNs = choiceParts[0] as keyof typeof STRINGS;
           const nsObj = STRINGS[charNs] as Record<string, unknown> | undefined;
           
           const checkChoiceKey = (key: string) => {

@@ -8,12 +8,14 @@ describe('EndingEvaluator', () => {
   const evaluator = new EndingEvaluator(ENDING_CONFIGS);
   
   function createProgress(overrides: Partial<{
+    chapter: number;
     stars: number;
     completedArcs: string[];
     flags: Record<string, boolean>;
     upgradesOwned: Record<string, boolean>;
   }> = {}) {
     return {
+      chapter: overrides.chapter ?? 5,
       stars: overrides.stars ?? 2,
       completedArcs: overrides.completedArcs ?? [],
       flags: overrides.flags ?? {},
@@ -33,7 +35,7 @@ describe('EndingEvaluator', () => {
       dominantDimension: 'care',
       endingAchieved: null,
     };
-    return { ...base, ...overrides };
+    return { ...base, ...overrides } as unknown as import('../src/narrative/narrative-state').NarrativeState;
   }
   
   it('evaluates keeper ending with high care and community', () => {
@@ -76,11 +78,29 @@ describe('EndingEvaluator', () => {
     });
     const progress = createProgress({ 
       completedArcs: ['wren_arc_complete'],
+      flags: { chose_old_road: true },
     });
     
     const result = evaluator.evaluate(state, progress);
     
     expect(result.ending).toBe('wanderer');
+  });
+
+  it('does NOT evaluate wanderer without the deliberate old-road choice (flag gate)', () => {
+    // Independence is high, Wren arc complete, but the player never took the
+    // self-directed old-road beat → Wanderer is hard-disqualified (Phase 10).
+    const state = createState({
+      chapter: 5,
+      dimensions: { care: 0.1, curiosity: 0.2, community: 0.1, comfort: 0.1, independence: 0.8 },
+      dominantDimension: 'independence',
+    });
+    const progress = createProgress({
+      completedArcs: ['wren_arc_complete'],
+      flags: {}, // no chose_old_road
+    });
+
+    const result = evaluator.evaluate(state, progress);
+    expect(result.ending).not.toBe('wanderer');
   });
 
   it('does NOT assign wanderer from skipped days alone (pacing is neutral)', () => {
@@ -108,7 +128,7 @@ describe('EndingEvaluator', () => {
     });
     const progress = createProgress({
       flags: { 
-        town_ch3_market_day_delivered: true, 
+        chose_community_night: true,
         sela_ch1_intro_delivered: true, 
         bram_ch1_intro_delivered: true, 
         nia_ch1_intro_delivered: true 
@@ -118,6 +138,26 @@ describe('EndingEvaluator', () => {
     const result = evaluator.evaluate(state, progress);
     
     expect(result.ending).toBe('community');
+  });
+
+  it('does NOT evaluate community without the deliberate community-night choice (flag gate)', () => {
+    // Community dimension is high, NPC intros delivered, but the player never
+    // took the community-building beat → Community is hard-disqualified.
+    const state = createState({
+      chapter: 5,
+      dimensions: { care: 0.3, curiosity: 0.2, community: 0.7, comfort: 0.1, independence: 0.1 },
+      dominantDimension: 'community',
+    });
+    const progress = createProgress({
+      flags: { 
+        sela_ch1_intro_delivered: true, 
+        bram_ch1_intro_delivered: true, 
+        nia_ch1_intro_delivered: true 
+      },
+    });
+
+    const result = evaluator.evaluate(state, progress);
+    expect(result.ending).not.toBe('community');
   });
   
   it('uses tiebreaker when scores are close', () => {

@@ -54,13 +54,18 @@ export class EndingEvaluator {
     const tiebreakerConfig = this.endingConfigs.find(e => e.tiebreaker_dimension === primaryDimension);
     const tiebreakerBonus = tiebreakerConfig ? 0.1 : 0;
 
-    // An ending only "qualifies" if it meets ALL its minimum dimension thresholds.
-    // Pacing (skipped days, early closes, low activity) does NOT feed any dimension,
-    // so a calm/low-engagement player must not be silently pushed toward an ending.
+    // An ending only "qualifies" if it meets ALL of its requirements:
+    //   (a) every minimum dimension threshold, AND
+    //   (b) every required flag, AND
+    //   (c) every required arc.
+    // Pacing (skipped days, early closes, low activity) does NOT feed any
+    // dimension, so a calm/low-engagement player must not be silently pushed
+    // toward an ending. Required flags/arcs turn specific endings (Wanderer,
+    // Community) into *behavior-gated* outcomes, not near-miss scores.
     // When NO ending qualifies, the deterministic neutral fallback is 'keeper'
-    // (belonging / continuity — the calm, P1-aligned default), not the ending with
-    // the fewest requirements.
-    const qualifiers = this.endingConfigs.filter(e => this.endingQualifies(e, state));
+    // (belonging / continuity — the calm, P1-aligned default), not the ending
+    // with the fewest requirements.
+    const qualifiers = this.endingConfigs.filter(e => this.endingQualifies(e, state, progress));
     const candidatePool = qualifiers.length > 0
       ? qualifiers
       : [this.endingConfigs.find(e => e.id === 'keeper')!];
@@ -72,7 +77,15 @@ export class EndingEvaluator {
     for (const config of candidatePool) {
       const ending = config.id;
       const bonus = config.tiebreaker_dimension === primaryDimension ? tiebreakerBonus : 0;
-      const finalScore = scores[ending] + bonus;
+      // Phase 10 — specific identity beats the generic fallback. A *qualifying*
+      // non-Keeper ending (Community / Wanderer / Builder) that is driven by its
+      // own defining dimension earns a small identity-confidence bonus so it is
+      // not silently out-scored by Keeper (the calm, generic default) when both
+      // happen to qualify. This is deterministic and never applies to Keeper
+      // itself. The bonus is tiny (0.05) — it only breaks near-ties in favor of
+      // the player's actual, verified behavior, not against it.
+      const identityBonus = ending !== 'keeper' ? 0.05 : 0;
+      const finalScore = scores[ending] + bonus + identityBonus;
       if (finalScore > bestScore) {
         bestScore = finalScore;
         bestEnding = ending;
@@ -86,11 +99,29 @@ export class EndingEvaluator {
     };
   }
 
-  /** True if the state meets ALL of an ending's minimum dimension thresholds. */
-  private endingQualifies(config: EndingConfig, state: NarrativeState): boolean {
+  /**
+   * True if the state meets ALL of an ending's gating requirements:
+   *   - every minimum dimension threshold
+   *   - every required flag (present + truthy)
+   *   - every required arc (completed)
+   * Required flags/arcs are HARD gates: missing one disqualifies the ending
+   * entirely, rather than merely lowering its score. This is what keeps
+   * Wanderer/Community specific to genuine player behavior (Phase 10).
+   */
+  private endingQualifies(
+    config: EndingConfig,
+    state: NarrativeState,
+    progress: { completedArcs: string[]; flags: Record<string, boolean> },
+  ): boolean {
     for (const [dim, threshold] of Object.entries(config.min_dimensions ?? {})) {
-      const value = state.dimensions[dim as 'care' | 'curiosity' | 'community' | 'comfort' | 'independence'] ?? 0;
+      const value = state.dimensions[dim as NarrativeDimension] ?? 0;
       if (value < (threshold as number)) return false;
+    }
+    for (const flag of config.required_flags ?? []) {
+      if (!progress.flags?.[flag]) return false;
+    }
+    for (const arc of config.required_arcs ?? []) {
+      if (!progress.completedArcs?.includes(arc)) return false;
     }
     return true;
   }

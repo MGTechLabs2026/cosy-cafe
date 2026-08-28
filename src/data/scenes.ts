@@ -4,6 +4,8 @@
 import type { SceneDef, SceneBeat, SceneLine, SceneChoice } from '../ui/scene.js';
 import type { SaveData } from '../save/validate.js';
 import type { HeartLedger } from '../sim/hearts.js';
+import type { ActivityLedger } from '../narrative/activity-ledger.js';
+import { recordCommunityBeat, recordSelfDirectedChoice } from '../narrative/activity-ledger.js';
 import { FAVORITES } from '../sim/customers.js';
 
 // Helper to create a line
@@ -175,11 +177,24 @@ export const WREN_SCENES: SceneDef[] = [
           line('wren', 'wren.scene2.line4'),
           line('wren', 'wren.scene2.line5'),
         ],
+        choice: choice(
+          'wren.scene2.choicePrompt',
+          ['wren.scene2.choice1Label', 'wren.scene2.choice1Flavor'],
+          ['wren.scene2.choice2Label', 'wren.scene2.choice2Flavor'],
+        ),
       },
     ],
     onComplete: (save: SaveData, _hearts: HeartLedger) => {
       // Update journal hint card - first clue revealed
       save.flags.wren_clues_gathered = Math.min((save.flags.wren_clues_gathered ?? 0) + 1, 3);
+    },
+    onChoice: (save: SaveData, _hearts: HeartLedger, optionIndex: number, ledger: ActivityLedger) => {
+      // Option 0 = "I like that idea. The more, the warmer." — a deliberate
+      // community-building choice. Recorded exactly once (scene fires once).
+      if (optionIndex === 0) {
+        save.flags.chose_community_night = true;
+        recordCommunityBeat(ledger, { beatId: 'wren_scene2_bonding', day: save.day });
+      }
     },
   },
   // Scene 3: Middle 2 — More clues (moonleaf, hot)
@@ -194,11 +209,25 @@ export const WREN_SCENES: SceneDef[] = [
           line('wren', 'wren.scene3.line4'),
           line('wren', 'wren.scene3.line5'),
         ],
+        choice: choice(
+          'wren.scene3.choicePrompt',
+          ['wren.scene3.choice1Label', 'wren.scene3.choice1Flavor'],
+          ['wren.scene3.choice2Label', 'wren.scene3.choice2Flavor'],
+        ),
       },
     ],
     onComplete: (save: SaveData, _hearts: HeartLedger) => {
       // Update journal hint card - more clues
       save.flags.wren_clues_gathered = Math.min((save.flags.wren_clues_gathered ?? 0) + 1, 3);
+    },
+    onChoice: (save: SaveData, _hearts: HeartLedger, optionIndex: number, ledger: ActivityLedger) => {
+      // Option 0 = "Not yet. But I'd like to, one day." — a deliberate
+      // self-directed / personal-direction choice. This is the legitimate
+      // wanderer signal. Option 1 (stay) is neutral. Recorded once.
+      if (optionIndex === 0) {
+        save.flags.chose_old_road = true;
+        recordSelfDirectedChoice(ledger, { beatId: 'wren_scene3_old_road', day: save.day });
+      }
     },
   },
   // Scene 4: Middle 3 — Final clue (5 minutes simmering) + choice to brew

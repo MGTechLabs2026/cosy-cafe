@@ -32,6 +32,10 @@ export interface SaveFlags {
   fenwick_chili_granted: boolean;
   /** M4 — tutorial step 4 (doc 05 §3.1): kettle auto-opened once this save. */
   kettle_auto_opened: boolean;
+  /** Player took Wren's "old road" self-directed choice (wanderer signal). */
+  chose_old_road: boolean;
+  /** Player took Wren's "town night" community-building choice (community signal). */
+  chose_community_night: boolean;
 
   /** v5 — Narrative system flags */
   /** Current narrative chapter (0–5) */
@@ -115,6 +119,10 @@ export interface SaveFlags {
   activity_wren_mystery_clues: number;
   /** Ingredients purchased total */
   activity_ingredients_purchased: number;
+  /** Legitimate wanderer signal: count of distinct self-directed-choice beats taken */
+  activity_independent_choices: number;
+  /** Community-building beats performed (distinct from mere breadth) */
+  activity_community_beats: number;
   /** Activity ledger version */
   activity_version: number;
 }
@@ -412,6 +420,8 @@ export function validateSaveData(input: unknown): ValidationResult {
         nia_intro_done: typeof rawFlags['nia_intro_done'] === 'boolean' ? rawFlags['nia_intro_done'] : false,
         fenwick_chili_granted: typeof rawFlags['fenwick_chili_granted'] === 'boolean' ? rawFlags['fenwick_chili_granted'] : false,
         kettle_auto_opened: typeof rawFlags['kettle_auto_opened'] === 'boolean' ? rawFlags['kettle_auto_opened'] : false,
+        chose_old_road: typeof rawFlags['chose_old_road'] === 'boolean' ? rawFlags['chose_old_road'] : false,
+        chose_community_night: typeof rawFlags['chose_community_night'] === 'boolean' ? rawFlags['chose_community_night'] : false,
         // v5 narrative flags with safe defaults
         current_chapter: typeof rawFlags['current_chapter'] === 'number' ? rawFlags['current_chapter'] : 0,
         chapter_entered_day: (isRecord(rawFlags['chapter_entered_day']) ? rawFlags['chapter_entered_day'] : { 0: day }) as Record<number, number>,
@@ -452,6 +462,8 @@ export function validateSaveData(input: unknown): ValidationResult {
         activity_wren_visits: typeof rawFlags['activity_wren_visits'] === 'number' ? rawFlags['activity_wren_visits'] : 0,
         activity_wren_mystery_clues: typeof rawFlags['activity_wren_mystery_clues'] === 'number' ? rawFlags['activity_wren_mystery_clues'] : 0,
         activity_ingredients_purchased: typeof rawFlags['activity_ingredients_purchased'] === 'number' ? rawFlags['activity_ingredients_purchased'] : 0,
+        activity_independent_choices: typeof rawFlags['activity_independent_choices'] === 'number' ? rawFlags['activity_independent_choices'] : 0,
+        activity_community_beats: typeof rawFlags['activity_community_beats'] === 'number' ? rawFlags['activity_community_beats'] : 0,
         activity_version: typeof rawFlags['activity_version'] === 'number' ? rawFlags['activity_version'] : 1,
       },
       settings: { relaxed_mode: relaxed, reduced_motion: reducedMotion, master_vol: masterVol, text_size: textSize },
@@ -499,6 +511,8 @@ export function createInitialSave(): SaveData {
             nia_intro_done: false,
             fenwick_chili_granted: false,
             kettle_auto_opened: false,
+            chose_old_road: false,
+            chose_community_night: false,
             // v5 — Narrative system flags
             current_chapter: 0,
             chapter_entered_day: { 0: 1 },
@@ -539,6 +553,8 @@ export function createInitialSave(): SaveData {
             activity_wren_visits: 0,
             activity_wren_mystery_clues: 0,
             activity_ingredients_purchased: 0,
+            activity_independent_choices: 0,
+            activity_community_beats: 0,
             activity_version: 1,
           },
     settings: { relaxed_mode: true, reduced_motion: false, master_vol: 0.8, text_size: 100 },

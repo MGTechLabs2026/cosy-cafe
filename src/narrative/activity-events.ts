@@ -111,6 +111,34 @@ export interface WrenVisitEvent {
   timestamp: number;
 }
 
+/**
+ * Player made a deliberate self-directed choice — pursuing a personal direction
+ * (the wider world / their own path) over routine. This is the ONLY legitimate
+ * wanderer signal. It is NEVER inferred from skipped days, early closes, low
+ * chat, short sessions, or relaxed mode.
+ */
+export interface SelfDirectedChoiceEvent {
+  type: 'self_directed_choice';
+  /** Stable id for the specific beat (e.g. 'wren_old_road') — de-duplicated per beat. */
+  beatId: string;
+  day: number;
+  timestamp: number;
+}
+
+/**
+ * Player performed a deliberate community-building action — bringing people
+ * together rather than serving them individually. This is the strong,
+ * specific signal that distinguishes Community from Care. It is NOT merely
+ * "served many people" (that is breadth, already captured) nor "read letters".
+ */
+export interface CommunityBeatEvent {
+  type: 'community_beat';
+  /** Stable id for the specific beat (e.g. 'community_bonding') — de-duplicated per beat. */
+  beatId: string;
+  day: number;
+  timestamp: number;
+}
+
 /** Union of all activity events */
 export type ActivityEvent =
   | ServeEvent
@@ -125,7 +153,9 @@ export type ActivityEvent =
   | LetterReadEvent
   | LetterDismissedEvent
   | WrenMysteryBrewEvent
-  | WrenVisitEvent;
+  | WrenVisitEvent
+  | SelfDirectedChoiceEvent
+  | CommunityBeatEvent;
 
 /** Type guard helpers */
 export function isServeEvent(e: ActivityEvent): e is ServeEvent { return e.type === 'serve'; }
@@ -141,3 +171,5 @@ export function isLetterReadEvent(e: ActivityEvent): e is LetterReadEvent { retu
 export function isLetterDismissedEvent(e: ActivityEvent): e is LetterDismissedEvent { return e.type === 'letter_dismissed'; }
 export function isWrenMysteryBrewEvent(e: ActivityEvent): e is WrenMysteryBrewEvent { return e.type === 'wren_mystery_brew'; }
 export function isWrenVisitEvent(e: ActivityEvent): e is WrenVisitEvent { return e.type === 'wren_visit'; }
+export function isSelfDirectedChoiceEvent(e: ActivityEvent): e is SelfDirectedChoiceEvent { return e.type === 'self_directed_choice'; }
+export function isCommunityBeatEvent(e: ActivityEvent): e is CommunityBeatEvent { return e.type === 'community_beat'; }

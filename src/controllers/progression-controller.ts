@@ -157,6 +157,8 @@ export class ProgressionController {
     this.save.flags.activity_wren_visits = counters.wrenVisits;
     this.save.flags.activity_wren_mystery_clues = counters.wrenMysteryClues;
     this.save.flags.activity_ingredients_purchased = counters.ingredientsPurchasedTotal;
+    this.save.flags.activity_independent_choices = counters.independentChoiceCount;
+    this.save.flags.activity_community_beats = counters.communityBeatCount;
     this.save.flags.activity_version = counters.version;
     writeSave(this.save);
   }

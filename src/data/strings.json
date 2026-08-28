@@ -510,14 +510,24 @@
       "line2": "\"She said: 'Milk holds the warmth. Water runs through you.'\"",
       "line3": "\"Second: something sweet. Not sugar. Something the bees make.\"",
       "line4": "\"Honey. Local. The hives by the river bend.\"",
-      "line5": "\"Third... ah, that's for another day. Drink your tea, dear.\""
+      "line5": "\"Third... ah, that's for another day. Drink your tea, dear.\"",
+      "choicePrompt": "\"You've a gift for gathering folks, dear. Ever think of opening the café for a town night — let them find each other here?\"",
+      "choice1Label": "\"I like that idea. The more, the warmer.\"",
+      "choice1Flavor": "Wren smiles. \"Then you already understand Marigold's secret. A café isn't a building. It's a *place where people become neighbors.*\"",
+      "choice2Label": "\"One guest at a time suits me.\"",
+      "choice2Flavor": "Wren nods. \"One at a time is its own kind of care. The door stays open either way.\""
     },
     "scene3": {
       "line1": "\"Third clue: a whisper of the valley's own herb.\"",
       "line2": "\"Moonleaf. But just a pinch — like a secret you're not sure you heard.\"",
       "line3": "\"Marigold gathered it herself, moonlit nights only. Said the leaf remembers the rain.\"",
       "line4": "\"Fourth: served hot. Always hot. Even in summer.\"",
-      "line5": "\"Because warmth isn't temperature. It's *intention*.\""
+      "line5": "\"Because warmth isn't temperature. It's *intention*.\"",
+      "choicePrompt": "Wren pauses. \"The old road beyond town — the one that doesn't come back to Hollowbrook. Ever walked it?\"",
+      "choice1Label": "\"Not yet. But I'd like to, one day.\"",
+      "choice1Flavor": "Wren's eyes brighten. \"Good. A café can be a home *and* a doorway. Marigold never locked hers.\"",
+      "choice2Label": "\"I'd rather stay here, for now.\"",
+      "choice2Flavor": "Wren nods, slow and easy. \"Then here you stay. No wrong answer, dear — only the one you choose.\""
     },
     "scene4": {
       "line1": "\"The last clue isn't an ingredient. It's the *waiting*.\"",
@@ -574,6 +584,21 @@
       "line5": "\"Iced Berry Tisane. Frostberries, water, iced. Bubbles adjacent!\""
     }
   },
+  "wren_old_road_letter": {
+    "title": "A Note Folded Into Your Journal",
+    "body": "Dear one,\n\nYou said you'd like to walk the old road one day. I noticed. Most folks answer the question without hearing it — but you heard it.\n\nMarigold walked that road once, you know. Came back with a recipe and a silence she never quite unpacked. She never told anyone where it led. Only that it was hers to choose.\n\nThe café will keep. The road will wait. The choosing — that's the part that's yours.\n\n— Wren"
+  },
+
+  "wren_path_letter": {
+    "title": "Wren's Last Note",
+    "body": "Dear one,\n\nYour sign says OPEN, but I can see you already planning the next door. That's alright. That's more than alright.\n\nMarigold didn't leave you this café to keep you here. She left it to show you that you could stay *or* go, and mean both with your whole heart.\n\nWalk the road. The kettle will be warm when you circle back — or when you don't.\n\n— Wren"
+  },
+
+  "sela_gathering_letter": {
+    "title": "Sela, By the Cart",
+    "body": "Friend,\n\nYou said the more the warmer. I've been thinking on that. My cart's wheel is mended, and the elders' letters are still unopened in my pack — but for the first time in years, this place feels like somewhere to stay.\n\nMaybe because this is the first place that felt like more than a stop. You made it that. Not with grandness. With the door.\n\nIf you ever want to host the town a night, my cart's got the lanterns. We'll fill the square with people who'd otherwise pass in the dark.\n\n— Sela"
+  },
+
   "chat": {
     "fenwick": [
       "\"Mountain pass report: first frost on the switchbacks. Two weeks early.\"",
