@@ -86,6 +86,10 @@ export interface ServiceControllerDeps {
   practicePour: (isMurky: boolean) => void;
   /** Murky-decline copy when a waiting customer politely passes. */
   murkyDecline: () => void;
+  /** Mops murky-brew sniff event hook. */
+  onMurkyBrew: () => void;
+  /** Mops door-chime reaction hook. */
+  onDoorChime?: () => void;
 }
 
 /**
@@ -223,6 +227,7 @@ export class ServiceController {
 
     playDoorChime(); // arrival cue (audio) + door animation handled visually
     this.nextArrivalIdx += 1;
+    this.deps.onDoorChime?.();
 
     // Playtest fix #2: the doc 05 §3.1 "kettle opens automatically on first
     // arrival" behavior was REMOVED by owner decision — the panel must only
@@ -347,6 +352,7 @@ export class ServiceController {
         day: ctx.dayState.day,
       });
       this.deps.murkyDecline();
+      this.deps.onMurkyBrew();
       return;
     }
 

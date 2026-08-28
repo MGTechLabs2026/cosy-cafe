@@ -84,34 +84,34 @@ export function tickMops(
   if (next.timerSec <= 0) {
     switch (next.name) {
       case 'idle':
+        next = sleepState(next.x, next.groundY);
+        break;
+      case 'sleep':
       case 'stretch':
       case 'look':
       case 'sniff':
       case 'pet':
       case 'sit':
-        next = { ...idleState(next.x, next.groundY), x: next.x, groundY: next.groundY };
-        break;
-      case 'sleep':
-        next = { ...idleState(next.x, next.groundY), x: next.x, groundY: next.groundY };
+        next = idleState(next.x, next.groundY);
         break;
       default:
-        next = { ...idleState(next.x, next.groundY), x: next.x, groundY: next.groundY };
+        next = idleState(next.x, next.groundY);
     }
   }
 
   // Event overrides take priority.
   if (opts.serviceOpen) {
-    const sinceChime = opts.nowMs - opts.doorChimeMs;
+    const sinceChime = opts.doorChimeMs >= 0 ? opts.nowMs - opts.doorChimeMs : -1;
     if (sinceChime >= 0 && sinceChime < 1400) {
       return lookTowardDoor(next, opts.nowMs);
     }
-    const sinceMurky = opts.nowMs - opts.activeMurkyMs;
+    const sinceMurky = opts.activeMurkyMs >= 0 ? opts.nowMs - opts.activeMurkyMs : -1;
     if (sinceMurky >= 0 && sinceMurky < 1800) {
       return { ...next, name: 'sniff', timerSec: Math.min(next.timerSec, 1.8) };
     }
   }
 
-  const sinceChoose = opts.nowMs - opts.chooseCustomerMs;
+  const sinceChoose = opts.chooseCustomerMs >= 0 ? opts.nowMs - opts.chooseCustomerMs : -1;
   if (sinceChoose >= 0 && sinceChoose < 2200) {
     return chooseCustomer(next, opts.nowMs, sinceChoose);
   }

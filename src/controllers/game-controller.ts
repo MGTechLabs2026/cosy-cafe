@@ -8,7 +8,7 @@ import { CountUp } from '../render/tween.js';
 import { createSceneFx, drawSceneLayer } from '../render/scene.js';
 import type { SceneFx } from '../render/scene.js';
 import { preloadAllArt } from '../render/images.js';
-import { initParticles, clearAllParticles, resetCupSlide } from '../render/fx.js';
+import { initParticles, clearAllParticles, resetCupSlide, spawnHeartPuff } from '../render/fx.js';
 import { ALL_RECIPES, recipeToView } from '../data/recipes.js';
 import type { BrewInput } from '../sim/brewing.js';
 import type { DayState, IngredientId } from '../sim/day.js';
@@ -122,6 +122,12 @@ export class GameController {
       onRecipeDiscovered: (recipeId) => this.openJournalToNewEntry(recipeId),
       practicePour: (isMurky) => this.kettle.showPracticePourToast(isMurky),
       murkyDecline: () => this.kettle.showMurkyDeclineToast(),
+      onMurkyBrew: () => {
+        this.mopsMurkyBrewMs = performance.now();
+      },
+      onDoorChime: () => {
+        this.mopsDoorChimeMs = performance.now();
+      },
     });
 
     this.kettle = new KettleController({
@@ -162,6 +168,7 @@ export class GameController {
       onOpenSettings: init.onOpenSettings,
       onOpenDoors: () => this.day.openDoors(),
       onTryCloseDay: () => this.tryCloseDay(),
+      onMopsClick: () => this.petMops(),
     });
     setCafeDomPhaseProvider(() => this.dayState.phase);
 
@@ -328,6 +335,17 @@ export class GameController {
   tick(dtSec: number, _timeMs: number): void {
     this.service.tick(dtSec);
 
+    // Tick Mops ambient state machine each frame.
+    this.mopsState = tickMops(this.mopsState, dtSec, {
+      reducedMotion: this.reducedMotion,
+      hasWindowBench: this.save.upgrades.includes('window_bench'),
+      serviceOpen: this.dayState.phase === 'service',
+      doorChimeMs: this.mopsDoorChimeMs,
+      activeMurkyMs: this.mopsMurkyBrewMs,
+      chooseCustomerMs: this.mopsChooseCustomerMs,
+      nowMs: performance.now(),
+    });
+
     // Gentle close suggestion when queue empty and nobody at counter.
     if (
       this.dayState.phase === 'service' &&
@@ -455,6 +473,11 @@ export class GameController {
 
   debugBuyUpgrade(id: Parameters<ProgressionController['buyUpgrade']>[0]): void {
     if (this.progression.buyUpgrade(id)) this.syncHud();
+  }
+
+  private petMops(): void {
+    this.mopsState = petMops(this.mopsState);
+    spawnHeartPuff(this.mopsState.x, this.mopsState.groundY - 10);
   }
 
   debugPatienceMax(): number {

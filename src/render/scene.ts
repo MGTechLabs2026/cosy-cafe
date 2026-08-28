@@ -178,6 +178,21 @@ export function clearBubbleRect(): void {
   lastDrawnBubbleRect = null;
 }
 
+/** Current clickable Mops region (canvas coords), or null if no Mops. */
+let lastMopsHitRect: HitRect | null = null;
+
+export function setMopsHitRect(rect: HitRect | null): void {
+  lastMopsHitRect = rect;
+}
+
+export function getMopsHitRect(): HitRect | null {
+  return lastMopsHitRect;
+}
+
+export function clearMopsHitRect(): void {
+  lastMopsHitRect = null;
+}
+
 /** Generic cast sprite draw: 2× integer scale, grounded by OPAQUE bounds.
  * `gait` carries the walk-in bob+lean (playtest fix #1); zero at rest. */
 function drawCharacterSprite(
@@ -456,7 +471,7 @@ export interface SceneInput {
   serviceOpen: boolean;
   prepPhase: boolean;
   customer: CustomerVisual | null;
-  mopsAsleep: boolean;
+  mopsAsleep?: boolean;
   kettleGlint: boolean;
   journalPulse: boolean;
   reducedMotion: boolean;
@@ -509,6 +524,7 @@ export function drawSceneLayer(c: CanvasRenderingContext2D, input: SceneInput, f
 
   // Mops — state-driven sprite + ambient behaviors.
   const mopsState = input.mopsState ?? null;
+  clearMopsHitRect();
   if (mopsState) {
     const img = mopsSpriteFor(mopsState.name);
     const b = img && img.complete && img.naturalWidth > 0 ? opaqueBounds(img) : null;
@@ -526,9 +542,21 @@ export function drawSceneLayer(c: CanvasRenderingContext2D, input: SceneInput, f
         rect(c, centerX + 16, drawY - 8, 3, 3, Palette.textMuted);
         rect(c, centerX + 22, drawY - 15, 3, 3, Palette.textMuted);
       }
+      setMopsHitRect({
+        x: Math.round(centerX - dw / 2),
+        y: drawY,
+        w: dw,
+        h: dh,
+      });
     } else {
       rect(c, centerX - 10, groundY - 12, 18, 11, Palette.accentWarm);
       rect(c, centerX + 6, groundY - 16, 6, 6, Palette.accentWarm);
+      setMopsHitRect({
+        x: centerX - 10,
+        y: groundY - 16,
+        w: 24,
+        h: 18,
+      });
     }
   }
 

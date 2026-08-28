@@ -6,7 +6,7 @@
 
 import { STRINGS, format } from '../data/strings.js';
 import { recipeToView } from '../data/recipes.js';
-import { DOOR_SIGN_RECT, getBubbleRect } from '../render/scene.js';
+import { DOOR_SIGN_RECT, getBubbleRect, getMopsHitRect } from '../render/scene.js';
 
 /** Handlers the café screen needs from the orchestration layer. */
 export interface CafeDomHandlers {
@@ -20,6 +20,8 @@ export interface CafeDomHandlers {
   onOpenDoors: () => void;
   /** Door-sign click while phase = service (and nobody unserved waits). */
   onTryCloseDay: () => void;
+  /** Mops click — pet the cat. */
+  onMopsClick: () => void;
 }
 
 export interface CafeDomRefs {
@@ -105,7 +107,7 @@ function canvasPoint(e: MouseEvent, canvasEl: HTMLCanvasElement): { x: number; y
 }
 
 /** True when the point sits inside an interactive canvas region (door sign,
- * customer order bubble). */
+ * customer order bubble, Mops). */
 function hitsInteractive(p: { x: number; y: number } | null): boolean {
   if (!p) return false;
   const hit = DOOR_SIGN_RECT;
@@ -113,6 +115,10 @@ function hitsInteractive(p: { x: number; y: number } | null): boolean {
   const bubble = getBubbleRect();
   if (bubble) {
     return p.x >= bubble.x && p.x <= bubble.x + bubble.w && p.y >= bubble.y && p.y <= bubble.y + bubble.h;
+  }
+  const mops = getMopsHitRect();
+  if (mops) {
+    return p.x >= mops.x && p.x <= mops.x + mops.w && p.y >= mops.y && p.y <= mops.y + mops.h;
   }
   return false;
 }
@@ -124,6 +130,12 @@ function handleCanvasClick(
 ): void {
   const p = canvasPoint(e, canvasEl);
   if (!hitsInteractive(p)) return;
+  // Mops click → pet the cat.
+  const mops = getMopsHitRect();
+  if (mops && p && p.x >= mops.x && p.x <= mops.x + mops.w && p.y >= mops.y && p.y <= mops.y + mops.h) {
+    handlers.onMopsClick();
+    return;
+  }
   // Bubble click → open the kettle to serve this order.
   const bubble = getBubbleRect();
   if (bubble && p && p.x >= bubble.x && p.x <= bubble.x + bubble.w && p.y >= bubble.y && p.y <= bubble.y + bubble.h) {
