@@ -5,6 +5,10 @@ node_modules/
 dist/
 dist-itch/
 
+# release builds (packaged separately; not committed)
+releases/
+cosy-cafe-mvp-itch.zip
+
 # logs
 npm-debug.log*
 yarn-debug.log*

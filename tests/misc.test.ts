@@ -63,7 +63,7 @@ describe('recipe views resolve through strings.json', () => {
     const view = recipeToView('R001');
     expect(view).not.toBeNull();
     expect(view!.name.length).toBeGreaterThan(0);
-    expect(view!.icon).toContain('/assets/items/drink_black_tea.png');
+    expect(view!.icon).toBe('drink_black_tea.png');
     expect(view!.combo).toContain('Water');
   });
 

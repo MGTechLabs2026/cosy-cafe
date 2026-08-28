@@ -8,7 +8,7 @@ import { STRINGS } from './strings.js';
 export interface RecipeView {
   id: string;
   name: string; // resolved display name
-  icon: string; // /assets/items/*.png
+  icon: string; // bare filename under assets/items/, e.g. drink_black_tea.png
   combo: string; // human-readable combo summary
 }
 
@@ -45,7 +45,10 @@ export function recipeToView(id: string): RecipeView | null {
   return {
     id: recipe.id,
     name: STRINGS.recipes[key].name,
-    icon: `/assets/items/${recipe.icon}`,
+    // Bare filename only: loadDrinkIcon() prefixes the deploy-base-aware
+    // assets/items/ path (import.meta.env.BASE_URL) so the ich.io iframe
+    // build resolves icons under its subpath instead of from site root.
+    icon: recipe.icon,
     combo: comboLabel(recipe.base, recipe.ingredients, recipe.finish),
   };
 }

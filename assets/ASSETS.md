@@ -64,16 +64,56 @@ All: binary alpha (no soft edges), transparent corners verified programmatically
 2. **Style drift risk:** all assets were generated with the same params (pixen, selective outline, low/medium detail, no background). For future assets, reuse these exact params and consider passing an existing asset via `style_image` once a "hero" style is chosen.
 3. Palette is warm/cohesive but not audited against the 32-color master palette in doc 04 §1.3. Run `reduce_colors` (PixelLab) across all assets if strict palette lock is wanted.
 
-## Still Missing for MVP (doc 04 §1.4)
+## Asset status for the current itch.io MVP build
 
-- [ ] Café room background 480×270 (+ seasonal variants) — base room DONE: `backgrounds/cafe_room.png` 480×270, 77 KB · job b590bfaa-d218-475f-8322-3db69501bc26 (generated 480×272, cropped bottom 2 rows) · ✅ QA pass all 9 elements. Variants post-MVP
-- [x] Character counter sprites ×5 (Fenwick/Sela/Bram/Nia/Wren) at 32×48 — `sprites/*_walk.png`; see size deviation note in Counter Sprites section. Travelers + walk ANIMATION frames still open
-- [ ] Mops animation states (sleep, stretch, sniff, petted)
-- [ ] Upgrade furniture sprites ×6
-- [ ] Props (~15: cups, kettle, jars, notice board…)
-- [ ] FX (steam loop, sparkle, coin puff, heart puff)
-- [ ] UI skin (9-patch panels, buttons, ~20 icons)
-- [ ] Fonts (doc 04 §1.6 recommends existing fonts, not generated)
+This section replaces the older "Still Missing for MVP" list. The art pass that
+shipped the playable build added most of the items the manifest originally flagged
+as missing, so the table below separates three buckets:
+
+- **Required for current MVP** — referenced by runtime code; missing these breaks the build.
+- **Optional ambience** — code already guards for absence; missing is a visual gap, not a defect.
+- **Future content** — not part of the current MVP; planned polish.
+
+### Required for current MVP (all shipped in this build)
+
+| Asset | Status |
+|-------|--------|
+| Café background `backgrounds/cafe_room.png` (480×270) | ✅ shipped, QA pass |
+| Character walk sprites ×5 (`sprites/*_walk.png`) | ✅ shipped |
+| Portraits ×5 (`portraits/{fenwick,sela,bram,nia,wren}.png`) | ✅ shipped (fenwick added to shipped set for this release) |
+| Mops states ×6 (`pets/mops_{sit,idle,sleep,stretch,walk,look}.png`) | ✅ shipped (all six added to shipped set for this release) |
+| Drink icons ×6 (`items/drink_{black_tea,honey_milk,moonleaf_tea,ember_cocoa,iced_berry_tisane,root_remedy_broth}.png`) | ✅ shipped |
+| Furniture ×3 (`furniture/{window_bench,record_player,coffee_machine_v2_unverified}.png`) | ✅ shipped |
+| FX (`fx/heart_puff.png`) | ✅ shipped |
+| SFX ×3 (`audio/{click,door-chime}.{wav,mp3,ogg}`) | ✅ shipped |
+| Music ×3 (`assets/music/{1_Fireplace,3_RainingDays,4_CherryBlossomTree}.m4a`) | ✅ shipped (real loops) |
+
+### Optional ambience (code falls back gracefully; not build-blocking)
+
+- `drink_cloud_foam.png` (R005 "Cloud Foam") — NOT yet authored; the order bubble
+  draws a calm placeholder icon. Visual gap only.
+- `drink_honey_milk_wren.png` (R008 "Wren's Usual") — NOT yet authored; same
+  placeholder fallback. Visual gap only.
+- `sprites/fenwick_walk_b.png` — second walk frame; gait is supplemented by
+  bob/lean tween, so its absence is invisible in practice.
+- `coffee_machine_v2_unverified.png` — upgrade sprite; visual QA pending, but
+  harmless (it is decorative furniture).
+- Seasonal / time-of-day background variants, extra NPC idle frames, richer
+  environmental FX, ambient prop clutter — all future polish.
+
+### Future content (post-MVP, not in this release)
+
+- Mops animation beyond the six states above
+- Additional upgrade furniture sprites
+- Full UI skin art (currently CSS/DOM)
+- Richer ambient sound palette (room tone, weather, micro SFX)
+- World-state background variants
+
+> Implementation note: every runtime asset path is resolved relative to
+> `import.meta.env.BASE_URL` (vite base `./`), so the build works when served
+> from an itch.io iframe subpath. The two pending drink icons above are the only
+> genuinely missing referenced art; both have in-engine placeholder fallbacks, so
+> the current MVP is fully shippable without them.
 
 ## Budget Log
 
