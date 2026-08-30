@@ -58,6 +58,18 @@ Deviation from doc 04 §1.4 (24×36): PixelLab forces square canvases below 32px
 
 All: binary alpha (no soft edges), transparent corners verified programmatically.
 
+## Batch 6 — 2026-08-30 (R005/R008 icons + ambience props)
+
+| File | Size | Job ID | QA |
+|------|------|--------|-----|
+| items/drink_cloud_foam.png (32×32) | Cloud Foam (R005) icon | b74696d3-cc16-4383-a447-80bd9696c582 | ✅ pass — tall glass, foamy crown, pale creamy palette |
+| items/drink_honey_milk_wren.png (32×32) | Wren's Usual (R008) icon | 53f2a756-463f-43ec-85a3-21d8ea997806 | ✅ pass — same mug family as R002, moonleaf garnish visible |
+| fx/steam_wisp.png (16×16) | steam FX sprite | f911e1cc-5b62-46d2-91b2-d29c6edda973 | ✅ pass — gentle rising curls, warm translucent shape |
+| furniture/menu_board.png (32×32) | menu board prop | 31e052f0-ad8b-4944-afc6-ecccb3f9f745 | ✅ pass (corner frame pixel opaque, rest transparent) |
+| props/recipe_notebook.png (32×32) | recipe notebook prop | 0ba58aa1-ee75-4715-8b84-d16d8d9e61a2 | ✅ pass — cloth bookmark peeking, worn look |
+
+All: RGBA, transparent corners verified via PIL corner-alpha check.
+
 ## Consistency Notes
 
 1. **Black Tea has a tiny face; other drinks don't.** Either embrace it (all drinks get faces — fits the cozy tone) or regenerate R001 faceless. Decide before adding more drink icons.
@@ -90,10 +102,6 @@ as missing, so the table below separates three buckets:
 
 ### Optional ambience (code falls back gracefully; not build-blocking)
 
-- `drink_cloud_foam.png` (R005 "Cloud Foam") — NOT yet authored; the order bubble
-  draws a calm placeholder icon. Visual gap only.
-- `drink_honey_milk_wren.png` (R008 "Wren's Usual") — NOT yet authored; same
-  placeholder fallback. Visual gap only.
 - `sprites/fenwick_walk_b.png` — second walk frame; gait is supplemented by
   bob/lean tween, so its absence is invisible in practice.
 - `coffee_machine_v2_unverified.png` — upgrade sprite; visual QA pending, but
@@ -117,4 +125,4 @@ as missing, so the table below separates three buckets:
 
 ## Budget Log
 
-40-generation trial balance. Used: 13 (12 successful + 1 job that vanished server-side, id e73b6a52-7654-4b8f-8a72-d0d3d9b6c1f4, never registered). Remaining after this batch: **27**.
+40-generation trial balance. Used: 13 (12 successful + 1 job that vanished server-side, id e73b6a52-7654-4b8f-8a72-d0d3d9b6c1f4, never registered). Remaining after Batch 6: **22** (5 used this session).
