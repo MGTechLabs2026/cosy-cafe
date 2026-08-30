@@ -531,11 +531,24 @@ export function drawSceneLayer(c: CanvasRenderingContext2D, input: SceneInput, f
     const groundY = mopsState.groundY;
     const centerX = Math.round(mopsState.x);
     ellipseShadow(c, centerX, groundY + 1, 20, 5);
+
+    // Mops motion: respect reduced motion, but keep readable sprite swaps.
+    // Walk: gentle step bob. Sleep: slow breathing bob. Other states: very
+    // subtle idle breathing so the cat feels present without being busy.
+    let bob = 0;
+    if (!input.reducedMotion) {
+      if (mopsState.walking) {
+        bob = Math.round(Math.abs(Math.sin(input.timeMs / 180)) * 1.5);
+      } else if (mopsState.name === 'sleep') {
+        bob = Math.round(Math.sin(input.timeMs / 900) * 1.2);
+      } else {
+        bob = Math.round(Math.sin(input.timeMs / 1200) * 0.8);
+      }
+    }
     if (img && b) {
       const SCALE = 2;
       const dw = (b.maxX - b.minX + 1) * SCALE;
       const dh = (b.maxY - b.minY + 1) * SCALE;
-      const bob = mopsState.name === 'sleep' && !input.reducedMotion ? Math.round(Math.sin(input.timeMs / 900) * 1.2) : 0;
       const drawY = Math.round(groundY - dh) + bob;
       c.drawImage(img, b.minX, b.minY, b.maxX - b.minX + 1, b.maxY - b.minY + 1, Math.round(centerX - dw / 2), drawY, dw, dh);
       if (mopsState.name === 'sleep' && !input.reducedMotion && Math.sin(input.timeMs / 900) > 0.6) {

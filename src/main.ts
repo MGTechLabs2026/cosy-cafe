@@ -25,6 +25,7 @@ import {
   debugContinueRecap,
   debugOpenJournal,
   debugCloseJournal,
+  debugPetMops,
   debugSpawnNow,
   debugState,
   initGame,
@@ -284,6 +285,7 @@ declare global {
       debugOpenJournal: typeof debugOpenJournal;
       debugCloseJournal: typeof debugCloseJournal;
       exportCode: () => Promise<string>;
+      debugPetMops: () => void;
     };
   }
 }
@@ -297,6 +299,7 @@ window.__moonleaf = {
   debugContinueRecap: () => debugContinueRecap(),
   debugOpenJournal: () => debugOpenJournal(),
   debugCloseJournal: () => debugCloseJournal(),
+  debugPetMops: () => debugPetMops(),
   exportCode: async (): Promise<string> => {
     const raw = localStorage.getItem('moonleaf_save_v1');
     if (raw === null) throw new Error('no save to export');

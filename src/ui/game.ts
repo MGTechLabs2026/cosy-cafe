@@ -84,7 +84,11 @@ export function debugCloseJournal(): void {
   game?.debugCloseJournal();
 }
 
-/** Drive the Day-14 run resolution (evaluate → record → present ending). */
+export function debugPetMops(): void {
+  game?.petMops();
+}
+
+/** Drive the Day-14 run resolution (evaluate → record + present ending). */
 export function debugResolveEnding(): void {
   game?.debugResolveEnding();
 }

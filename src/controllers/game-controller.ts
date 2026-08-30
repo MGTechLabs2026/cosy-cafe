@@ -475,7 +475,7 @@ export class GameController {
     if (this.progression.buyUpgrade(id)) this.syncHud();
   }
 
-  private petMops(): void {
+  petMops(): void {
     this.mopsState = petMops(this.mopsState);
     spawnHeartPuff(this.mopsState.x, this.mopsState.groundY - 10);
   }
