@@ -27,6 +27,11 @@ import { openJournal, closeJournal, isJournalOpen, openJournalToRecipe } from '.
 import { openShop, closeShop, isShopOpen, setShopDayProvider } from '../ui/shop.js';
 import { isSceneOpen } from '../ui/scene.js';
 import { showEnding, isEndingOpen, closeEnding } from '../ui/ending.js';
+import { isRecapVisible } from '../ui/recap.js';
+import { isSettingsOpen, closeSettings } from '../ui/settings.js';
+import { isMailboxOpen, closeMailbox } from '../ui/mailbox.js';
+import { isKettleOpen, closeKettle } from '../ui/kettle.js';
+import { isTitleActive } from '../ui/title.js';
 import { evaluateEndingForRun, recordEnding } from '../narrative/runtime.js';
 import type { EndingId } from '../narrative/story-definitions.js';
 import type { SaveData } from '../save/validate.js';
@@ -35,7 +40,8 @@ import { ProgressionController } from './progression-controller.js';
 import { KettleController } from './kettle-controller.js';
 import { ServiceController, HINTED_RECIPES, setServiceToastFn } from './service-controller.js';
 import { DayController } from './day-controller.js';
-import { createInitialMopsState, tickMops, petMops } from '../sim/mops.js';
+import { createInitialMopsState, tickMops, petMops, idleState, sleepState, sitState, stretchState, lookState } from '../sim/mops.js';
+import { pickAmbientPresence } from '../sim/presence.js';
 
 export interface GameInit {
   saveData: SaveData;
@@ -82,6 +88,9 @@ export class GameController {
   private mopsDoorChimeMs = -1;
   private mopsMurkyBrewMs = -1;
   private mopsChooseCustomerMs = -1;
+  private kettleReadyMs = -1;
+  private presenceElapsedMs = 0;
+  private presenceLastTickMinute = -1;
 
   constructor(init: GameInit) {
     this.init = init;
@@ -335,6 +344,23 @@ export class GameController {
   tick(dtSec: number, _timeMs: number): void {
     this.service.tick(dtSec);
 
+    // Presence clock: advance only while an interactive café view is active.
+    const cafeInteractive =
+      this.dayState.phase === 'service' &&
+      !isEndingOpen() &&
+      !isRecapVisible() &&
+      !isSettingsOpen() &&
+      !isJournalOpen() &&
+      !isSceneOpen() &&
+      !isMailboxOpen() &&
+      !isShopOpen() &&
+      !isKettleOpen();
+    if (cafeInteractive) {
+      this.presenceElapsedMs += dtSec * 1000;
+    }
+
+    this.tickPresence();
+
     // Tick Mops ambient state machine each frame.
     this.mopsState = tickMops(this.mopsState, dtSec, {
       reducedMotion: this.reducedMotion,
@@ -478,6 +504,45 @@ export class GameController {
   petMops(): void {
     this.mopsState = petMops(this.mopsState);
     spawnHeartPuff(this.mopsState.x, this.mopsState.groundY - 10);
+  }
+
+  debugPetMops(): void {
+    this.petMops();
+  }
+
+  /** Force a deterministic presence tick (tests/dev only). */
+  tickPresence(): void {
+    const change = pickAmbientPresence({
+      reducedMotion: this.reducedMotion,
+      mopsStateName: this.mopsState.name,
+      serviceOpen: this.dayState.phase === 'service',
+      hasActiveCustomer: this.service.hasActive,
+      hasWindowBench: this.save.upgrades.includes('window_bench'),
+      day: this.dayState.day,
+      elapsedMs: this.presenceElapsedMs,
+    });
+
+    if (!change) return;
+
+    const tick = Math.floor(this.presenceElapsedMs / 60000);
+    if (tick === this.presenceLastTickMinute) return;
+    this.presenceLastTickMinute = tick;
+
+    if (change.target === 'mops' && this.mopsState.name === change.from) {
+      const targetState =
+        change.to === 'sleep'
+          ? sleepState(this.mopsState.x, this.mopsState.groundY)
+          : change.to === 'sit'
+            ? sitState(this.mopsState.x, this.mopsState.groundY)
+            : change.to === 'stretch'
+              ? stretchState(this.mopsState.x, this.mopsState.groundY)
+              : change.to === 'look'
+                ? lookState(this.mopsState.x, this.mopsState.groundY)
+                : change.to === 'idle'
+                  ? idleState(this.mopsState.x, this.mopsState.groundY)
+                  : this.mopsState;
+      this.mopsState = targetState;
+    }
   }
 
   debugPatienceMax(): number {

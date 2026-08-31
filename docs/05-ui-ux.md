@@ -224,6 +224,26 @@ of what changed in the animation/UX polish pass:
 - **Reduced motion** collapses every animation to an instant rest (in-game toggle
   + `prefers-reduced-motion`); same information, less movement.
 
+### 9.1 Liveness Without Continuous Animation
+
+The café feels alive through **state-driven presence**, not constant motion.
+
+Player actions create immediate visual state changes:
+
+- pet Mops → pet state
+- brew → kettle ready state
+- serve → customer served state
+- door chime → Mops looks toward door
+
+Ambient presence produces occasional discrete state changes after ~60 seconds
+of active café time. This is not a timer, not a penalty, and not an
+obligation. It is simply: *the café quietly changes while you are here.*
+
+Reduced motion still receives state changes; only the movement enhancement is
+removed.
+
+See `docs/14-presence-system.md` for the full model.
+
 ## 10. UI Changelog
 
 | Date | Change | Reason |

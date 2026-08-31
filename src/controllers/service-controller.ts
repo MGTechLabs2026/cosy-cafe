@@ -90,6 +90,12 @@ export interface ServiceControllerDeps {
   onMurkyBrew: () => void;
   /** Mops door-chime reaction hook. */
   onDoorChime?: () => void;
+  /** Called when a brew completes (murky or successful). */
+  onBrewComplete?: (isMurky: boolean) => void;
+  /** Called when a customer is served. */
+  onCustomerServed?: () => void;
+  /** Called when a customer arrives at the door. */
+  onCustomerArrived?: () => void;
 }
 
 /**
@@ -228,6 +234,7 @@ export class ServiceController {
     playDoorChime(); // arrival cue (audio) + door animation handled visually
     this.nextArrivalIdx += 1;
     this.deps.onDoorChime?.();
+    this.deps.onCustomerArrived?.();
 
     // Playtest fix #2: the doc 05 §3.1 "kettle opens automatically on first
     // arrival" behavior was REMOVED by owner decision — the panel must only
@@ -353,6 +360,7 @@ export class ServiceController {
       });
       this.deps.murkyDecline();
       this.deps.onMurkyBrew();
+      this.deps.onBrewComplete?.(true);
       return;
     }
 
@@ -373,6 +381,7 @@ export class ServiceController {
     }
 
     this.serveCustomer(result.recipeId as string);
+    this.deps.onBrewComplete?.(false);
   }
 
   private serveCustomer(recipeId: string): void {

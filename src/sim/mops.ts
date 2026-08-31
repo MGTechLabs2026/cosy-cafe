@@ -44,6 +44,20 @@ function sleepState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
   return { name: 'sleep', timerSec: 8 + Math.random() * 10, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
 }
 
+function sitState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
+  return { name: 'sit', timerSec: 5 + Math.random() * 5, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
+}
+
+function stretchState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
+  return { name: 'stretch', timerSec: 1.2, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
+}
+
+function lookState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
+  return { name: 'look', timerSec: 1.4, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
+}
+
+export { idleState, sleepState, sitState, stretchState, lookState };
+
 export function createInitialMopsState(): MopsState {
   return idleState();
 }
