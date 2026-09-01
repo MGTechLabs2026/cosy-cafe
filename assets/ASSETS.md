@@ -211,6 +211,29 @@ now takes a variant and `preloadAllArt` warms all four.
 `scripts/verify_dist_paths.mjs` checks the four variants explicitly (they
 load via a template-literal path the static scan can't see).
 
+**Follow-up 2026-09-02:** `cafe_room_evening.png` re-cropped from a fresh
+dedicated dusk render (user-supplied single 1672×941 scene, window
+`(240,40,1440,900)` → Lanczos 480×270) — warmer and cleaner than the
+`bg_mesh_2` bottom half, framed to match the other three variants.
+
+## Batch 10 — 2026-09-02 (walk-sheet facing flip — no new art)
+
+No generation. Every Sela / Fenwick / Bram sprite PNG (`*_stand`, `*_walk`,
+`*_walk_1..N` — 25 files) was horizontally mirrored in place so the source
+now faces **screen-right = the counter = the walk-in direction**. Before
+this, all three faced left and moonwalked toward the counter on entry.
+
+Nia (near front-facing, reads fine either way) and Wren (kept facing the
+door) were **not** touched.
+
+Wiring: `render/scene.ts` `drawCharacterSprite` gained a `leaving` arg and a
+`MIRRORED_SOURCE_IDS = {sela, fenwick, bram}` set. When a customer of that
+set is walking out (`cv.leaving`), the sprite is drawn with a canvas
+`scale(-1, 1)` about its centre — mirrored back to face the door on exit.
+Both draw paths (plain + the lean/rotate path) apply it; the flip is placed
+before the lean rotation so the head still swings the correct way. Nia/Wren
+never flip. `assets/` and `public/assets/` kept in sync.
+
 ## Consistency Notes
 
 1. **Black Tea has a tiny face; other drinks don't.** Either embrace it (all drinks get faces — fits the cozy tone) or regenerate R001 faceless. Decide before adding more drink icons.

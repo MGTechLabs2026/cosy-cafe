@@ -259,10 +259,20 @@ export function clearMopsHitRect(): void {
   lastMopsHitRect = null;
 }
 
+/**
+ * Character ids whose walk sheets were mirrored at the asset level to face the
+ * counter (walk-in direction, screen-right). On the way out they move toward
+ * the door (screen-left), so `drawCharacterSprite` mirrors those back with a
+ * canvas flip. Nia (near front-facing) and Wren (kept facing the door) were
+ * left un-mirrored and never flip.
+ */
+const MIRRORED_SOURCE_IDS = new Set(['sela', 'fenwick', 'bram']);
+
 /** Generic cast sprite draw: 2× integer scale, grounded by OPAQUE bounds.
  * `gait` carries the walk-in bob+lean (playtest fix #1); zero at rest. While
  * moving, steps through `characterWalkAnim()` in time with the bob — Sela
- * ping-pongs 3 poses, Fenwick loops 8, everyone else stays on one frame. */
+ * ping-pongs 3 poses, Fenwick loops 8, everyone else stays on one frame.
+ * `leaving` flips the mirrored-source sprites so they face the door on exit. */
 function drawCharacterSprite(
   c: CanvasRenderingContext2D,
   x: number,
@@ -271,10 +281,12 @@ function drawCharacterSprite(
   characterId: string,
   gait: WalkGait = { moving: false, bobPx: 0, leanRad: 0 },
   timeMs: number = 0,
+  leaving: boolean = false,
 ): void {
   const anim = characterWalkAnim(characterId);
   const frameIdx = gait.moving ? walkFrameIndex(anim.frames.length, timeMs, anim.mode) : 0;
   const img = anim.frames[frameIdx] ?? characterSprite(characterId);
+  const mirrorX = leaving && MIRRORED_SOURCE_IDS.has(characterId);
   // Shadow stays GLUED to the floor: it must not bob with the body, or the
   // figure looks like it's hovering instead of stepping.
   ellipseShadow(c, x + CUSTOMER_W / 2, y + CUSTOMER_H - 1, 17, 5);
@@ -295,6 +307,8 @@ function drawCharacterSprite(
         const pivotY = y + CUSTOMER_H;
         c.save();
         c.translate(pivotX, pivotY);
+        // Mirror before the lean so the head still swings the right way.
+        if (mirrorX) c.scale(-1, 1);
         c.rotate(gait.leanRad);
         c.drawImage(
           img,
@@ -304,6 +318,25 @@ function drawCharacterSprite(
           b.maxY - b.minY + 1,
           Math.round(-dw / 2),
           Math.round(-dh),
+          dw,
+          dh,
+        );
+        c.restore();
+        return;
+      }
+      if (mirrorX) {
+        const centerX = x + CUSTOMER_W / 2;
+        c.save();
+        c.translate(centerX, 0);
+        c.scale(-1, 1);
+        c.drawImage(
+          img,
+          b.minX,
+          b.minY,
+          b.maxX - b.minX + 1,
+          b.maxY - b.minY + 1,
+          Math.round(-dw / 2),
+          drawY,
           dw,
           dh,
         );
@@ -657,7 +690,7 @@ export function drawSceneLayer(c: CanvasRenderingContext2D, input: SceneInput, f
     // Walk-in gait (playtest fix #1): bob+lean only while entering; collapses
     // to rest for reduced motion.
     const gait = walkGait(cv.walkT, input.timeMs, input.reducedMotion);
-    drawCharacterSprite(c, pos.x, pos.y, cv.served, cv.characterId, gait, input.timeMs);
+    drawCharacterSprite(c, pos.x, pos.y, cv.served, cv.characterId, gait, input.timeMs, cv.leaving);
 
     if (cv.bubbleVisible) {
       drawBubble(c, pos.x + CUSTOMER_W / 2, pos.y, cv.characterId, cv.bubbleImage, input.timeMs, cv.mysteryOrder, cv.bubbleRecipeId);
