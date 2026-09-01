@@ -827,6 +827,36 @@ html.reduced-motion .page-turn {
   margin-top: 6px;
 }
 
+/* Running purse total — persistent node, repainted in place on each buy. */
+.shop-coins {
+  margin: -4px 0 2px;
+  align-self: flex-end;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-star);
+}
+
+.shop-coins-spent {
+  animation: shop-coins-spent 0.4s ease-out;
+}
+
+@keyframes shop-coins-spent {
+  0% {
+    transform: translateY(-3px);
+    color: var(--color-accent);
+  }
+  100% {
+    transform: translateY(0);
+    color: var(--color-star);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-coins-spent {
+    animation: none;
+  }
+}
+
 /* Sela's cart art, beside the title — visible the instant the shop opens
    once her cart is open (SELA_CART_FROM_DAY). Decorative; hidden via the
    `hidden` attribute (toggled in render()), not removed, so it never has to

@@ -171,6 +171,7 @@ export interface Strings {
     upgradesHeading: string;
     ingredientsHeading: string;
     buyButton: string;
+    coinsLabel: string;
     owned: string;
     priceTemplate: string;
     countTemplate: string;

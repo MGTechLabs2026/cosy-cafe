@@ -76,8 +76,15 @@ function ensureOverlay(): HTMLDivElement {
   header.appendChild(title);
   header.appendChild(cartArt);
 
+  // Running purse total — updated in place on every buy (below), never a
+  // full re-render, so it can pulse when it drops.
+  const coins = document.createElement('p');
+  coins.className = 'shop-coins';
+  coins.setAttribute('aria-live', 'polite');
+
   panel.appendChild(closeX);
   panel.appendChild(header);
+  panel.appendChild(coins);
   overlay.appendChild(panel);
   app.appendChild(overlay);
 
@@ -86,6 +93,25 @@ function ensureOverlay(): HTMLDivElement {
   });
 
   return overlay;
+}
+
+/**
+ * Repaint the purse total from the live coin count. Called on open and after
+ * every successful buy; pulses when the number goes down so a purchase reads.
+ */
+function refreshCoins(): void {
+  if (!hooksRef) return;
+  const el = document.querySelector<HTMLElement>('#shop-overlay .shop-coins');
+  if (!el) return;
+  const coins = hooksRef.getCoins();
+  const prev = el.dataset['coins'] !== undefined ? Number(el.dataset['coins']) : coins;
+  el.dataset['coins'] = String(coins);
+  el.textContent = format(STRINGS.shop.coinsLabel, { amount: coins });
+  if (coins < prev) {
+    el.classList.remove('shop-coins-spent');
+    void el.offsetWidth; // restart the animation on rapid buys
+    el.classList.add('shop-coins-spent');
+  }
 }
 
 /** Wiggle feedback for a rejected purchase (doc 05 §5). */
@@ -121,10 +147,13 @@ function render(overlay: HTMLElement): void {
   // Rebuild everything below the header. openShop() calls render() on EVERY
   // open, so if we leave stale nodes behind the previous day's rows stack
   // above the new day's rows (the shop then shows day-1 state on day 2).
-  // The panel's first two children are the persistent close button and
-  // header (title + Sela's cart art); drop everything after them and
-  // rebuild fresh from the current hooks.
-  while (panel.children.length > 2) panel.removeChild(panel.lastChild as Node);
+  // The panel's first THREE children are persistent — close button, header
+  // (title + Sela's cart art), and the purse total — drop everything after
+  // them and rebuild fresh from the current hooks.
+  while (panel.children.length > 3) panel.removeChild(panel.lastChild as Node);
+
+  delete (panel.children[2] as HTMLElement).dataset['coins']; // fresh baseline, no pulse on open
+  refreshCoins();
 
   // Cart art lives in the persistent header, next to the title — toggle it
   // rather than re-inserting it mid-list, so it's visible without scrolling.
@@ -252,6 +281,7 @@ function upgradeRow(id: UpgradeId, owned: readonly string[]): HTMLElement {
       return;
     }
     hooksRef.onBuyUpgrade(id);
+    refreshCoins();
   });
 
   row.appendChild(buyBtn);
@@ -313,6 +343,7 @@ function ingredientRow(id: IngredientId): HTMLElement {
     // "Tea Leaves × N" must tick up in place, not after reopening the shop.
     const updated = hooksRef.getInventory()[id] ?? 0;
     name.textContent = `${STRINGS.ingredients[id]} × ${updated}`;
+    refreshCoins();
   });
 
   row.appendChild(buyBtn);
