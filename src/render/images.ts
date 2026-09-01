@@ -61,8 +61,17 @@ export interface WalkAnim {
  * Walk-cycle animation for a cast member. Most have exactly one static frame —
  * for those the walk-in reads as motion purely through the bob/lean tween
  * (playtest fix #1), unchanged. Sela (Batch 7) has 3 hand-made poses the
- * renderer ping-pongs; Fenwick (Batch 8) has a full 8-frame cycle it loops.
+ * renderer ping-pongs; Fenwick + Bram (Batch 8) have full loop cycles.
  */
+/** `<id>_walk.png` (frame 0) then `<id>_walk_1.png` … `<id>_walk_<last>.png`. */
+function numberedWalkFrames(id: string, last: number): HTMLImageElement[] {
+  const frames = [loadImage(assetUrl(`assets/sprites/${id}_walk.png`))];
+  for (let i = 1; i <= last; i++) {
+    frames.push(loadImage(assetUrl(`assets/sprites/${id}_walk_${i}.png`)));
+  }
+  return frames;
+}
+
 export function characterWalkAnim(characterId: string): WalkAnim {
   if (characterId === 'sela') {
     return {
@@ -74,13 +83,8 @@ export function characterWalkAnim(characterId: string): WalkAnim {
       mode: 'pingpong',
     };
   }
-  if (characterId === 'fenwick') {
-    const frames = [loadImage(assetUrl('assets/sprites/fenwick_walk.png'))];
-    for (let i = 1; i <= 7; i++) {
-      frames.push(loadImage(assetUrl(`assets/sprites/fenwick_walk_${i}.png`)));
-    }
-    return { frames, mode: 'loop' };
-  }
+  if (characterId === 'fenwick') return { frames: numberedWalkFrames('fenwick', 7), mode: 'loop' };
+  if (characterId === 'bram') return { frames: numberedWalkFrames('bram', 9), mode: 'loop' };
   const single = characterSprite(characterId);
   return { frames: single ? [single] : [], mode: 'loop' };
 }
@@ -208,4 +212,5 @@ export function preloadAllArt(recipeIcons?: string[]): void {
   loadImage(assetUrl('assets/props/sela_cart.png')); // shop-overlay DOM <img>, not canvas-drawn
   characterWalkAnim('sela'); // warm Sela's b/c walk frames
   characterWalkAnim('fenwick'); // warm Fenwick's 8-frame walk cycle
+  characterWalkAnim('bram'); // warm Bram's 10-frame walk cycle
 }

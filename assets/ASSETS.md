@@ -120,35 +120,42 @@ both `drawBubble()` and `bubbleRectFor()` (drawing and hit-testing) call it,
 same shared-geometry pattern the bubble already used for its own size.
 Verified live: bubble now floats correctly clear of Sela's hood.
 
-## Batch 8 — 2026-09-02 (Fenwick re-art + 8-frame walk cycle, user-supplied)
+## Batch 8 — 2026-09-02 (Fenwick + Bram re-art, full walk cycles, user-supplied)
 
-Source: a user-supplied sheet (`fenwick_meshes.png`, 1536×1024) — an 8-frame
-side-view walk cycle (top row) plus a standing pose (bottom-left). Deleted
-after cropping. Same higher-detail illustration style as Sela's Batch 7; the
-two re-arted regulars now share a look distinct from Bram/Nia/Wren.
+Source: two user-supplied sheets, `fenwick_meshes.png` (1536×1024, 8 walk
+frames + a stand pose) and `bram_mesh.png` (1536×1024, 4 stand poses in row 1,
+then a 10-frame walk cycle across rows 2–3). Both deleted after cropping. Same
+higher-detail illustration style as Sela's Batch 7 — the three re-arted
+regulars now share a look distinct from Nia/Wren.
 
-Harder to key than Sela's sheet: the background is a warm radial glow that
-hugs each figure, so a flat colour-distance key left a brown halo behind the
-head. Working method was **difference-from-background**: a 61×61 median of
-each figure's region estimates the smooth glow, then `|source − median| > 26`
-isolates the (non-smooth, pixel-art) figure. Then mirror east, crop to opaque
-bounds, Lanczos-fit to 44×50 within a shared 48×64 canvas.
+Harder to key than Sela's flat-black sheet: the background is a warm radial
+glow that hugs each figure, so a colour-distance key left a brown halo behind
+the head. Working method was **difference-from-background**: a ~61×61 median
+of each figure's region estimates the smooth glow, then `|source − median| >
+~24` isolates the (non-smooth, pixel-art) figure. Then mirror east, crop to
+opaque bounds, Lanczos-fit into a shared 48×64 canvas.
 
 | File | Size | QA |
 |------|------|-----|
-| sprites/fenwick_walk.png … fenwick_walk_7.png | 48×64, opaque ~32×50 each | ✅ pass — 8-frame walk cycle. `fenwick_walk.png` is frame 0 and doubles as the at-rest/served pose (`characterSprite('fenwick')` already points here). All 8 the same opaque height (50) so the cycle doesn't bob vertically. On-screen ~64×100 at 2× — between the base cast (~88) and Sela (~116): a stout, not-tall dwarf. |
+| sprites/fenwick_walk.png … fenwick_walk_7.png | 48×64, opaque ~32×50 each | ✅ pass — 8-frame walk cycle. `fenwick_walk.png` is frame 0 and doubles as the at-rest/served pose (`characterSprite('fenwick')` already points here). All 8 the same opaque height (50) so the cycle doesn't bob vertically. On-screen ~64×100 at 2× — a stout, not-tall dwarf. |
 | sprites/fenwick_stand.png | 48×64, opaque 33×50 | ✅ pass — staged idle pose, not wired. |
 | sprites/fenwick_walk_b.png | — | **deleted** — the old unused 2nd frame; the 8-frame cycle replaces the whole idea. |
+| sprites/bram_walk.png … bram_walk_9.png | 48×64, opaque ~35×54 each | ✅ pass — 10-frame walk cycle (rows 2–3 of the sheet). `bram_walk.png` is frame 0 / at-rest pose. All 10 opaque height 54. On-screen ~70×108 at 2× — a broad, heavy human, tallest of the re-arted trio. Replaces the old 32×48 `bram_walk.png`. |
+| sprites/bram_stand.png | 48×64, opaque 30×54 | ✅ pass — staged idle pose (one of the 4 row-1 stands), not wired. |
 
-Wiring: `characterWalkAnim(id)` now returns `{ frames, mode }`.
-`walkFrameIndex(n, timeMs, mode)` gained a **`loop`** mode (0,1,…,n-1,0,…) for
-a full cycle, alongside Sela's `pingpong`. Fenwick loops his 8 at one frame
-per 110 ms (≈880 ms/cycle — cozy pace, doc 04 "nothing above 12 fps").
+On-screen height order after this batch: Sela ~116 (tall elf) > Bram ~108
+(big human) > Fenwick ~100 (stout dwarf) > base cast Nia/Wren ~88.
+
+Wiring: `characterWalkAnim(id)` returns `{ frames, mode }`.
+`walkFrameIndex(n, timeMs, mode)` has a **`loop`** mode (0,1,…,n-1,0,…) for a
+full cycle alongside Sela's `pingpong`. Fenwick loops 8, Bram loops 10, both
+at one frame per 110 ms (~880 / ~1100 ms per cycle — cozy pace, doc 04
+"nothing above 12 fps"; the slower cycle suits gruff, heavy-footed Bram).
 
 Not verified live in-scene: the debug spawn hook skips the walk-in tween and
-won't advance past the active customer, so Fenwick's cycle was only checked
-via the extracted-frame contact sheet + the unit-tested index math (same
-limitation hit with Sela's walk-in).
+won't advance past the active customer, so the cycles were only checked via
+extracted-frame contact sheets + the unit-tested index math (same limitation
+hit with Sela's walk-in).
 
 ## Consistency Notes
 
