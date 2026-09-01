@@ -102,18 +102,24 @@ const GAIT_AT_REST: WalkGait = { moving: false, bobPx: 0, leanRad: 0 };
  * - `pingpong` (default): 0,1,…,N-1,…,1, 0,1,… — for N=3, a,b,c,b,a,b,c,b…
  *   Right for a short hand-made set that has no mirrored second half (Sela).
  * - `loop`: 0,1,…,N-1, 0,1,… — a full cycle straight through (Fenwick's 8).
+ * - `loop-body`: 1,2,…,N-1, 1,2,… — frame 0 is a held IDLE, never in the
+ *   moving cycle (Wren, whose sheet has a dedicated idle). Undefined for N<2.
  *
  * Single-frame casts always return 0 (unchanged behavior). Pure → unit-tested.
  */
 export function walkFrameIndex(
   frameCount: number,
   timeMs: number,
-  mode: 'pingpong' | 'loop' = 'pingpong',
+  mode: 'pingpong' | 'loop' | 'loop-body' = 'pingpong',
 ): number {
   if (frameCount <= 1) return 0;
   const step = Math.floor(timeMs / WALK_STEP_HALF_PERIOD_MS);
   if (mode === 'loop') {
     return ((step % frameCount) + frameCount) % frameCount;
+  }
+  if (mode === 'loop-body') {
+    const n = frameCount - 1; // frames 1 … frameCount-1
+    return 1 + (((step % n) + n) % n);
   }
   const period = (frameCount - 1) * 2;
   const s = ((step % period) + period) % period;

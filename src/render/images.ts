@@ -48,20 +48,25 @@ export function characterSprite(characterId: string): HTMLImageElement | null {
 }
 
 export interface WalkAnim {
-  /** Ordered walk frames; frames[0] is also the at-rest / served pose. */
+  /** Ordered walk frames; frames[0] is always the at-rest / served pose. */
   frames: HTMLImageElement[];
   /**
-   * `pingpong` bounces a short hand-made set (Sela's a,b,c → a,b,c,b,a…);
-   * `loop` runs a full cycle straight through (Fenwick's 8 frames).
+   * How the renderer steps `frames` while moving:
+   * - `pingpong`: bounce a short hand-made set (Sela a,b,c → a,b,c,b,a…);
+   * - `loop`: run every frame straight through, frames[0] included
+   *   (Fenwick/Bram/Nia — their frame 0 is a walk pose that also serves as rest);
+   * - `loop-body`: hold frames[0] only at rest and cycle frames[1…] while
+   *   moving (Wren — his sheet has a dedicated IDLE separate from the stride).
    */
-  mode: 'pingpong' | 'loop';
+  mode: 'pingpong' | 'loop' | 'loop-body';
 }
 
 /**
  * Walk-cycle animation for a cast member. Most have exactly one static frame —
  * for those the walk-in reads as motion purely through the bob/lean tween
  * (playtest fix #1), unchanged. Sela (Batch 7) has 3 hand-made poses the
- * renderer ping-pongs; Fenwick, Bram + Nia (Batch 8) have full loop cycles.
+ * renderer ping-pongs; Fenwick/Bram/Nia (Batch 8) loop full cycles; Wren
+ * (Batch 8) loops its 6 stride frames over a held IDLE.
  */
 /** `<id>_walk.png` (frame 0) then `<id>_walk_1.png` … `<id>_walk_<last>.png`. */
 function numberedWalkFrames(id: string, last: number): HTMLImageElement[] {
@@ -86,6 +91,7 @@ export function characterWalkAnim(characterId: string): WalkAnim {
   if (characterId === 'fenwick') return { frames: numberedWalkFrames('fenwick', 7), mode: 'loop' };
   if (characterId === 'bram') return { frames: numberedWalkFrames('bram', 9), mode: 'loop' };
   if (characterId === 'nia') return { frames: numberedWalkFrames('nia', 6), mode: 'loop' };
+  if (characterId === 'wren') return { frames: numberedWalkFrames('wren', 6), mode: 'loop-body' };
   const single = characterSprite(characterId);
   return { frames: single ? [single] : [], mode: 'loop' };
 }
@@ -215,4 +221,5 @@ export function preloadAllArt(recipeIcons?: string[]): void {
   characterWalkAnim('fenwick'); // warm Fenwick's 8-frame walk cycle
   characterWalkAnim('bram'); // warm Bram's 10-frame walk cycle
   characterWalkAnim('nia'); // warm Nia's 7-frame walk cycle
+  characterWalkAnim('wren'); // warm Wren's idle + 6-frame shuffle
 }

@@ -120,23 +120,25 @@ both `drawBubble()` and `bubbleRectFor()` (drawing and hit-testing) call it,
 same shared-geometry pattern the bubble already used for its own size.
 Verified live: bubble now floats correctly clear of Sela's hood.
 
-## Batch 8 — 2026-09-02 (Fenwick + Bram + Nia re-art, full walk cycles, user-supplied)
+## Batch 8 — 2026-09-02 (Fenwick + Bram + Nia + Wren re-art, full walk cycles, user-supplied)
 
-Source: three user-supplied sheets, all 1536×1024 — `fenwick_meshes.png`
+Source: four user-supplied sheets, all 1536×1024 — `fenwick_meshes.png`
 (8 walk frames + a stand), `bram_mesh.png` (4 stand poses in row 1, a 10-frame
 walk cycle across rows 2–3), `nia_mesh.png` (a 7-frame run cycle across rows
-1–2, plus a stand in the last cell). All deleted after cropping. Same
-higher-detail illustration style as Sela's Batch 7 — the four re-arted
-regulars now share a look distinct from Wren.
+1–2, plus a stand in the last cell), `wren_mesh.png` (labelled 1–8: two IDLE
+bookends + a 6-frame cane shuffle). All deleted after cropping. Same
+higher-detail illustration style as Sela's Batch 7 — the whole regular cast
+now shares one look, and every regular has a real walk cycle.
 
 Keying: Fenwick + Bram sit on a warm radial glow that hugs each figure, so a
 colour-distance key left a brown halo behind the head. Method there was
 **difference-from-background**: a ~61×61 median of each figure's region
 estimates the smooth glow, then `|source − median| > ~24` isolates the
-(non-smooth, pixel-art) figure. Nia's sheet is flat black like Sela's — a
-plain alpha ramp is enough. Then (Fenwick/Bram only) mirror east — **Nia
-already faces east**, no flip — crop to opaque bounds, Lanczos-fit into the
-shared 48×64 canvas.
+(non-smooth, pixel-art) figure. Nia's + Wren's sheets are flat (black /
+charcoal) like Sela's — a plain alpha ramp is enough (Wren's row bands are
+kept above the printed frame labels). Then (Fenwick/Bram only) mirror east —
+**Nia and Wren already face east**, no flip — crop to opaque bounds,
+Lanczos-fit into the shared 48×64 canvas.
 
 | File | Size | QA |
 |------|------|-----|
@@ -147,16 +149,20 @@ shared 48×64 canvas.
 | sprites/bram_stand.png | 48×64, opaque 30×54 | ✅ pass — staged idle pose (one of the 4 row-1 stands), not wired. |
 | sprites/nia_walk.png … nia_walk_6.png | 48×64, opaque ~28×44 each | ✅ pass — 7-frame run cycle. `nia_walk.png` is frame 0 / at-rest pose. All 7 opaque height 44. On-screen ~56×88 at 2× — a small, bouncy gnome, smallest of the re-arted set. Replaces the old 32×48 `nia_walk.png`. |
 | sprites/nia_stand.png | 48×64, opaque 25×44 | ✅ pass — staged idle pose (last cell of the sheet), not wired. |
+| sprites/wren_walk.png … wren_walk_6.png | 48×64, opaque ~28×48 each | ✅ pass — `wren_walk.png` is the dedicated IDLE (sheet frame 1); `_1…_6` are the stride frames (L stride/mid/push, R stride/mid/push). Held-idle `loop-body` mode — the moving cycle is `_1…_6`, IDLE shows only at rest. On-screen ~56×96 at 2×. Replaces the old 32×48 `wren_walk.png`. |
+| sprites/wren_stand.png | 48×64, opaque 27×48 | ✅ pass — staged idle pose (sheet frame 8, the 2nd IDLE), not wired. |
 
 On-screen height order after this batch: Sela ~116 (tall elf) > Bram ~108
-(big human) > Fenwick ~100 (stout dwarf) > Nia ~88 ≈ base cast Wren ~88.
+(big human) > Fenwick ~100 (stout dwarf) > Wren ~96 (hunched, cane) > Nia ~88
+(small gnome).
 
 Wiring: `characterWalkAnim(id)` returns `{ frames, mode }`; the numbered-frame
 loaders share `numberedWalkFrames(id, last)`.
-`walkFrameIndex(n, timeMs, mode)` has a **`loop`** mode (0,1,…,n-1,0,…) for a
-full cycle alongside Sela's `pingpong`. Nia loops 7, Fenwick 8, Bram 10, all
-at one frame per 110 ms (~770 / ~880 / ~1100 ms per cycle — cozy pace, doc 04
-"nothing above 12 fps"; Bram's slower cycle suits his gruff heavy tread).
+`walkFrameIndex(n, timeMs, mode)` modes: **`pingpong`** (Sela, 3), **`loop`**
+(0,1,…,n-1,0,… — Nia 7, Fenwick 8, Bram 10), and **`loop-body`** (1,…,n-1,1,…
+— Wren, whose frame 0 is a held IDLE separate from the 6 stride frames). One
+frame per 110 ms (~660–1100 ms/cycle — cozy pace, doc 04 "nothing above
+12 fps"; Bram's slower cycle suits his gruff heavy tread, Wren's the shuffle).
 
 Not verified live in-scene: the debug spawn hook skips the walk-in tween and
 won't advance past the active customer, so the cycles were only checked via

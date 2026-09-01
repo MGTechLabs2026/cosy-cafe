@@ -251,4 +251,16 @@ describe('walkFrameIndex (multi-frame walk cycle, e.g. Sela a/b/c)', () => {
   it('loop mode still pins a single-frame cast to 0', () => {
     expect(walkFrameIndex(1, 500, 'loop')).toBe(0);
   });
+
+  it("loop-body mode cycles frames 1…N-1 and never returns frame 0 (Wren's held idle)", () => {
+    // Wren: 7 frames = [idle, 6 strides] → moving cycle is 1,2,3,4,5,6,1,2,…
+    const seen = new Set<number>();
+    for (let step = 0; step < 30; step++) {
+      const idx = walkFrameIndex(7, step * 110, 'loop-body');
+      expect(idx).toBe(1 + (step % 6));
+      seen.add(idx);
+    }
+    expect([...seen].sort()).toEqual([1, 2, 3, 4, 5, 6]); // frame 0 (idle) never in the moving cycle
+    expect(walkFrameIndex(7, 6 * 110, 'loop-body')).toBe(1); // wraps 6 → 1, not → 0
+  });
 });
