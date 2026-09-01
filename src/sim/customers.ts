@@ -74,7 +74,7 @@ export function getCharacter(id: RegularId): CharacterDef {
   return def;
 }
 
-/** Per-character favorites table (doc 03 §4) — replaces FENWICK_FAVORITE_M1. */
+/** Per-character favorites table (doc 03 §4). */
 export const FAVORITES: Readonly<Record<RegularId, string>> = {
   fenwick: 'R004',
   sela: 'R005',
@@ -112,13 +112,6 @@ export function tickPatience(customer: Customer, dtSec: number, relaxedMultiplie
   if (customer.served || customer.entering) return;
   customer.patience = Math.max(0, customer.patience - PATIENCE_DRAIN_PER_SEC * relaxedMultiplier * Math.max(0, dtSec));
 }
-
-/**
- * M1 compatibility alias. Fenwick's favorite moved to R004 (doc 03 §4) in M2;
- * the day-1 teaching beat still uses R003 — see buildDaySchedule.
- * Deprecated: prefer FAVORITES / getCharacter().favoriteRecipeId.
- */
-export const FENWICK_FAVORITE_M1 = 'R001';
 
 function makeCustomer(
   characterId: CharacterId,

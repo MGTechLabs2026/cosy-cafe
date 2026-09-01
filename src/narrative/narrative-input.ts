@@ -47,6 +47,8 @@ export interface UpgradeSnapshot {
 export interface LetterSnapshot {
   archivedLetters: string[];
   lettersDelivered: string[];
+  /** In-game day each letter was delivered, keyed by letter id (v7). */
+  lettersDeliveredDay: Record<string, number>;
   lettersRead: string[];
   lettersDismissed: string[];
   townLettersDelivered: number;
@@ -136,6 +138,7 @@ interface SaveDataLike {
     current_chapter: number;
     chapter_entered_day: Record<number, number>;
     letters_delivered: readonly string[];
+    letters_delivered_day: Record<string, number>;
     letters_read: readonly string[];
     letters_dismissed: readonly string[];
     dominant_dimension_history: readonly string[];
@@ -197,6 +200,7 @@ export function createNarrativeInput(save: {
     current_chapter: number;
     chapter_entered_day: Record<number, number>;
     letters_delivered: readonly string[];
+    letters_delivered_day: Record<string, number>;
     letters_read: readonly string[];
     letters_dismissed: readonly string[];
     dominant_dimension_history: readonly string[];
@@ -294,6 +298,7 @@ export function createNarrativeInput(save: {
   // --- Letters ---
   const archivedLetters = [...save.letters];
   const lettersDelivered = [...save.flags.letters_delivered];
+  const lettersDeliveredDay = { ...save.flags.letters_delivered_day };
   const lettersRead = [...save.flags.letters_read];
   const lettersDismissed = [...save.flags.letters_dismissed];
   const townLettersDeliveredCount = save.letters.filter(l => l.startsWith('town_')).length;
@@ -420,6 +425,7 @@ export function createNarrativeInput(save: {
     letters: {
       archivedLetters,
       lettersDelivered,
+      lettersDeliveredDay,
       lettersRead,
       lettersDismissed,
       townLettersDelivered: townLettersDeliveredCount,
@@ -535,6 +541,8 @@ export interface LetterContext {
   flags: Record<string, boolean>;
   /** Letter ids already delivered */
   lettersDelivered: string[];
+  /** In-game day each letter was delivered, keyed by letter id (drives cooldown). */
+  lettersDeliveredDay: Record<string, number>;
   /** Letter ids already read */
   lettersRead: string[];
   /** Total serves (used only for legacy compatibility) */
@@ -556,6 +564,7 @@ export function createLetterContext(input: NarrativeInput): LetterContext {
     heartsByNpc: input.relationships.displayedHearts,
     flags: input.story.flags,
     lettersDelivered: input.letters.lettersDelivered,
+    lettersDeliveredDay: input.letters.lettersDeliveredDay,
     lettersRead: input.letters.lettersRead,
     totalServes: act.totalServes,
     daysSkipped: input.activity.daysSkipped,

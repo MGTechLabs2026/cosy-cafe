@@ -17,7 +17,24 @@ import type { BrewInput } from '../sim/brewing.js';
 import type { UpgradeId } from '../sim/upgrades.js';
 import type { SaveData } from '../save/validate.js';
 import { exportSaveCode } from '../save/crypto.js';
-import { isEndingOpen as isEndingOpenImpl } from '../ui/ending.js';
+import {
+  debugState as debugStateDev,
+  debugSpawnNow as debugSpawnNowDev,
+  debugChat as debugChatDev,
+  debugBrew as debugBrewDev,
+  debugCloseDay as debugCloseDayDev,
+  debugContinueRecap as debugContinueRecapDev,
+  debugOpenJournal as debugOpenJournalDev,
+  debugCloseJournal as debugCloseJournalDev,
+  debugPetMops as debugPetMopsDev,
+  debugBrewAnimSec as debugBrewAnimSecDev,
+  debugResolveEnding as debugResolveEndingDev,
+  debugBuyUpgrade as debugBuyUpgradeDev,
+  debugPatienceMax as debugPatienceMaxDev,
+  debugShelfCapacity as debugShelfCapacityDev,
+  debugSelaCartOpen as debugSelaCartOpenDev,
+  debugSaveSnapshot as debugSaveSnapshotDev,
+} from './debug.js';
 
 let game: GameController | null = null;
 
@@ -50,75 +67,70 @@ export function reloadFromStorage(): void {
   game?.reloadFromStorage();
 }
 
-// ---- Debug/testing hooks — used by headless smoke tests (EXTEND-only) --------
+export function openJournalToRecipe(recipeId?: string): void {
+  game?.openJournalToRecipe(recipeId);
+}
 
 export function debugState(): object {
-  return game?.debugState() ?? {};
+  return debugStateDev(game);
 }
 
 export function debugSpawnNow(): void {
-  game?.debugSpawnNow();
+  debugSpawnNowDev(game);
 }
 
 export function debugChat(): void {
-  game?.debugChat();
+  debugChatDev(game);
 }
 
 export function debugBrew(input: BrewInput): void {
-  game?.debugBrew(input);
+  debugBrewDev(game, input);
 }
 
 export function debugCloseDay(): void {
-  game?.debugCloseDay();
+  debugCloseDayDev(game);
 }
 
 export function debugContinueRecap(): void {
-  game?.debugContinueRecap();
+  debugContinueRecapDev(game);
 }
 
 export function debugOpenJournal(): void {
-  game?.debugOpenJournal();
+  debugOpenJournalDev(game);
 }
 
 export function debugCloseJournal(): void {
-  game?.debugCloseJournal();
+  debugCloseJournalDev(game);
 }
 
 export function debugPetMops(): void {
-  game?.petMops();
+  debugPetMopsDev(game);
 }
 
-/** Drive the Day-14 run resolution (evaluate → record + present ending). */
 export function debugResolveEnding(): void {
-  game?.debugResolveEnding();
+  debugResolveEndingDev(game);
 }
 
 export function debugBuyUpgrade(id: UpgradeId): void {
-  game?.debugBuyUpgrade(id);
+  debugBuyUpgradeDev(game, id);
 }
 
 export function debugPatienceMax(): number {
-  return game?.debugPatienceMax() ?? 0;
+  return debugPatienceMaxDev(game);
 }
 
 export function debugShelfCapacity(): number {
-  return game?.debugShelfCapacity() ?? 0;
+  return debugShelfCapacityDev(game);
 }
 
 export function debugBrewAnimSec(): number {
-  return game?.debugBrewAnimSec() ?? 0;
+  return debugBrewAnimSecDev(game);
 }
 
 export function debugSelaCartOpen(): boolean {
-  return game?.debugSelaCartOpen() ?? false;
+  return debugSelaCartOpenDev(game);
 }
 
 export function debugSaveSnapshot(): SaveData {
-  return game?.debugSaveSnapshot() ?? ({} as never);
-}
-
-/** True if the ending overlay is currently mounted (test/smoke introspection). */
-export function isEndingOpen(): boolean {
-  // Lazy import keeps the dependency graph identical to the runtime path.
-  return isEndingOpenImpl();
+  return debugSaveSnapshotDev(game);
 }

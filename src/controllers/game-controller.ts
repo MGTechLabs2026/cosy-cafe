@@ -41,7 +41,7 @@ import { KettleController } from './kettle-controller.js';
 import { ServiceController, HINTED_RECIPES, setServiceToastFn } from './service-controller.js';
 import { DayController } from './day-controller.js';
 import { createInitialMopsState, tickMops, petMops, idleState, sleepState, sitState, stretchState, lookState } from '../sim/mops.js';
-import { pickAmbientPresence } from '../sim/presence.js';
+import { pickAmbientPresence, mulberry32 } from '../sim/presence.js';
 
 export interface GameInit {
   saveData: SaveData;
@@ -362,6 +362,7 @@ export class GameController {
     this.tickPresence();
 
     // Tick Mops ambient state machine each frame.
+    const mopsRng = mulberry32(this.dayState.day * 1013904223 + Math.floor(this.presenceElapsedMs / 60000));
     this.mopsState = tickMops(this.mopsState, dtSec, {
       reducedMotion: this.reducedMotion,
       hasWindowBench: this.save.upgrades.includes('window_bench'),
@@ -370,6 +371,7 @@ export class GameController {
       activeMurkyMs: this.mopsMurkyBrewMs,
       chooseCustomerMs: this.mopsChooseCustomerMs,
       nowMs: performance.now(),
+      rng: mopsRng,
     });
 
     // Gentle close suggestion when queue empty and nobody at counter.
@@ -495,6 +497,23 @@ export class GameController {
   /** Drive the Day-14 run resolution from a test (full real flow: evaluate → record → present). */
   debugResolveEnding(): void {
     this.resolveRun();
+  }
+
+  /** Apply a recipe discovery by id (used by UI journal + smoke tests). */
+  openJournalToRecipe(recipeId?: string): void {
+    if (recipeId) {
+      this.openJournalOverlay();
+      // Navigate to the discovered recipe tab within the open journal.
+      openJournalToRecipe(
+        this.save,
+        this.progression.heartLedger,
+        { hintedRecipes: HINTED_RECIPES },
+        { onClose: closeJournal },
+        recipeId,
+      );
+    } else {
+      this.openJournalOverlay();
+    }
   }
 
   debugBuyUpgrade(id: Parameters<ProgressionController['buyUpgrade']>[0]): void {

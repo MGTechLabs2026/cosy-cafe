@@ -30,3 +30,7 @@ coverage/
 .idea/
 .vscode/
 *.swp
+
+# agent tooling (local, per-developer)
+.claude/
+.codex/

@@ -5,6 +5,7 @@
 // static but readable, per doc 04 §1.5.
 
 import { Palette, paletteToCss, paletteToRgba } from './palette.js';
+import { mulberry32 } from '../sim/presence.js';
 
 export interface Particle {
   x: number;
@@ -72,21 +73,21 @@ export function activeParticleCount(): number {
   return activeParticles.length;
 }
 
-/**
- * Spawn steam wisps rising from a served cup while it waits on the counter.
+/** Spawn steam wisps rising from a served cup while it waits on the counter.
  * Call once per spawn tick; each call adds ONE wisp.
  */
 export function spawnSteamWisp(x: number, y: number): void {
   const p = acquireParticle();
-  p.x = x + (Math.random() - 0.5) * 8; // slight horizontal spread
+  const rng = mulberry32((x * 7385609) ^ (y * 19349663) ^ performance.now());
+  p.x = x + (rng() - 0.5) * 8; // slight horizontal spread
   p.y = y;
-  p.vx = (Math.random() - 0.5) * 6; // gentle drift
-  p.vy = -8 - Math.random() * 12; // upward
+  p.vx = (rng() - 0.5) * 6; // gentle drift
+  p.vy = -8 - rng() * 12; // upward
   p.life = 0;
-  p.maxLife = 1.5 + Math.random() * 1.0; // 1.5-2.5 seconds
-  p.radius = 3 + Math.random() * 3;
+  p.maxLife = 1.5 + rng() * 1.0; // 1.5-2.5 seconds
+  p.radius = 3 + rng() * 3;
   p.color = Palette.textMuted;
-  p.alpha = 0.5 + Math.random() * 0.3;
+  p.alpha = 0.5 + rng() * 0.3;
   p.kind = 'steam';
   activeParticles.push(p);
 }
@@ -94,10 +95,11 @@ export function spawnSteamWisp(x: number, y: number): void {
 /** Spawn heart puff from customer on favorite serve */
 export function spawnHeartPuff(x: number, y: number): void {
   const p = acquireParticle();
+  const rng = mulberry32((x * 7385609) ^ (y * 19349663) + 1);
   p.x = x;
   p.y = y - 10; // above customer head
-  p.vx = (Math.random() - 0.5) * 10;
-  p.vy = -20 - Math.random() * 10;
+  p.vx = (rng() - 0.5) * 10;
+  p.vy = -20 - rng() * 10;
   p.life = 0;
   p.maxLife = 1.2;
   p.radius = 6;
@@ -112,11 +114,12 @@ export function spawnSparkle(x: number, y: number): void {
   const p = acquireParticle();
   p.x = x;
   p.y = y;
-  p.vx = (Math.random() - 0.5) * 20;
-  p.vy = (Math.random() - 0.5) * 20;
+  const rng = mulberry32((x * 7385609) ^ (y * 19349663));
+  p.vx = (rng() - 0.5) * 20;
+  p.vy = (rng() - 0.5) * 20;
   p.life = 0;
   p.maxLife = 0.6;
-  p.radius = 2 + Math.random() * 3;
+  p.radius = 2 + rng() * 3;
   p.color = Palette.accentGold;
   p.alpha = 1;
   p.kind = 'sparkle';
@@ -346,17 +349,25 @@ const MAX_SNOWFLAKES = 50;
 
 let snowflakes: Snowflake[] = [];
 
+// One persistent generator for the whole snowfall lifetime. Re-seeded only in
+// initSnowfall so a fresh title screen is deterministic; updateSnowfall must
+// NOT re-seed per frame or every wrap lands in the same column (a fixed first
+// draw from mulberry32(0x5eed)).
+const SNOW_SEED = 0x5eed;
+let snowRng = mulberry32(SNOW_SEED);
+
 /** Initialize snowfall for the title screen. */
 export function initSnowfall(canvasWidth: number, canvasHeight: number): void {
   snowflakes = [];
+  snowRng = mulberry32(SNOW_SEED);
   for (let i = 0; i < MAX_SNOWFLAKES; i++) {
     snowflakes.push({
-      x: Math.random() * canvasWidth,
-      y: Math.random() * canvasHeight,
-      vx: (Math.random() - 0.5) * 10,
-      vy: 20 + Math.random() * 30,
-      radius: 1 + Math.random() * 2,
-      opacity: 0.3 + Math.random() * 0.5,
+      x: snowRng() * canvasWidth,
+      y: snowRng() * canvasHeight,
+      vx: (snowRng() - 0.5) * 10,
+      vy: 20 + snowRng() * 30,
+      radius: 1 + snowRng() * 2,
+      opacity: 0.3 + snowRng() * 0.5,
     });
   }
 }
@@ -377,7 +388,7 @@ export function updateSnowfall(
     // Wrap around
     if (flake.y > canvasHeight) {
       flake.y = -10;
-      flake.x = Math.random() * canvasWidth;
+      flake.x = snowRng() * canvasWidth;
     }
     if (flake.x < -10) flake.x = canvasWidth + 10;
     if (flake.x > canvasWidth + 10) flake.x = -10;

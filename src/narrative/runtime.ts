@@ -86,12 +86,20 @@ export function advanceNarrative(
   for (const sel of selections) {
     const def = ALL_LETTERS.find((l) => l.id === sel.letterId);
     if (!def) continue;
-    // Guard: never re-deliver a consumed letter (idempotent per day).
-    if (save.flags.letters_delivered.includes(def.id)) continue;
+    // Guard: consumed letters deliver exactly once, ever. Non-consumed letters
+    // may re-deliver once their source cooldown has elapsed — the scheduler
+    // enforces cooldown_days from letters_delivered_day before it gets here.
+    const alreadyDelivered = save.flags.letters_delivered.includes(def.id);
+    if (def.consumed && alreadyDelivered) continue;
 
-    // Persist into the mail archive + delivered set.
+    // Persist into the mail archive + delivered set (both deduped).
     if (!save.letters.includes(def.id)) save.letters.push(def.id);
-    save.flags.letters_delivered.push(def.id);
+    if (!alreadyDelivered) save.flags.letters_delivered.push(def.id);
+
+    // Record delivery day for cooldown tracking (v7). Refreshed on every
+    // (re-)delivery so the next cooldown window measures from the latest send.
+    if (!save.flags.letters_delivered_day) save.flags.letters_delivered_day = {};
+    save.flags.letters_delivered_day[def.id] = save.day;
 
     // Set the letter's side-effect flags (e.g. wren_clue_1).
     for (const f of def.sets_flags ?? []) {

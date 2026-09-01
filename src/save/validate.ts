@@ -1,7 +1,7 @@
 // save/validate.ts — doc 02 §7.1 schema validation
 // Hand-rolled validator (~1 KB per doc 08); no dependency. Fail-closed.
 
-export const SAVE_SCHEMA_VERSION = 6;
+export const SAVE_SCHEMA_VERSION = 7;
 export const SAVE_STORAGE_KEY = 'moonleaf_save_v1';
 
 // Shape mirrors doc 02 §7.1 exactly:
@@ -10,6 +10,10 @@ export const SAVE_STORAGE_KEY = 'moonleaf_save_v1';
 // heart_points_today{}, flags.wren_usual_revealed, letters[].
 // v3 additions (M3): arc progress flags.
 // v4 addition (M4): settings.text_size — UI body scale percent (doc 05 §6).
+// v5 additions (M5): narrative system flags.
+// v6 additions (M6): activity ledger counters.
+// v7 addition (M7): flags.letters_delivered_day — per-letter delivery day, for
+// letter-source cooldown tracking (doc 09).
 export interface SaveFlags {
   discovered_recipes: string[];
   learned_prefs: string[];
@@ -44,6 +48,12 @@ export interface SaveFlags {
   chapter_entered_day: Record<number, number>;
   /** IDs of delivered letters */
   letters_delivered: string[];
+  /**
+   * v7 — in-game day each letter was delivered, keyed by letter id. Drives
+   * letter-source cooldown (see LetterScheduler). Only populated for letters
+   * delivered on/after the v7 migration; absent keys mean "no cooldown data".
+   */
+  letters_delivered_day: Record<string, number>;
   /** IDs of letters player actually opened */
   letters_read: string[];
   /** IDs of letters player dismissed without reading */
@@ -288,6 +298,7 @@ export function validateSaveData(input: unknown): ValidationResult {
   const currentChapter = rawFlags['current_chapter'];
   const chapterEnteredDay = rawFlags['chapter_entered_day'];
   const lettersDelivered = rawFlags['letters_delivered'];
+  const lettersDeliveredDay = rawFlags['letters_delivered_day'];
   const lettersRead = rawFlags['letters_read'];
   const lettersDismissed = rawFlags['letters_dismissed'];
   const dominantDimensionHistory = rawFlags['dominant_dimension_history'];
@@ -329,6 +340,7 @@ export function validateSaveData(input: unknown): ValidationResult {
   if (currentChapter !== undefined && (!isFiniteNumber(currentChapter) || !Number.isInteger(currentChapter) || currentChapter < 0 || currentChapter > 5)) return { ok: false };
   if (chapterEnteredDay !== undefined && !isRecord(chapterEnteredDay)) return { ok: false };
   if (lettersDelivered !== undefined && !isStringArray(lettersDelivered)) return { ok: false };
+  if (lettersDeliveredDay !== undefined && !isRecord(lettersDeliveredDay)) return { ok: false };
   if (lettersRead !== undefined && !isStringArray(lettersRead)) return { ok: false };
   if (lettersDismissed !== undefined && !isStringArray(lettersDismissed)) return { ok: false };
   if (dominantDimensionHistory !== undefined && !isStringArray(dominantDimensionHistory)) return { ok: false };
@@ -426,6 +438,7 @@ export function validateSaveData(input: unknown): ValidationResult {
         current_chapter: typeof rawFlags['current_chapter'] === 'number' ? rawFlags['current_chapter'] : 0,
         chapter_entered_day: (isRecord(rawFlags['chapter_entered_day']) ? rawFlags['chapter_entered_day'] : { 0: day }) as Record<number, number>,
         letters_delivered: isStringArray(rawFlags['letters_delivered']) ? rawFlags['letters_delivered'] : (rawLetters ?? []),
+        letters_delivered_day: (isRecord(rawFlags['letters_delivered_day']) ? rawFlags['letters_delivered_day'] : {}) as Record<string, number>,
         letters_read: isStringArray(rawFlags['letters_read']) ? rawFlags['letters_read'] : [],
         letters_dismissed: isStringArray(rawFlags['letters_dismissed']) ? rawFlags['letters_dismissed'] : [],
         dominant_dimension_history: isStringArray(rawFlags['dominant_dimension_history']) ? rawFlags['dominant_dimension_history'] : [],
@@ -517,6 +530,7 @@ export function createInitialSave(): SaveData {
             current_chapter: 0,
             chapter_entered_day: { 0: 1 },
             letters_delivered: ['letter_marigold_1'],
+            letters_delivered_day: {},
             letters_read: [],
             letters_dismissed: [],
             dominant_dimension_history: [],

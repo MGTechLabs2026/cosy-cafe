@@ -4,6 +4,7 @@
 // M1: the café is alive — day cycle, brewing, Fenwick, coins, recap, autosave.
 
 import { initAudio } from './audio/howl.js';
+import { devWarn } from './ui/logger.js';
 import {
   beginFrame,
   drawCafeRoom,
@@ -32,6 +33,7 @@ import {
   reloadFromStorage,
   render,
   tickGame,
+  openJournalToRecipe,
 } from './ui/game.js';
 import { openJournal, closeJournal, isJournalOpen } from './ui/journal.js';
 import { initHUD, showHUD, updateHUD } from './ui/hud.js';
@@ -97,7 +99,9 @@ function openJournalOverlay(): void {
     closeJournal();
     return;
   }
-  import('./ui/game.js').then(({ debugOpenJournal }) => debugOpenJournal());
+  // Delegate to the game controller; keeps journal opening out of the main
+  // bootstrap loop (avoids an extra dynamic import chunk and Vite warning).
+  openJournalToRecipe();
 }
 
 function openSettingsOverlay(): void {
@@ -244,7 +248,7 @@ function startLoop(): void {
     if (frameDelta > LONG_TASK_MS) {
       // Dev-mode long-task audit: visible, throttled by nature (only on the
       // offending frame), never thrown — a slow frame must not kill the loop.
-      console.warn(
+      devWarn(
         `[Moonleaf] long frame ${frameDelta.toFixed(1)}ms (> ${LONG_TASK_MS}ms) at t=${(now / 1000).toFixed(1)}s`,
       );
     }
@@ -290,23 +294,25 @@ declare global {
   }
 }
 
-window.__moonleaf = {
-  debugState: () => debugState(),
-  debugSpawnNow: () => debugSpawnNow(),
-  debugChat: () => debugChat(),
-  debugBrew: (input) => debugBrew(input),
-  debugCloseDay: () => debugCloseDay(),
-  debugContinueRecap: () => debugContinueRecap(),
-  debugOpenJournal: () => debugOpenJournal(),
-  debugCloseJournal: () => debugCloseJournal(),
-  debugPetMops: () => debugPetMops(),
-  exportCode: async (): Promise<string> => {
-    const raw = localStorage.getItem('moonleaf_save_v1');
-    if (raw === null) throw new Error('no save to export');
-    const { exportSaveCode: exp } = await import('./save/crypto.js');
-    return exp(raw);
-  },
-};
+if (import.meta.env.DEV) {
+  window.__moonleaf = {
+    debugState: () => debugState(),
+    debugSpawnNow: () => debugSpawnNow(),
+    debugChat: () => debugChat(),
+    debugBrew: (input) => debugBrew(input),
+    debugCloseDay: () => debugCloseDay(),
+    debugContinueRecap: () => debugContinueRecap(),
+    debugOpenJournal: () => debugOpenJournal(),
+    debugCloseJournal: () => debugCloseJournal(),
+    debugPetMops: () => debugPetMops(),
+    exportCode: async (): Promise<string> => {
+      const raw = localStorage.getItem('moonleaf_save_v1');
+      if (raw === null) throw new Error('no save to export');
+      const { exportSaveCode: exp } = await import('./save/crypto.js');
+      return exp(raw);
+    },
+  };
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => void main());

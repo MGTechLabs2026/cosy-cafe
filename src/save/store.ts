@@ -4,6 +4,7 @@
 // single atomic write, never during service.
 
 import { importSaveCode } from './crypto.js';
+import { devWarn } from '../ui/logger.js';
 import {
   SAVE_SCHEMA_VERSION,
   SAVE_STORAGE_KEY,
@@ -49,6 +50,10 @@ export function isStorageAvailable(): boolean {
  * v4 → v5 (M5): adds narrative system flags with safe defaults.
  *
  * v5 → v6 (M6): adds activity ledger counters with safe defaults.
+ *
+ * v6 → v7 (M7): adds flags.letters_delivered_day {} — per-letter delivery day
+ * for letter cooldown tracking. Empty for existing saves: letters already
+ * delivered simply carry no cooldown history, which is the safe default.
  */
 function migrateV1toV2(data: Record<string, unknown>): Record<string, unknown> {
   return {
@@ -163,13 +168,25 @@ function migrateV5toV6(data: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+function migrateV6toV7(data: Record<string, unknown>): Record<string, unknown> {
+  const flags = isRecord(data['flags']) ? data['flags'] : {};
+  return {
+    ...data,
+    flags: {
+      ...flags,
+      // v7 — per-letter delivery day for cooldown tracking (empty = no history)
+      letters_delivered_day: {},
+    },
+  };
+}
+
 /** Local structural guard (store.ts stays free of validator imports cycles). */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 type MigrationFn = (data: Record<string, unknown>) => Record<string, unknown>;
-const MIGRATIONS: readonly MigrationFn[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6];
+const MIGRATIONS: readonly MigrationFn[] = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6, migrateV6toV7];
 
 function migrate(data: Record<string, unknown>): Record<string, unknown> {
   let current = data;
@@ -198,7 +215,7 @@ export function loadSave(): LoadResult {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      console.warn(
+      devWarn(
         `[Moonleaf] Save at "${SAVE_STORAGE_KEY}" is not valid JSON — starting fresh. ` +
           `The damaged save was kept at "${SAVE_STORAGE_KEY}/corrupt-backup".`,
       );
@@ -206,7 +223,7 @@ export function loadSave(): LoadResult {
       return { ok: false, reason: 'corrupt' };
     }
     if (!isRecord(parsed)) {
-      console.warn(`[Moonleaf] Save at "${SAVE_STORAGE_KEY}" has an unreadable shape — starting fresh.`);
+      devWarn(`[Moonleaf] Save at "${SAVE_STORAGE_KEY}" has an unreadable shape — starting fresh.`);
       quarantineCorruptSave(raw);
       return { ok: false, reason: 'corrupt' };
     }

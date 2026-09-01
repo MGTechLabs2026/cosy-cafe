@@ -10,6 +10,7 @@ import {
   createEmptyCounters
 } from './narrative-test-utils';
 import { CHAPTER_CONFIGS, ENDING_CONFIGS, ALL_LETTERS, TRAJECTORY_RULES } from '../src/narrative/story-definitions';
+import type { NarrativeLetter } from '../src/narrative/story-definitions';
 
 function createMockState(overrides: Partial<{
   chapter: number;
@@ -98,6 +99,7 @@ function createMockSaveData(overrides: Partial<{
     heartsByNpc: saveData.hearts,
     flags: Object.fromEntries(Object.entries(flags).filter(([, v]) => typeof v === 'boolean')) as Record<string, boolean>,
     lettersDelivered,
+    lettersDeliveredDay: (flags['letters_delivered_day'] as Record<string, number>) ?? {},
     lettersRead: (flags['letters_read'] as string[]) ?? [],
     totalServes: saveData.total_serves,
     daysSkipped: 0,
@@ -289,5 +291,49 @@ describe('LetterScheduler', () => {
     const deliveries1 = letterScheduler.selectNextLetters(state, ctx, 2);
     const deliveries2 = letterScheduler.selectNextLetters(state, ctx, 2);
     expect(deliveries1.map(d => d.letterId)).toEqual(deliveries2.map(d => d.letterId));
+  });
+
+  describe('source cooldown (v7 letters_delivered_day)', () => {
+    // A repeatable (non-consumed) letter with a 3-day source cooldown.
+    const cooldownLetter: NarrativeLetter = {
+      id: 'cooldown_probe',
+      source: 'town',
+      chapter: 0,
+      category: 'reactive',
+      requires: {},
+      priority: 50,
+      cooldown_days: 3,
+      mandatory: false,
+      skippable: true,
+      consumed: false,
+      content_id: 'letters.reactive.cooldown_probe',
+    };
+    const soloScheduler = new LetterScheduler([cooldownLetter], TRAJECTORY_RULES);
+
+    it('skips a letter still inside its cooldown window', () => {
+      const state = createMockState({ chapter: 1 });
+      const { ctx } = createMockSaveData({
+        day: 10,
+        flags: { letters_delivered: ['cooldown_probe'], letters_delivered_day: { cooldown_probe: 8 } },
+      });
+      expect(soloScheduler.selectNextLetters(state, ctx, 1)).toEqual([]);
+    });
+
+    it('re-delivers once the cooldown has elapsed', () => {
+      const state = createMockState({ chapter: 1 });
+      const { ctx } = createMockSaveData({
+        day: 10,
+        flags: { letters_delivered: ['cooldown_probe'], letters_delivered_day: { cooldown_probe: 6 } },
+      });
+      const deliveries = soloScheduler.selectNextLetters(state, ctx, 1);
+      expect(deliveries.map(d => d.letterId)).toEqual(['cooldown_probe']);
+    });
+
+    it('delivers when there is no recorded delivery day', () => {
+      const state = createMockState({ chapter: 1 });
+      const { ctx } = createMockSaveData({ day: 10, flags: { letters_delivered: [], letters_delivered_day: {} } });
+      const deliveries = soloScheduler.selectNextLetters(state, ctx, 1);
+      expect(deliveries.map(d => d.letterId)).toEqual(['cooldown_probe']);
+    });
   });
 });

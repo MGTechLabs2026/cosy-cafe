@@ -114,6 +114,28 @@ describe('migration v1 → v2 (doc 02 §7.1 oldest-first)', () => {
     expect(save.letters).toContain('letter_marigold_1');
     expect(save.hearts).toEqual({});
   });
+
+  it('v6 → v7 migration adds an empty letters_delivered_day map', () => {
+    // Take a current save, strip the v7 field and relabel it v6 → the only
+    // migration that should run is v6 → v7.
+    const v6 = JSON.parse(JSON.stringify(freshSave())) as {
+      version: number;
+      flags: Record<string, unknown>;
+    };
+    v6.version = 6;
+    v6.flags['letters_delivered'] = ['reactive_ingredient_low'];
+    delete v6.flags['letters_delivered_day'];
+    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(v6));
+
+    const loaded = loadSave();
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.data.version).toBe(SAVE_SCHEMA_VERSION);
+      // Existing deliveries carry no cooldown history — the safe default.
+      expect(loaded.data.flags.letters_delivered_day).toEqual({});
+      expect(loaded.data.flags.letters_delivered).toContain('reactive_ingredient_low');
+    }
+  });
 });
 
 describe('export/import round-trip + tamper refusal at v2', () => {

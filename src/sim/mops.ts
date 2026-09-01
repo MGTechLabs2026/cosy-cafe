@@ -37,15 +37,15 @@ const BENCH_X = GAME_WIDTH - 150;
 const HEARTH_X = GAME_WIDTH - 96;
 
 function idleState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
-  return { name: 'idle', timerSec: 4 + Math.random() * 6, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
+  return { name: 'idle', timerSec: 4, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
 }
 
 function sleepState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
-  return { name: 'sleep', timerSec: 8 + Math.random() * 10, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
+  return { name: 'sleep', timerSec: 8, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
 }
 
 function sitState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
-  return { name: 'sit', timerSec: 5 + Math.random() * 5, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
+  return { name: 'sit', timerSec: 5, x, groundY, walking: false, walkT: 0, walkFromX: x, walkToX: x };
 }
 
 function stretchState(x = HEARTH_X, groundY = DEFAULT_GROUND_Y): MopsState {
@@ -73,8 +73,11 @@ export function tickMops(
     activeMurkyMs: number;
     chooseCustomerMs: number;
     nowMs: number;
+    rng?: () => number;
   },
 ): MopsState {
+  const rng = opts.rng ?? Math.random;
+  const rand = (): number => rng();
   if (opts.reducedMotion) {
     return instant(state);
   }
@@ -131,7 +134,7 @@ export function tickMops(
   }
 
   // Window bench relocation.
-  if (opts.hasWindowBench && !next.walking && next.groundY !== BENCH_GROUND_Y && Math.random() < dtSec * 0.05) {
+  if (opts.hasWindowBench && !next.walking && next.groundY !== BENCH_GROUND_Y && rand() < dtSec * 0.05) {
     const targetX = BENCH_X;
     if (Math.abs(next.x - targetX) > 4) {
       return walkTo(next, targetX, BENCH_GROUND_Y, () => sleepState(targetX, BENCH_GROUND_Y));
@@ -139,7 +142,7 @@ export function tickMops(
   }
 
   // Rare stretch from idle.
-  if (next.name === 'idle' && Math.random() < dtSec * 0.04) {
+  if (next.name === 'idle' && rand() < dtSec * 0.04) {
     return { ...next, name: 'stretch', timerSec: 1.2 };
   }
 

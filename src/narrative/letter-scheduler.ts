@@ -207,9 +207,15 @@ export class LetterScheduler {
       if (!chapterSourceCounts[chapterKey]) chapterSourceCounts[chapterKey] = {};
       if ((chapterSourceCounts[chapterKey][letter.source] ?? 0) >= 3) continue;
 
-      // Check source cooldown
+      // Check source cooldown: don't re-deliver this letter within
+      // cooldown_days of its last delivery. Delivery days come from
+      // ctx.lettersDeliveredDay (SaveFlags.letters_delivered_day, v7); a
+      // missing entry means the letter has no recorded delivery, so it passes.
       if (letter.cooldown_days && letter.cooldown_days > 0) {
-        // TODO: implement cooldown tracking
+        const lastDeliveredDay = ctx.lettersDeliveredDay[letter.id];
+        if (lastDeliveredDay !== undefined && ctx.day - lastDeliveredDay < letter.cooldown_days) {
+          continue;
+        }
       }
 
       selected.push({
