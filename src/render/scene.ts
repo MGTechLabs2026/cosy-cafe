@@ -150,16 +150,22 @@ export interface HitRect {
   h: number;
 }
 
+// Order-bubble geometry — the single source shared by drawBubble() (drawing)
+// and bubbleRectFor() (hit-testing) so the two can never drift. The drink icon
+// draws at 2× its 32px native size (integer scale = crisp pixel art); the panel
+// is sized to hold it plus the shape-lane chip.
+const BUBBLE_ICON_PX = 64;
+const BUBBLE_W = 84;
+const BUBBLE_H = 72;
+
 /** Bubble layout for a customer anchor point (x = sprite center, y = top).
  * Mirrors drawBubble()'s panel geometry; +6 covers the pointer tail. */
 export function bubbleRectFor(anchorX: number, anchorY: number): HitRect {
-  const w = 56;
-  const h = 42;
   return {
-    x: Math.round(anchorX - w / 2),
-    y: Math.round(anchorY - CUSTOMER_H - h - 8),
-    w,
-    h: h + 6,
+    x: Math.round(anchorX - BUBBLE_W / 2),
+    y: Math.round(anchorY - CUSTOMER_H - BUBBLE_H - 8),
+    w: BUBBLE_W,
+    h: BUBBLE_H + 6,
   };
 }
 
@@ -360,10 +366,11 @@ function drawBubble(
   mysteryOrder: boolean = false,
   recipeId: string | null = null,
 ): void {
-  // Layout: [shape lane 16px][icon at NATIVE 32×32] — downscaling pixel art to
-  // 24px mangles it regardless of smoothing mode, so the bubble grows instead.
-  const w = 56;
-  const h = 42;
+  // Layout: [shape-lane chip][drink icon at 2× = 64×64]. Pixel art only scales
+  // cleanly by whole numbers, so the panel grows to hold a 2× icon rather than
+  // squeezing the art (doc 05 §6).
+  const w = BUBBLE_W;
+  const h = BUBBLE_H;
   const bx = Math.round(x - w / 2);
   const by = Math.round(y - CUSTOMER_H - h - 8);
   rect(c, bx, by, w, h, Palette.bgPanel);
@@ -379,32 +386,34 @@ function drawBubble(
 
   // Shape lane (color-independent identification, doc 05 §6): outlined chip on
   // the left, glyph inside. Reads even when the icon art fails to load.
-  const chipX = bx + 2;
+  const chipX = bx + 3;
   const chipY = Math.round(by + h / 2) - 7;
   c.fillStyle = paletteToCss(Palette.bgPanelBorder);
   c.fillRect(chipX, chipY, 12, 14);
   drawShapeBadge(c, chipX + 2, chipY + 3, shapeForRecipe(recipeId));
 
-  const iconX = bx + 20;
+  const iconX = chipX + 15;
+  const iconY = by + 4;
   if (mysteryOrder) {
     // Wren's unrevealed "usual" — a calm "?" glyph in the icon slot, never a
     // wrong drink hint (doc 05 §3.1: generic-cup icon with "?"). The cup badge
     // already says "drink" without guessing at the recipe.
     c.fillStyle = paletteToCss(Palette.accentGold);
-    c.fillRect(iconX + 5, by + 12, 10, 3); // top bar
-    c.fillRect(iconX + 12, by + 15, 3, 4); // upper hook
-    c.fillRect(iconX + 8, by + 19, 5, 3); // middle nub
-    c.fillRect(iconX + 8, by + 26, 3, 3); // dot
+    c.fillRect(iconX + 12, iconY + 12, 22, 6); // top bar
+    c.fillRect(iconX + 28, iconY + 18, 6, 10); // upper hook
+    c.fillRect(iconX + 18, iconY + 30, 12, 6); // middle nub
+    c.fillRect(iconX + 18, iconY + 44, 6, 6); // dot
     return;
   }
   if (image && image.complete && image.naturalWidth > 0) {
-    c.drawImage(image, iconX, by + 5);
+    c.imageSmoothingEnabled = false; // crisp 2× nearest-neighbour upscale
+    c.drawImage(image, iconX, iconY, BUBBLE_ICON_PX, BUBBLE_ICON_PX);
   } else {
     // Icon still loading (or missing asset): gentle pulse square keeps the
     // promise of a picture without inventing one.
     const pulse = 0.5 + 0.5 * Math.sin(timeMs / 300);
     c.fillStyle = paletteToRgba(Palette.accentGold, 0.3 + 0.4 * pulse);
-    c.fillRect(iconX + 8, by + 9, 16, 16);
+    c.fillRect(iconX + 16, iconY + 16, 32, 32);
   }
 }
 

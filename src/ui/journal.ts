@@ -7,7 +7,7 @@
 
 import { STRINGS, format } from '../data/strings.js';
 import { recipeToView } from '../data/recipes.js';
-import { portraitSprite } from '../render/images.js';
+import { portraitSprite, loadDrinkIcon } from '../render/images.js';
 import { CHARACTERS, FAVORITES } from '../sim/customers.js';
 import type { RegularId } from '../sim/customers.js';
 import { displayedHearts } from '../sim/hearts.js';
@@ -240,7 +240,7 @@ function renderRecipes(
     if (!view) continue;
 
     const card = document.createElement('div');
-    card.className = 'journal-card';
+    card.className = 'journal-card journal-recipe';
     card.setAttribute('data-recipe-id', recipeId);
 
     // New-discovery entrance: page-turn animation + persistent highlight ring.
@@ -249,6 +249,21 @@ function renderRecipes(
       card.classList.add('journal-card-new');
       card.classList.add('page-turn');
     }
+
+    // Drink icon: the real art once the recipe is discovered; while it is still
+    // a riddle, the same icon renders as a flat black silhouette (CSS) — the
+    // shape hints at the drink without giving away colour or detail.
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'journal-recipe-icon';
+    if (!known) iconWrap.classList.add('journal-recipe-icon-riddle');
+    const icon = loadDrinkIcon(view.icon);
+    if (icon.complete && icon.naturalWidth > 0) {
+      icon.alt = '';
+      iconWrap.appendChild(icon);
+    }
+
+    const textCol = document.createElement('div');
+    textCol.className = 'journal-recipe-text';
 
     const name = document.createElement('p');
     name.className = 'journal-card-title';
@@ -259,8 +274,10 @@ function renderRecipes(
     body.className = 'note';
     body.textContent = known ? view.combo : `??? — ${riddleBodyFor(recipeId)}`;
 
-    card.appendChild(name);
-    card.appendChild(body);
+    textCol.appendChild(name);
+    textCol.appendChild(body);
+    card.appendChild(iconWrap);
+    card.appendChild(textCol);
     content.appendChild(card);
   }
 

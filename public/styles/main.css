@@ -742,6 +742,43 @@ html.reduced-motion .page-turn {
   display: block;
 }
 
+.journal-recipe {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.journal-recipe-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  image-rendering: pixelated;
+  border: 1px solid var(--color-panel-border);
+  border-radius: 3px;
+  background: #17131f;
+  overflow: hidden;
+}
+
+.journal-recipe-icon img {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+/* Undiscovered recipe: the icon renders as a flat black silhouette on a
+   paler ground so the drink's shape hints at it without revealing detail. */
+.journal-recipe-icon-riddle {
+  background: var(--color-text-muted);
+}
+
+.journal-recipe-icon-riddle img {
+  filter: brightness(0);
+  opacity: 0.9;
+}
+
 .journal-hearts {
   color: var(--color-star);
   letter-spacing: 2px;
