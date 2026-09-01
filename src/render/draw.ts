@@ -20,6 +20,20 @@ export function setRoomVariantProvider(read: () => RoomVariant): void {
   roomVariantProvider = read;
 }
 
+// Crossfade between backdrops: when the provider returns a new variant (door
+// opens → morning→day; last customer leaves → day→evening) the new art fades
+// in over the old rather than cutting. Timed off performance.now() since
+// drawCafeRoom() gets no dt. Reduced motion snaps.
+const ROOM_FADE_MS = 1400;
+let shownVariant: RoomVariant | null = null;
+let fadeToVariant: RoomVariant | null = null;
+let fadeStartMs = 0;
+
+function reducedMotion(): boolean {
+  return typeof document !== 'undefined'
+    && document.documentElement.classList.contains('reduced-motion');
+}
+
 /**
  * Bind the renderer to a specific canvas element. Called by the bootstrap
  * AFTER appending the element to the DOM. Rebinding is cheap and idempotent;
@@ -164,9 +178,40 @@ export function particle(
  * M0 warm-band placeholder so the screen is never blank during load.
  */
 export function drawCafeRoom(c: CanvasRenderingContext2D): void {
-  const room = cafeRoom(roomVariantProvider());
-  if (room.complete && room.naturalWidth > 0) {
-    c.drawImage(room, 0, 0);
+  const want = roomVariantProvider();
+  const now = performance.now();
+  if (shownVariant === null) shownVariant = want; // first frame: no fade
+
+  // A new target starts (or re-aims) a crossfade from whatever's on screen.
+  if (want !== shownVariant && want !== fadeToVariant) {
+    if (reducedMotion()) {
+      shownVariant = want;
+      fadeToVariant = null;
+    } else {
+      fadeToVariant = want;
+      fadeStartMs = now;
+    }
+  }
+
+  const base = cafeRoom(shownVariant);
+  if (base.complete && base.naturalWidth > 0) {
+    c.drawImage(base, 0, 0);
+    if (fadeToVariant) {
+      const top = cafeRoom(fadeToVariant);
+      if (top.complete && top.naturalWidth > 0) {
+        const t = Math.min(1, (now - fadeStartMs) / ROOM_FADE_MS);
+        const eased = t * t * (3 - 2 * t); // smoothstep
+        c.save();
+        c.globalAlpha = eased;
+        c.drawImage(top, 0, 0);
+        c.restore();
+        if (t >= 1) {
+          shownVariant = fadeToVariant;
+          fadeToVariant = null;
+        }
+      }
+      // target still loading → hold on base this frame, retry next
+    }
     return;
   }
   // Walls: three horizontal bands, warm and dim toward the top.

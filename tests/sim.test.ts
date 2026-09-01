@@ -41,10 +41,18 @@ describe('roomVariantFor — backdrop by time of day + season', () => {
     expect(roomVariantFor(WINTER_FROM_DAY - 1, 'service')).toBe('day');
   });
 
-  it('locks to snow from WINTER_FROM_DAY onward, whatever the phase', () => {
+  it('shifts the service backdrop to evening once the day is winding down', () => {
+    expect(roomVariantFor(3, 'service', false)).toBe('day');
+    expect(roomVariantFor(3, 'service', true)).toBe('evening'); // last customer gone
+    // prep/recap ignore the flag
+    expect(roomVariantFor(3, 'prep', true)).toBe('morning');
+    expect(roomVariantFor(3, 'recap', true)).toBe('evening');
+  });
+
+  it('locks to snow from WINTER_FROM_DAY onward, whatever the phase or flag', () => {
     for (const phase of ['prep', 'service', 'recap'] as const) {
       expect(roomVariantFor(WINTER_FROM_DAY, phase)).toBe('snow');
-      expect(roomVariantFor(14, phase)).toBe('snow');
+      expect(roomVariantFor(14, phase, true)).toBe('snow');
     }
   });
 });

@@ -29,13 +29,20 @@ export const WINTER_FROM_DAY = 11;
 /**
  * Backdrop for the current day + phase. Winter (day ≥ WINTER_FROM_DAY) wins
  * over the time-of-day cycle; otherwise prep = morning, service = day,
- * recap = evening. Pure — unit-tested.
+ * recap = evening. `serviceWindingDown` (no arrivals left, nobody at the
+ * counter) flips the service backdrop to evening early, so the light shifts
+ * toward dusk as a "closing time" cue before the recap. The renderer
+ * crossfades between whatever this returns frame to frame. Pure — unit-tested.
  */
-export function roomVariantFor(day: number, phase: Phase): RoomVariant {
+export function roomVariantFor(
+  day: number,
+  phase: Phase,
+  serviceWindingDown = false,
+): RoomVariant {
   if (day >= WINTER_FROM_DAY) return 'snow';
   if (phase === 'prep') return 'morning';
   if (phase === 'recap') return 'evening';
-  return 'day';
+  return serviceWindingDown ? 'evening' : 'day';
 }
 
 export function createInitialDayState(): DayState {

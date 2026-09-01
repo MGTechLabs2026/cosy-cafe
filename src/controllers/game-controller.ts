@@ -181,7 +181,16 @@ export class GameController {
       onMopsClick: () => this.petMops(),
     });
     setCafeDomPhaseProvider(() => this.dayState.phase);
-    setRoomVariantProvider(() => roomVariantFor(this.dayState.day, this.dayState.phase));
+    setRoomVariantProvider(() =>
+      roomVariantFor(
+        this.dayState.day,
+        this.dayState.phase,
+        // "last customer left" — nobody at the counter, no arrivals to come.
+        this.dayState.phase === 'service' &&
+          !this.service.hasActive &&
+          !this.service.arrivalsRemaining,
+      ),
+    );
 
     this.day.wire(
       {
