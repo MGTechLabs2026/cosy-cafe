@@ -540,6 +540,53 @@ describe('M2 smoke — PASS lines', () => {
     console.log('PASS: journal open/close');
   });
 
+  it('PASS: per-day recap tallies reset at the next morning (not run-cumulative)', () => {
+    startNewGame();
+
+    // Day 1: earn some coins and serves by working the scheduled arrivals.
+    openMorning();
+    const plan = (debugState() as {
+      schedule: { orderRecipeId: string | null }[];
+    }).schedule.slice();
+    let served = 0;
+    for (let i = 0; i < plan.length && served < 2; i++) {
+      debugSpawnNow();
+      tickGame(3.0, 0);
+      if (!(debugState() as { hasActive: boolean }).hasActive) continue;
+      debugBrew(recipeInputs[plan[i]!.orderRecipeId ?? 'R001']!);
+      served += 1;
+      tickGame(0.7, 100);
+    }
+
+    const day1 = debugState() as {
+      day: number;
+      coinsEarnedToday: number;
+      servesToday: number;
+    };
+    expect(day1.day).toBe(1);
+    expect(served).toBe(2);
+    expect(day1.coinsEarnedToday).toBeGreaterThan(0);
+    expect(day1.servesToday).toBe(2);
+
+    // Close → continue past recap → rolls to Day 2 morning.
+    debugCloseDay();
+    debugContinueRecap();
+
+    const day2 = debugState() as {
+      day: number;
+      coinsEarnedToday: number;
+      servesToday: number;
+      discoveriesToday: string[];
+    };
+    expect(day2.day).toBe(2);
+    // The bug: beginDayResets never called service.beginDay(), so these kept
+    // accumulating and the evening recap reported run totals as "today".
+    expect(day2.coinsEarnedToday).toBe(0);
+    expect(day2.servesToday).toBe(0);
+    expect(day2.discoveriesToday).toEqual([]);
+    console.log('PASS: recap tallies roll over each morning');
+  });
+
   it('PASS: save/reload continuity — upgrades/day/hearts survive loadSave()', () => {
     startNewGame();
     openMorning();

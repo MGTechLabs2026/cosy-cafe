@@ -217,6 +217,10 @@ export class GameController {
   private beginDayResets(_schedule: readonly unknown[]): void {
     clearAllParticles();
     resetCupSlide();
+    // Per-day service tallies (coins earned, drinks served, discoveries, hearts)
+    // roll over here — without this the evening recap reports run-cumulative
+    // totals instead of "today". openService() later sets the real schedule.
+    this.service.beginDay([]);
     this.progression.resetHeartDay(); // daily +1.0 cap resets each morning (doc 02 §5)
   }
 
