@@ -47,6 +47,24 @@ export function characterSprite(characterId: string): HTMLImageElement | null {
   }
 }
 
+/**
+ * Ordered walk-cycle frames for a cast member. Everyone but Sela has exactly
+ * one static frame — for those, the walk-in reads as motion purely through
+ * the bob/lean tween (playtest fix #1), same as before. Sela has three real
+ * walk poses (Batch 7), so the renderer ping-pongs through them while moving.
+ */
+export function characterWalkFrames(characterId: string): HTMLImageElement[] {
+  if (characterId === 'sela') {
+    return [
+      loadImage(assetUrl('assets/sprites/sela_walk.png')),
+      loadImage(assetUrl('assets/sprites/sela_walk_b.png')),
+      loadImage(assetUrl('assets/sprites/sela_walk_c.png')),
+    ];
+  }
+  const single = characterSprite(characterId);
+  return single ? [single] : [];
+}
+
 /** 48×48 journal/portrait art by cast id. */
 export function portraitSprite(characterId: string): HTMLImageElement | null {
   switch (characterId) {
@@ -167,4 +185,6 @@ export function preloadAllArt(recipeIcons?: string[]): void {
   // journal open ever waits on disk mid-frame.
   for (const id of ['sela', 'bram', 'nia', 'wren']) characterSprite(id);
   for (const id of ['fenwick', 'sela', 'bram', 'nia', 'wren']) portraitSprite(id);
+  loadImage(assetUrl('assets/props/sela_cart.png')); // shop-overlay DOM <img>, not canvas-drawn
+  characterWalkFrames('sela'); // warm the b/c walk-cycle frames too
 }

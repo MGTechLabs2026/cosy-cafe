@@ -809,8 +809,38 @@ html.reduced-motion .page-turn {
 
 /* ---- Shop (doc 05 §3.3 recap shop button → evening market) ---- */
 
+.shop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* Room for the absolutely-positioned close button (top:10px right:12px,
+     28px square) so the cart art never sits under it. */
+  padding-right: 34px;
+}
+
+.shop-header h2 {
+  margin: 0;
+}
+
 .shop-section-heading {
   margin-top: 6px;
+}
+
+/* Sela's cart art, beside the title — visible the instant the shop opens
+   once her cart is open (SELA_CART_FROM_DAY). Decorative; hidden via the
+   `hidden` attribute (toggled in render()), not removed, so it never has to
+   be recreated. */
+.shop-cart-art {
+  display: block;
+  width: 52px;
+  height: auto;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+.shop-cart-art[hidden] {
+  display: none;
 }
 
 .shop-row {

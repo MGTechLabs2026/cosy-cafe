@@ -41,7 +41,7 @@ Deviation from doc 04 §1.4 (24×36): PixelLab forces square canvases below 32px
 | File | Job ID | QA |
 |------|--------|-----|
 | fenwick_walk.png | ab2352c5-cc35-4b76-8d62-2f5b3f4d0c1b | ✅ pass (torso busy w/ backpack+beard overlap — polish item) |
-| sela_walk.png | dcfb338e-2fb8-4e09-8633-3489a64c43bd | ✅ pass (best of set) |
+| sela_walk.png | dcfb338e-2fb8-4e09-8633-3489a64c43bd | ⚠️ superseded — see Batch 7. Original PixelLab job/QA kept here for history. |
 | bram_walk.png | 633da35b-6327-402f-913d-646975098b95 | ✅ pass (arm pose slightly ambiguous) |
 | nia_walk.png | 93030bf2-ad34-4fb4-846c-0ecb0a5984c5 | ✅ pass — black bar under feet kept per user decision (a); game draws unified soft shadows over it |
 | wren_walk.png | 10641833-d5ac-4f8f-8ce6-ad4129171142 | ✅ pass (facial shading reads slightly bearded, consistent with portrait) |
@@ -70,11 +70,62 @@ All: binary alpha (no soft edges), transparent corners verified programmatically
 
 All: RGBA, transparent corners verified via PIL corner-alpha check.
 
+## Batch 7 — 2026-09-01 (Sela re-art, user-supplied — not PixelLab)
+
+Source: a 4-pose + cart character sheet supplied directly by the user
+(`sela_mesh_1/2.png`, 1536×1024, identical duplicates — deleted after
+cropping). Higher-detail illustration style than the rest of the cast, not
+generated with the pixen params above — a deliberate one-off, not the new
+house style.
+
+Pipeline: alpha-keyed crop off the near-black sheet background (soft ramp,
+then despeckled to remove the cart's pull-rope line) → mirrored horizontally
+(source faced west; the sim walks customers door→counter, i.e. facing east,
+and nothing in the render path flips sprites) → cropped to opaque bounds →
+Lanczos-downscaled to fit 44×58 within a shared 48×64 canvas, bottom-aligned
++ centered (so any future frame-swap won't jitter).
+
+| File | Size | Source pose | QA |
+|------|------|--------------|-----|
+| sprites/sela_walk.png | 48×64, opaque 34×58 | walking, arm forward / back leg lifted | ✅ pass — replaces the original sela_walk.png. Renders ~48% taller than the ~32×48 cast (opaque height 58 vs ~44) at the same 2× engine scale — no scene.ts change needed, the existing bounds-driven draw just picks up the bigger source. |
+| sprites/sela_walk_b.png | 48×64, opaque 34×58 | walking, opposite arm/leg contact | ✅ pass — second walk-cycle frame. See Batch 7 follow-up below: unlike `fenwick_walk_b.png`, this one IS wired into a real frame-swap animation. |
+| sprites/sela_stand.png | 48×64, opaque 29×58 | standing, hands at belt pouch | ✅ pass — staged only, not referenced by any code path yet (candidate idle/portrait-adjacent pose). |
+| props/sela_cart.png | 140×137 | the market cart (plants, jars, sacks) | ✅ pass — wired into `ui/shop.ts`: shows above Sela's ingredient rows when `selaCartOpen(day)` is true (day ≥ `SELA_CART_FROM_DAY`). First art the shop overlay has ever shown; everything else in it is DOM text. |
+
+Raw mesh sheets deleted after cropping (both copies, identical).
+
+## Batch 7 follow-up — 2026-09-02 (walk-cycle animation + bubble-anchor fix)
+
+| File | Size | Source pose | QA |
+|------|------|--------------|-----|
+| sprites/sela_walk_c.png | 48×64, opaque 34×58 | mid-stride, trailing arm back | ✅ pass — recovered from the pose originally cut as "reads oddly without the cart" (Batch 7); on its own it's a fine third walk-cycle frame. Same pipeline as walk/walk_b. |
+
+Sela is now the first cast member with **real per-frame walk animation**:
+`render/images.ts` gained `characterWalkFrames(id)` (3 frames for Sela, the
+existing single frame for everyone else), and `render/scene.ts` gained
+`walkFrameIndex(frameCount, timeMs)` — a pure, unit-tested ping-pong
+(a,b,c,b,a,b,c,b,… for 3 frames) stepped off the same clock as the existing
+footstep bob, so the frame change and the bob land together.
+`drawCharacterSprite` now picks `frames[walkFrameIndex(...)]` while
+`gait.moving`, frame 0 at rest. Everyone else is unaffected — a 1-frame
+array always resolves to index 0, i.e. today's behavior.
+
+**Bug found and fixed while verifying this live:** the order bubble anchors
+itself a fixed distance above `CUSTOMER_H`, which assumed every cast member
+renders at the old ~88px-tall size. Sela's taller Batch 7 art (~116px)
+poked up through that assumption and the bubble panel buried her head
+entirely. Fixed by adding `spriteTopY(characterId, y)` — computes the
+anchor from that character's *actual* rendered sprite height — and having
+both `drawBubble()` and `bubbleRectFor()` (drawing and hit-testing) call it,
+same shared-geometry pattern the bubble already used for its own size.
+Verified live: bubble now floats correctly clear of Sela's hood.
+
 ## Consistency Notes
 
 1. **Black Tea has a tiny face; other drinks don't.** Either embrace it (all drinks get faces — fits the cozy tone) or regenerate R001 faceless. Decide before adding more drink icons.
 2. **Style drift risk:** all assets were generated with the same params (pixen, selective outline, low/medium detail, no background). For future assets, reuse these exact params and consider passing an existing asset via `style_image` once a "hero" style is chosen.
 3. Palette is warm/cohesive but not audited against the 32-color master palette in doc 04 §1.3. Run `reduce_colors` (PixelLab) across all assets if strict palette lock is wanted.
+4. **Sela now visibly differs in style from Fenwick/Bram/Nia/Wren** (Batch 7: higher-detail illustration vs. the rest's flatter pixen output), and renders taller. Accepted as a deliberate one-off per user direction; flag before doing the same for another character, or before a broader "re-art the cast" pass.
 
 ## Asset status for the current itch.io MVP build
 

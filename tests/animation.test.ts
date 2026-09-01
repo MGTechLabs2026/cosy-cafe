@@ -25,7 +25,7 @@ import {
   overlayFinished,
   type OverlayVisual,
 } from '../src/render/tween.js';
-import { walkGait } from '../src/render/scene.js';
+import { walkGait, walkFrameIndex } from '../src/render/scene.js';
 
 describe('easing vocabulary (cozy motion language)', () => {
   it('clamp01 bounds the input', () => {
@@ -210,5 +210,30 @@ describe('Canvas walk gait (arrival coziness)', () => {
     const rm = walkGait(0.5, 1234, true);
     expect(rm.moving).toBe(false);
     expect(rm.bobPx).toBe(0);
+  });
+});
+
+describe('walkFrameIndex (multi-frame walk cycle, e.g. Sela a/b/c)', () => {
+  it('always returns 0 for a single-frame cast member', () => {
+    for (const t of [0, 55, 110, 999, 100000]) {
+      expect(walkFrameIndex(1, t)).toBe(0);
+      expect(walkFrameIndex(0, t)).toBe(0);
+    }
+  });
+
+  it('ping-pongs a→b→c→b→a→… for 3 frames, one step per WALK_STEP_HALF_PERIOD_MS (110ms)', () => {
+    expect(walkFrameIndex(3, 0)).toBe(0); // a
+    expect(walkFrameIndex(3, 110)).toBe(1); // b
+    expect(walkFrameIndex(3, 220)).toBe(2); // c
+    expect(walkFrameIndex(3, 330)).toBe(1); // b (bounced off the end)
+    expect(walkFrameIndex(3, 440)).toBe(0); // a (full cycle back to start)
+    expect(walkFrameIndex(3, 550)).toBe(1); // b (repeats)
+  });
+
+  it('ping-pongs 0,1,0,1,… for exactly 2 frames', () => {
+    expect(walkFrameIndex(2, 0)).toBe(0);
+    expect(walkFrameIndex(2, 110)).toBe(1);
+    expect(walkFrameIndex(2, 220)).toBe(0);
+    expect(walkFrameIndex(2, 330)).toBe(1);
   });
 });

@@ -17,6 +17,7 @@ import {
 } from '../sim/shelf.js';
 import type { IngredientId, Inventory } from '../sim/day.js';
 import { playOverlayEnter } from './overlay-anim.js';
+import { assetUrl } from '../render/images.js';
 
 export interface ShopHooks {
   getCoins: () => number;
@@ -57,11 +58,26 @@ function ensureOverlay(): HTMLDivElement {
   closeX.textContent = '×';
   closeX.addEventListener('click', () => hooksRef?.onClose());
 
+  const header = document.createElement('div');
+  header.className = 'shop-header';
+
   const title = document.createElement('h2');
   title.textContent = STRINGS.shop.title;
 
+  // Sela's cart art, next to the title so it's visible the instant the shop
+  // opens (previously it sat mid-scroll above her ingredient rows). Created
+  // once and toggled per render() — visible only once her cart is open.
+  const cartArt = document.createElement('img');
+  cartArt.className = 'shop-cart-art';
+  cartArt.src = assetUrl('assets/props/sela_cart.png');
+  cartArt.alt = '';
+  cartArt.hidden = true;
+
+  header.appendChild(title);
+  header.appendChild(cartArt);
+
   panel.appendChild(closeX);
-  panel.appendChild(title);
+  panel.appendChild(header);
   overlay.appendChild(panel);
   app.appendChild(overlay);
 
@@ -102,12 +118,18 @@ function render(overlay: HTMLElement): void {
   const panel = overlay.querySelector<HTMLElement>('.shop-panel');
   if (!panel) return;
 
-  // Rebuild everything below the title + close button. openShop() calls render()
-  // on EVERY open, so if we leave stale nodes behind the previous day's rows
-  // stack above the new day's rows (the shop then shows day-1 state on day 2).
-  // The panel's first two children are the persistent close button and title;
-  // drop everything after them and rebuild fresh from the current hooks.
+  // Rebuild everything below the header. openShop() calls render() on EVERY
+  // open, so if we leave stale nodes behind the previous day's rows stack
+  // above the new day's rows (the shop then shows day-1 state on day 2).
+  // The panel's first two children are the persistent close button and
+  // header (title + Sela's cart art); drop everything after them and
+  // rebuild fresh from the current hooks.
   while (panel.children.length > 2) panel.removeChild(panel.lastChild as Node);
+
+  // Cart art lives in the persistent header, next to the title — toggle it
+  // rather than re-inserting it mid-list, so it's visible without scrolling.
+  const cartArt = overlay.querySelector<HTMLImageElement>('.shop-cart-art');
+  if (cartArt) cartArt.hidden = !selaCartOpen(currentDay());
 
   // Ingredients first (up) — the everyday restock the player reaches for.
   const ingHeading = document.createElement('h3');

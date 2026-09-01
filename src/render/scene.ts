@@ -14,6 +14,7 @@ import { easeInOut } from './tween.js';
 import {
   cafeRoom,
   characterSprite,
+  characterWalkFrames,
   mopsSprite,
   mopsSpriteFor,
   opaqueBounds,
@@ -93,6 +94,21 @@ export interface WalkGait {
 
 const GAIT_AT_REST: WalkGait = { moving: false, bobPx: 0, leanRad: 0 };
 
+/**
+ * Ping-pong a walk-cycle frame index off the SAME clock as the bob/lean
+ * (`timeMs`), so a cast member with real walk art (currently Sela: a,b,c)
+ * steps in time with its own footstep bob. Sequence for N frames is
+ * 0,1,...,N-1,...,1,0,1,... — for N=3 that's a,b,c,b,a,b,c,b… For the common
+ * single-frame case this always returns 0 (unchanged behavior). Pure →
+ * unit-tested.
+ */
+export function walkFrameIndex(frameCount: number, timeMs: number): number {
+  if (frameCount <= 1) return 0;
+  const period = (frameCount - 1) * 2;
+  const step = Math.floor(timeMs / WALK_STEP_HALF_PERIOD_MS) % period;
+  return step < frameCount ? step : period - step;
+}
+
 /** Gait offsets for the current walk-in frame. Pure → unit-tested. */
 export function walkGait(walkT: number, timeMs: number, reducedMotion: boolean): WalkGait {
   const arriving = walkT > 0 && walkT < 1;
@@ -157,13 +173,41 @@ export interface HitRect {
 const BUBBLE_ICON_PX = 64;
 const BUBBLE_W = 84;
 const BUBBLE_H = 72;
+/** How far the bubble's bottom edge is allowed to dip below a sprite's own
+ * top pixel — a deliberate small overlap so the tail reads as touching the
+ * hood, not floating. */
+const BUBBLE_HEAD_OVERLAP_PX = 8;
+/** Assumed on-screen sprite height (SCALE=2 × ~44px opaque) used only as a
+ * fallback before art has loaded — matches the pre-Batch-7 cast. */
+const DEFAULT_SPRITE_DRAW_HEIGHT = 88;
+
+/**
+ * Top edge (canvas y) of a cast member's sprite for anchor `y`, at rest
+ * (no bob). Cast members don't all render the same height — Batch 7's Sela
+ * art is taller than the rest — so the order bubble must ask per-character
+ * instead of assuming the old fixed sprite height, or a tall sprite's head
+ * pokes up into the bubble.
+ */
+function spriteTopY(characterId: string, y: number): number {
+  const frames = characterWalkFrames(characterId);
+  const img = frames[0] ?? characterSprite(characterId);
+  if (img && img.complete && img.naturalWidth > 0) {
+    const b = opaqueBounds(img);
+    if (b) {
+      const dh = (b.maxY - b.minY + 1) * 2; // SCALE=2, must match drawCharacterSprite
+      return y + CUSTOMER_H - dh;
+    }
+  }
+  return y + CUSTOMER_H - DEFAULT_SPRITE_DRAW_HEIGHT;
+}
 
 /** Bubble layout for a customer anchor point (x = sprite center, y = top).
  * Mirrors drawBubble()'s panel geometry; +6 covers the pointer tail. */
-export function bubbleRectFor(anchorX: number, anchorY: number): HitRect {
+export function bubbleRectFor(anchorX: number, anchorY: number, characterId: string): HitRect {
+  const by = spriteTopY(characterId, anchorY) + BUBBLE_HEAD_OVERLAP_PX - BUBBLE_H;
   return {
     x: Math.round(anchorX - BUBBLE_W / 2),
-    y: Math.round(anchorY - CUSTOMER_H - BUBBLE_H - 8),
+    y: Math.round(by),
     w: BUBBLE_W,
     h: BUBBLE_H + 6,
   };
@@ -200,7 +244,9 @@ export function clearMopsHitRect(): void {
 }
 
 /** Generic cast sprite draw: 2× integer scale, grounded by OPAQUE bounds.
- * `gait` carries the walk-in bob+lean (playtest fix #1); zero at rest. */
+ * `gait` carries the walk-in bob+lean (playtest fix #1); zero at rest. While
+ * moving, ping-pongs through `characterWalkFrames()` in step with the bob
+ * (a,b,c,b,a,… for a 3-frame cast member; unchanged for a 1-frame one). */
 function drawCharacterSprite(
   c: CanvasRenderingContext2D,
   x: number,
@@ -208,8 +254,11 @@ function drawCharacterSprite(
   served: boolean,
   characterId: string,
   gait: WalkGait = { moving: false, bobPx: 0, leanRad: 0 },
+  timeMs: number = 0,
 ): void {
-  const img = characterSprite(characterId);
+  const frames = characterWalkFrames(characterId);
+  const frameIdx = gait.moving ? walkFrameIndex(frames.length, timeMs) : 0;
+  const img = frames[frameIdx] ?? characterSprite(characterId);
   // Shadow stays GLUED to the floor: it must not bob with the body, or the
   // figure looks like it's hovering instead of stepping.
   ellipseShadow(c, x + CUSTOMER_W / 2, y + CUSTOMER_H - 1, 17, 5);
@@ -361,6 +410,7 @@ function drawBubble(
   c: CanvasRenderingContext2D,
   x: number,
   y: number,
+  characterId: string,
   image: HTMLImageElement | null,
   timeMs: number,
   mysteryOrder: boolean = false,
@@ -372,7 +422,9 @@ function drawBubble(
   const w = BUBBLE_W;
   const h = BUBBLE_H;
   const bx = Math.round(x - w / 2);
-  const by = Math.round(y - CUSTOMER_H - h - 8);
+  // Anchored off the CURRENT character's actual sprite top, not a fixed
+  // height — Batch 7's Sela renders taller than the rest of the cast.
+  const by = Math.round(spriteTopY(characterId, y) + BUBBLE_HEAD_OVERLAP_PX - h);
   rect(c, bx, by, w, h, Palette.bgPanel);
   rectOutline(c, bx, by, w, h, Palette.bgPanelBorder);
   // Tail pointing down at the customer.
@@ -589,13 +641,13 @@ export function drawSceneLayer(c: CanvasRenderingContext2D, input: SceneInput, f
     // Walk-in gait (playtest fix #1): bob+lean only while entering; collapses
     // to rest for reduced motion.
     const gait = walkGait(cv.walkT, input.timeMs, input.reducedMotion);
-    drawCharacterSprite(c, pos.x, pos.y, cv.served, cv.characterId, gait);
+    drawCharacterSprite(c, pos.x, pos.y, cv.served, cv.characterId, gait, input.timeMs);
 
     if (cv.bubbleVisible) {
-      drawBubble(c, pos.x + CUSTOMER_W / 2, pos.y, cv.bubbleImage, input.timeMs, cv.mysteryOrder, cv.bubbleRecipeId);
+      drawBubble(c, pos.x + CUSTOMER_W / 2, pos.y, cv.characterId, cv.bubbleImage, input.timeMs, cv.mysteryOrder, cv.bubbleRecipeId);
       // Publish the bubble's live rect from the SHARED geometry helper so the
       // clickable region always matches what was drawn this frame.
-      lastDrawnBubbleRect = bubbleRectFor(pos.x + CUSTOMER_W / 2, pos.y);
+      lastDrawnBubbleRect = bubbleRectFor(pos.x + CUSTOMER_W / 2, pos.y, cv.characterId);
     } else {
       lastDrawnBubbleRect = null;
     }
