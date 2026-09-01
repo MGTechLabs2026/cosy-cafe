@@ -6,6 +6,8 @@
 // M4 (doc 07 §3): every runtime path is prefixed with import.meta.env.BASE_URL
 // so the itch.io HTML5 build works inside its iframe subpath (vite base './').
 
+import { ROOM_VARIANTS, type RoomVariant } from '../sim/day.js';
+
 /** Resolve a public/ asset path against the deploy base (relative on itch). */
 export function assetUrl(path: string): string {
   const base = import.meta.env.BASE_URL ?? '/';
@@ -136,8 +138,9 @@ export function mopsSpriteFor(stateName: string): HTMLImageElement | null {
   }
 }
 
-export function cafeRoom(): HTMLImageElement {
-  return loadImage(assetUrl('assets/backgrounds/cafe_room.png'));
+/** Café backdrop for a time-of-day / season (see sim/day.ts roomVariantFor). */
+export function cafeRoom(variant: RoomVariant = 'day'): HTMLImageElement {
+  return loadImage(assetUrl(`assets/backgrounds/cafe_room_${variant}.png`));
 }
 
 /**
@@ -201,7 +204,7 @@ export function opaqueBounds(img: HTMLImageElement): SpriteBounds | null {
 
 /** Warm the ENTIRE art cache (call at bootstrap, during the title screen). */
 export function preloadAllArt(recipeIcons?: string[]): void {
-  cafeRoom();
+  for (const v of ROOM_VARIANTS) cafeRoom(v);
   fenwickSprite();
   mopsSprite();
   preloadGameArt(recipeIcons);

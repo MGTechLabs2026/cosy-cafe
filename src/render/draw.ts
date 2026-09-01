@@ -5,9 +5,20 @@
 import { Palette, paletteToCss, paletteToRgba } from './palette.js';
 import { GAME_HEIGHT, GAME_WIDTH } from './scale.js';
 import { cafeRoom } from './images.js';
+import type { RoomVariant } from '../sim/day.js';
 
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
+
+/**
+ * Which backdrop drawCafeRoom() paints. The game loop (main.ts) draws the room
+ * without a handle on day state, so the controller hands it a reader here —
+ * same pattern as setCafeDomPhaseProvider. Defaults to 'day' until wired.
+ */
+let roomVariantProvider: () => RoomVariant = () => 'day';
+export function setRoomVariantProvider(read: () => RoomVariant): void {
+  roomVariantProvider = read;
+}
 
 /**
  * Bind the renderer to a specific canvas element. Called by the bootstrap
@@ -153,7 +164,7 @@ export function particle(
  * M0 warm-band placeholder so the screen is never blank during load.
  */
 export function drawCafeRoom(c: CanvasRenderingContext2D): void {
-  const room = cafeRoom();
+  const room = cafeRoom(roomVariantProvider());
   if (room.complete && room.naturalWidth > 0) {
     c.drawImage(room, 0, 0);
     return;

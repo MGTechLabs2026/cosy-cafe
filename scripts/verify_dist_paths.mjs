@@ -48,7 +48,13 @@ for (const f of missing) {
 }
 
 // 4. dist must contain the copied public assets the game cannot run without.
-if (!existsSync(join(dist, 'assets', 'backgrounds', 'cafe_room.png'))) problems.push('cafe_room.png missing');
+// Background variants are loaded via a template-literal path (cafe_room_<variant>.png)
+// so they never appear in the static ref scan above — check them explicitly.
+for (const v of ['morning', 'day', 'evening', 'snow']) {
+  if (!existsSync(join(dist, 'assets', 'backgrounds', `cafe_room_${v}.png`))) {
+    problems.push(`cafe_room_${v}.png missing`);
+  }
+}
 if (!existsSync(join(dist, 'audio', 'click.ogg'))) problems.push('audio/click.ogg missing');
 
 console.log(`index.html relative refs OK · runtime asset refs=${refs.size} · missing-but-optional=${warnings.length}`);

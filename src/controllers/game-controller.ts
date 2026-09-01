@@ -8,11 +8,12 @@ import { CountUp } from '../render/tween.js';
 import { createSceneFx, drawSceneLayer } from '../render/scene.js';
 import type { SceneFx } from '../render/scene.js';
 import { preloadAllArt } from '../render/images.js';
+import { setRoomVariantProvider } from '../render/draw.js';
 import { initParticles, clearAllParticles, resetCupSlide, spawnHeartPuff } from '../render/fx.js';
 import { ALL_RECIPES, recipeToView } from '../data/recipes.js';
 import type { BrewInput } from '../sim/brewing.js';
 import type { DayState, IngredientId } from '../sim/day.js';
-import { beginNextDay } from '../sim/day.js';
+import { beginNextDay, roomVariantFor } from '../sim/day.js';
 import { STRINGS } from '../data/strings.js';
 import {
   displayedHearts,
@@ -180,6 +181,7 @@ export class GameController {
       onMopsClick: () => this.petMops(),
     });
     setCafeDomPhaseProvider(() => this.dayState.phase);
+    setRoomVariantProvider(() => roomVariantFor(this.dayState.day, this.dayState.phase));
 
     this.day.wire(
       {

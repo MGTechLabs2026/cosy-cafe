@@ -182,6 +182,35 @@ won't advance past the active customer, so the cycles were only checked via
 extracted-frame contact sheets + the unit-tested index math (same limitation
 hit with Sela's walk-in).
 
+## Batch 9 — 2026-09-02 (time-of-day + season backgrounds, user-supplied)
+
+Source: two user-supplied sheets (`bg_mesh_1/2.png`, 1672×941), each two
+full-scene café interiors stacked. Same room as `cafe_room.png`, relit:
+`bg_mesh_1` top = **morning** (blue dawn), bottom = **snow** (snowbound
+night); `bg_mesh_2` top = **day** (bright, blue sky, green), bottom =
+**evening** (pink/red dusk). Both meshes deleted after cropping.
+
+The mesh room is wider than the game's 16:9 frame. Cropped each half to
+`x[330:1400]` (a landmark map: fireplace, both windows, counter and stools
+land where `cafe_room.png` had them — verified live, Mops at `HEARTH_X`
+still sits on the hearth), then Lanczos-resized to **exactly 480×270** —
+non-uniform (horizontal squished ~20% more than vertical), unnoticeable at
+game scale.
+
+| File | Size | QA |
+|------|------|-----|
+| backgrounds/cafe_room_morning.png / _day.png / _evening.png / _snow.png | 480×270 | ✅ pass — replace the single `cafe_room.png` (deleted). `day` is much brighter/warmer than the old art — the café now reads as *open* during service. |
+
+Wiring: `sim/day.ts` gained `roomVariantFor(day, phase)` (pure, unit-tested)
+— `prep → morning`, `service → day`, `recap → evening`, and **day ≥ 11
+(`WINTER_FROM_DAY`) → snow, all phases** (lore: "the mountain pass will
+close with the first heavy snow"; chapter 4 opens day 11). `render/draw.ts`
+gained `setRoomVariantProvider` (same pattern as `setCafeDomPhaseProvider`);
+`game-controller` wires it to `roomVariantFor(this.dayState.…)`. `cafeRoom()`
+now takes a variant and `preloadAllArt` warms all four.
+`scripts/verify_dist_paths.mjs` checks the four variants explicitly (they
+load via a template-literal path the static scan can't see).
+
 ## Consistency Notes
 
 1. **Black Tea has a tiny face; other drinks don't.** Either embrace it (all drinks get faces — fits the cozy tone) or regenerate R001 faceless. Decide before adding more drink icons.
@@ -203,8 +232,8 @@ as missing, so the table below separates three buckets:
 
 | Asset | Status |
 |-------|--------|
-| Café background `backgrounds/cafe_room.png` (480×270) | ✅ shipped, QA pass |
-| Character walk sprites ×5 (`sprites/*_walk.png`) | ✅ shipped |
+| Café background — `backgrounds/cafe_room_{morning,day,evening,snow}.png` (480×270) | ✅ shipped (Batch 9; single `cafe_room.png` removed) |
+| Character walk sprites ×5 (`sprites/*_walk*.png`) — Sela/Fenwick/Bram/Nia/Wren all now full cycles | ✅ shipped (Batches 7–8) |
 | Portraits ×5 (`portraits/{fenwick,sela,bram,nia,wren}.png`) | ✅ shipped (fenwick added to shipped set for this release) |
 | Mops states ×6 (`pets/mops_{sit,idle,sleep,stretch,walk,look}.png`) | ✅ shipped (all six added to shipped set for this release) |
 | Drink icons ×6 (`items/drink_{black_tea,honey_milk,moonleaf_tea,ember_cocoa,iced_berry_tisane,root_remedy_broth}.png`) | ✅ shipped |

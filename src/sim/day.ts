@@ -15,6 +15,29 @@ export interface DayState {
  */
 export const FINAL_DAY = 14;
 
+/** Which café backdrop to show. Time-of-day tracks the phase; winter overrides. */
+export const ROOM_VARIANTS = ['morning', 'day', 'evening', 'snow'] as const;
+export type RoomVariant = (typeof ROOM_VARIANTS)[number];
+
+/**
+ * "The mountain pass will close with the first heavy snow" (doc 03) — the arc
+ * turns wintry in its last stretch (chapter 4 begins day 11; courier transfer
+ * deadline is day 12). From here the window is snowbound all day.
+ */
+export const WINTER_FROM_DAY = 11;
+
+/**
+ * Backdrop for the current day + phase. Winter (day ≥ WINTER_FROM_DAY) wins
+ * over the time-of-day cycle; otherwise prep = morning, service = day,
+ * recap = evening. Pure — unit-tested.
+ */
+export function roomVariantFor(day: number, phase: Phase): RoomVariant {
+  if (day >= WINTER_FROM_DAY) return 'snow';
+  if (phase === 'prep') return 'morning';
+  if (phase === 'recap') return 'evening';
+  return 'day';
+}
+
 export function createInitialDayState(): DayState {
   return {
     day: 1,
