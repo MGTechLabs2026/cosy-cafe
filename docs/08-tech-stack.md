@@ -63,15 +63,15 @@ Why this wins on all three stated axes:
 src/
   main.ts                 bootstrap, loop, scaling
   render/
-    draw.ts               backbuffer, palette rect/blit/particle primitives, room base
+    draw.ts               backbuffer, palette rect/blit/particle primitives, room base + backdrop-variant crossfade (setRoomVariantProvider)
     scale.ts              integer scale computation + CSS transform string
-    scene.ts              world-layer: customer sprites, order bubbles, patience candle, door sign, FX
-    images.ts             preloaded-image registry (room, sprites, portraits, drink icons)
+    scene.ts              world-layer: customer sprites (multi-frame walk cycle via walkFrameIndex), order bubbles, patience candle, door sign, FX
+    images.ts             preloaded-image registry (room variants, sprite walk sheets, portraits, drink icons)
     fx.ts                 pooled particles (steam, heart puff, sparkle, cup slide, title snow)
     palette.ts            32-color master palette + CSS converters
     tween.ts              smoothstep tween, CountUp (coin count-up)
   sim/
-    day.ts                day phase machine, inventory, starting stock
+    day.ts                day phase machine, inventory, starting stock, roomVariantFor (backdrop by phase + season)
     brewing.ts            recipe table, matching, resolveBrew, drink pricing
     customers.ts          character defs, favorites, patience, daily schedule builder
     economy.ts            coins/stars, payouts, star thresholds
@@ -220,3 +220,4 @@ Checks run in GitHub Actions: typecheck → vitest → biome → build → size-
 | 2026-08-27 | **Orchestration refactor:** extracted `src/ui/game.ts` (~1100 LOC) into five controller modules under `src/controllers/` — `game-controller.ts` (composition root), `day-controller.ts`, `service-controller.ts`, `kettle-controller.ts`, `progression-controller.ts`. `ui/game.ts` retained as thin compatibility layer. Pure sim boundary enforced; zero behavior change; all 241 tests + typecheck + build pass. Updated stale doc statements (R008 status, Fenwick favorite, kettle auto-open, module map, dirty-flag claim, milestone table). |
 | 2026-08-27 | **Architecture documentation audit:** docs/08-tech-stack.md rewritten to match actual codebase. Corrected controller dependency model (controllers DO import presentation/infra modules), removed stale dirty-flag rendering claim, completed module map, documented real dependency direction, documented save architecture accurately. |
 | 2026-08-27 | **Narrative module architecture added:** `src/narrative/` (6 modules), updated dependency direction, controller responsibility matrix, module map. Pure narrative boundary enforced (imports sim/ + save/validate only). |
+| 2026-09-02 | **Backdrop variant system:** `sim/day.ts` `roomVariantFor` (pure, unit-tested) → `render/draw.ts` crossfade via `setRoomVariantProvider` (module-closure provider set by `game-controller`, same pattern as `setCafeDomPhaseProvider`). `render/images.ts` `cafeRoom(variant)` loads `assets/backgrounds/cafe_room_${variant}.png`. **Walk-cycle animation:** `characterWalkAnim(id)` + `numberedWalkFrames` in `images.ts`, pure `walkFrameIndex(frameCount, timeMs, mode)` in `scene.ts`. Save schema **v7** (`letters_delivered_day`). Two bug fixes: recap per-day tallies now reset (`beginDayResets` → `ServiceController.beginDay`); Journal Recipes tab loops all of `RECIPES` (discovered-or-hinted rule) instead of only `HINTED_RECIPES`. 482 tests + typecheck + build pass. |

@@ -36,7 +36,9 @@ Desktop reference 1280×720 (native art 480×270 integer-scaled). Mobile/tablet:
 ```
 
 - **Top bar:** day/weather, coins (tick up animated), stars, settings gear, journal button. Always visible, always calm.
+- **Backdrop:** the room art itself carries the time of day — morning light in prep, daylight in service, dusk for the recap and the quiet tail of service, snow from day 11 on. Variants crossfade over ~1.4 s (`sim/day.ts` `roomVariantFor`), so opening the door reads as the light coming up and closing time as it going warm. Reduced motion cuts straight to the new variant.
 - **Customer bubble:** appears above arrival showing desired drink as a *picture* (icon of the drink, colored) — reading names is never required to play correctly.
+- **Customer sprites** walk in and out on a real multi-frame walk cycle (per-character frame sheets in `assets/sprites/<id>_walk_*.png`; `render/scene.ts` `walkFrameIndex` picks the frame, rest pose when stationary).
 - **Kettle panel (opens on click):** base choice (3 buttons) → up to 3 ingredient slots (tap shelf items) → finish toggle (hot/iced/foamed) → BREW. One screen, no sub-screens. Shows last-made drink as "repeat" shortcut button.
 - **Door sign:** the day-phase controller. Flip to open service; flip to close. Physically drawn on the door — diegetic UI.
 
@@ -61,6 +63,11 @@ Chat is opt-in per customer (a small speech icon above them); skipping it costs 
 
 ### 3.3 Closing
 Flip sign → recap modal: coins earned (count-up animation), new discoveries, hearts gained, letters received → Continue → autosave → next morning. Recap is also where upgrades can be browsed (shop button inside recap).
+
+Every recap figure is **that day's total only** — coins earned, drinks served and discoveries reset each morning (doc 02 §1). "Coins earned today" is not the purse balance; the purse (see §3.3a) will differ by yesterday's leftover minus anything spent in the shop.
+
+### 3.3a Shop (Evening Market)
+Opened from the recap. The header carries a running **purse total** (`Purse: ¤N`) that reads the live coin balance and ticks down on every purchase — a brief highlight pulse marks the deduction (skipped under reduced motion). Insufficient funds show an inline "Earn ¤N more" on the item, never a blocking dialog.
 
 ### 3.4 Save export / import (Settings overlay)
 
@@ -216,6 +223,11 @@ of what changed in the animation/UX polish pass:
   `ui/overlay-anim.ts`. Reused overlay nodes re-animate every open.
 - **Customers walk out gracefully.** After serving (or a kind low-patience
   goodbye) the figure eases back toward the door (~0.8 s) instead of vanishing.
+  Walk-in and walk-out play a real per-character frame cycle; the sprite holds
+  its rest frame when standing at the counter.
+- **The backdrop crossfades, never cuts.** Time-of-day / season variants
+  (`morning` / `day` / `evening` / `snow`) blend over ~1.4 s (`ROOM_FADE_MS`,
+  smoothstep) so door-open and closing time land as light changes, not swaps.
 - **Toasts ease up + in** (calm entrance) instead of popping.
 - **Motion bands:** micro 80–160 ms · short 160–280 ms · medium 300–700 ms ·
   long 700–1400 ms. **Easing:** `easeOutQuad` / `easeOutCubic` (enter) /
@@ -251,3 +263,4 @@ See `docs/14-presence-system.md` for the full model.
 | 2026-08-25 | Initial UI spec | Baseline for M1 |
 | 2026-08-27 | Added §3.5 Morning Mail & Letter System, §3.6 Narrative Debug | Doc 09 narrative system integration |
 | 2026-08-28 | Added §9 Motion & Animation; linked doc 11 (Animation & Motion Guidelines) | Animation/UX polish pass: overlays settle in, customers walk out, toast eases in, cozy motion language defined |
+| 2026-09-02 | §2/§9: backdrop cycles by phase + season with a ~1.4 s crossfade; customer sprites use real per-character walk cycles. §3.3a: Evening Market shop header shows a live purse total that ticks down on each buy. §3.3 clarified recap figures are per-day, not the purse balance. | Session feature work + two bug fixes (recap tallies reset, journal Recipes tab lists all met recipes) |

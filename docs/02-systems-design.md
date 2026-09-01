@@ -16,6 +16,8 @@
 - Service has no clock. Customers arrive from a per-day schedule; when the queue is empty, the game gently suggests closing ("The street is quiet now…").
 - Skipping a day is one click from the morning screen ("Sleep in") — for players who just want story beats or upgrades.
 - Autosave fires every evening recap. Manual save unnecessary.
+- **Per-day tallies reset each morning.** Coins earned today, drinks served, recipes discovered and hearts gained are counted per day and zeroed at the morning reset (`ServiceController.beginDay`, invoked from `beginDayResets`) — the evening recap always reports *that day*, never a run-cumulative total. This sits alongside the heart-day reset (§5).
+- **The backdrop tracks time of day and season.** Prep = morning light, service = daytime, the recap (and the tail of service once the last customer has gone) = dusk; from day 11 the window is snowbound for every phase. `sim/day.ts` `roomVariantFor(day, phase, serviceWindingDown)` is the single source of truth (`morning` / `day` / `evening` / `snow`), unit-tested and pure. The renderer crossfades between variants over ~1.4 s (`ROOM_FADE_MS`), so opening the door reads as the room brightening and closing time as the light going warm; reduced motion snaps instead.
 
 ## 2. Brewing & Recipes
 
@@ -154,7 +156,7 @@ Progress is deliberately split so different player motivations each have a dial 
 
 One key/tabbed screen, four tabs:
 
-1. **Recipes** — found recipes (brewable cards), hinted ones (riddle cards with clue text from `service.taughtRXXXBody`), plus a "close guesses" log of near-miss experiments (post-MVP).
+1. **Recipes** — found recipes (brewable cards), hinted ones (riddle cards with clue text from `service.taughtRXXXBody`), plus a "close guesses" log of near-miss experiments (post-MVP). The tab renders one card per recipe in `RECIPES` (R001–R008) order, showing it **only** once the recipe is either discovered (`flags.discovered_recipes`) *or* currently hinted (`HINTED_RECIPES` = R004–R007). A recipe that is neither — R001–R003 before their day-1 teaching visits, R008 before Wren's arc resolves — stays off the page so nothing is spoiled. So the tab grows from 4 riddle cards on a fresh save toward all 8 as the run progresses; it is never capped at the hinted four.
 2. **Regulars** — portrait, likes/dislikes (written down automatically after you learn them via `flags.learned_prefs`), current hearts (0–5, floor of points), arc progress marker.
 3. **Town** — map sketch of Hollowbrook Crossing, unlocked lore scraps, moon-phase widget (post-MVP).
 4. **Letters** — archive of mail and notice-board notes (from `save.letters`).
@@ -171,11 +173,11 @@ Browser-first means saves must be defensive.
 - Browser `localStorage` under a versioned key (`moonleaf_save_v1`).
 - Stored as plaintext JSON by design: players own their local save, and dev-tools inspection must stay easy during development. Encryption applies **only to the export string** (7.2).
 - **Autosave points:** evening recap only (single atomic write via `ProgressionController.snapshotIntoSave`). Mid-service quitting loses at most one service — acceptable, and stated on the title screen footer.
-- **Schema (v4, current):**
+- **Schema (current version: v7).** The block below is the M4-era core shape kept for orientation; `src/save/validate.ts` is the source of truth. Since then: v5–v6 added the narrative dimensions and the activity-ledger flags (doc 09 §9.7), and **v7** added `flags.letters_delivered_day` (`letterId → day delivered`) so the letter scheduler's per-letter cooldown is enforceable. Migrations `migrateV1toV2 … migrateV6toV7` live in `src/save/store.ts`.
 
 ```typescript
 interface SaveData {
-  version: number;                    // 4
+  version: number;                    // 7 (see validate.ts for the full flags shape)
   day: number;                        // current day
   coins: number;                      // ¤
   stars: number;                      // 0–5
@@ -211,7 +213,7 @@ interface SaveData {
 }
 ```
 
-- **Migration rule:** on load, if `version < current`, run migration functions oldest-first (v1→v2→v3→v4). Never hot-patch old keys silently. Each migration adds new fields with safe defaults; existing fields are never rewritten.
+- **Migration rule:** on load, if `version < current`, run migration functions oldest-first (v1→v2→…→v7). Never hot-patch old keys silently. Each migration adds new fields with safe defaults; existing fields are never rewritten.
 
 ### 7.2 Export / import — encrypted transfer codes
 
@@ -393,3 +395,7 @@ interface NarrativeFlags {
 | 2026-08-25 | Initial values set | Baseline for playtest build M1 |
 | 2026-08-27 | Recipe R008 renamed from "Cozy Comfort" to "Wren's Usual"; favorite table corrected (Fenwick=R004); Sela's cart rule documented as chosen option ii; Murky Brew consumes ingredients; save schema updated to v4 with text_size; migration chain documented | Matches actual codebase |
 | 2026-08-27 | Added §9 Narrative System: 5 hidden dimensions, letter scheduler, 3 trajectories, 5 chapters, 4 endings, save schema additions | Doc 09 specification |
+| 2026-09-02 | Save schema v7: added `letters_delivered_day` (per-letter delivery-day map) so the letter scheduler's cooldown is a real gate, not a no-op; migration `migrateV6toV7` documented | Cooldown fix |
+| 2026-09-02 | Documented backdrop time-of-day + season cycling (§1): `roomVariantFor` variants `morning`/`day`/`evening`/`snow`, `WINTER_FROM_DAY = 11`, ~1.4 s crossfade | Feature shipped |
+| 2026-09-02 | **Bug fix:** per-day recap tallies (coins earned / drinks served / discoveries / hearts) were never reset — `ServiceController.beginDay()` was defined but never called, so the recap reported run-cumulative totals. `beginDayResets` now calls it (§1). | Matches intended design |
+| 2026-09-02 | **Bug fix:** Journal Recipes tab only ever listed the 4 hinted recipes (R004–R007); discovered starters (R001–R003) and Wren's Usual (R008) never appeared. Now loops all of `RECIPES` with a discovered-or-hinted visibility rule (§6). | Matches §6 spec |
