@@ -96,9 +96,15 @@ Raw mesh sheets deleted after cropping (both copies, identical).
 
 ## Batch 7 follow-up — 2026-09-02 (walk-cycle animation + bubble-anchor fix)
 
+> **Superseded 2026-09-02 (Batch 8):** Sela's 3-frame cloak-only walk
+> (`sela_walk` + `_b` + `_c`, ping-pong) was replaced by a new user mesh — a
+> 4-frame east-facing **cart-push** cycle. `sela_walk_b.png` / `sela_walk_c.png`
+> are deleted; `sela_walk.png` is now cart-push frame 0. The `pingpong` mode
+> stays in the code (unit-tested) but no character uses it. Details in Batch 8.
+
 | File | Size | Source pose | QA |
 |------|------|--------------|-----|
-| sprites/sela_walk_c.png | 48×64, opaque 34×58 | mid-stride, trailing arm back | ✅ pass — recovered from the pose originally cut as "reads oddly without the cart" (Batch 7); on its own it's a fine third walk-cycle frame. Same pipeline as walk/walk_b. |
+| sprites/sela_walk_c.png | 48×64, opaque 34×58 | mid-stride, trailing arm back | ⚠️ **deleted in Batch 8** — see the cart-push replacement. |
 
 Sela is now the first cast member with **real per-frame walk animation**:
 `render/images.ts` gained `characterWalkFrames(id)` (3 frames for Sela, the
@@ -151,18 +157,25 @@ Lanczos-fit into the shared 48×64 canvas.
 | sprites/nia_stand.png | 48×64, opaque 25×44 | ✅ pass — staged idle pose (last cell of the sheet), not wired. |
 | sprites/wren_walk.png … wren_walk_6.png | 48×64, opaque ~28×48 each | ✅ pass — `wren_walk.png` is the dedicated IDLE (sheet frame 1); `_1…_6` are the stride frames (L stride/mid/push, R stride/mid/push). Held-idle `loop-body` mode — the moving cycle is `_1…_6`, IDLE shows only at rest. On-screen ~56×96 at 2×. Replaces the old 32×48 `wren_walk.png`. |
 | sprites/wren_stand.png | 48×64, opaque 27×48 | ✅ pass — staged idle pose (sheet frame 8, the 2nd IDLE), not wired. |
+| sprites/sela_walk.png … sela_walk_3.png | **64×64** canvas, opaque ~54×58 each | ✅ pass — 4-frame east-facing cart-push cycle from a new `sela_mesh.png` (flat black, row 2 = east; row 1 was cart-*pull*, unused). Wider 64×64 canvas because the cart puts the sprite ~as wide as it is tall. `sela_walk.png` is frame 0 / at-rest pose (a mid-push stance). Replaces the Batch 7 `sela_walk` + `_b` + `_c`. On-screen ~108×116 at 2× — figure ≈ her old height, plus the cart sticking out ahead (east) of the walk point. |
 
-On-screen height order after this batch: Sela ~116 (tall elf) > Bram ~108
-(big human) > Fenwick ~100 (stout dwarf) > Wren ~96 (hunched, cane) > Nia ~88
-(small gnome).
+**Design note:** Sela now wheels her produce cart into the café on every
+visit. The shop rule says her "cart parks outside daily" — this is a mild
+lore tension and the cart ends up near/at the counter when she arrives.
+Easy to revert (drop the `sela` branch) if it reads wrong in play.
+
+On-screen height order after this batch: Sela ~116 (tall elf, now + cart) >
+Bram ~108 (big human) > Fenwick ~100 (stout dwarf) > Wren ~96 (hunched,
+cane) > Nia ~88 (small gnome).
 
 Wiring: `characterWalkAnim(id)` returns `{ frames, mode }`; the numbered-frame
 loaders share `numberedWalkFrames(id, last)`.
-`walkFrameIndex(n, timeMs, mode)` modes: **`pingpong`** (Sela, 3), **`loop`**
-(0,1,…,n-1,0,… — Nia 7, Fenwick 8, Bram 10), and **`loop-body`** (1,…,n-1,1,…
-— Wren, whose frame 0 is a held IDLE separate from the 6 stride frames). One
-frame per 110 ms (~660–1100 ms/cycle — cozy pace, doc 04 "nothing above
-12 fps"; Bram's slower cycle suits his gruff heavy tread, Wren's the shuffle).
+`walkFrameIndex(n, timeMs, mode)` modes: **`loop`** (0,1,…,n-1,0,… — Sela 4,
+Nia 7, Fenwick 8, Bram 10), **`loop-body`** (1,…,n-1,1,… — Wren, whose frame
+0 is a held IDLE separate from the 6 stride frames), and **`pingpong`** (bounce
+a hand-made set; currently unused, kept + tested). One frame per 110 ms
+(~440–1100 ms/cycle — cozy pace, doc 04 "nothing above 12 fps"; Bram's slower
+cycle suits his gruff heavy tread, Wren's the shuffle).
 
 Not verified live in-scene: the debug spawn hook skips the walk-in tween and
 won't advance past the active customer, so the cycles were only checked via

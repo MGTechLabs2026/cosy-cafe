@@ -213,7 +213,7 @@ describe('Canvas walk gait (arrival coziness)', () => {
   });
 });
 
-describe('walkFrameIndex (multi-frame walk cycle, e.g. Sela a/b/c)', () => {
+describe('walkFrameIndex (multi-frame walk cycles)', () => {
   it('always returns 0 for a single-frame cast member', () => {
     for (const t of [0, 55, 110, 999, 100000]) {
       expect(walkFrameIndex(1, t)).toBe(0);
@@ -237,8 +237,8 @@ describe('walkFrameIndex (multi-frame walk cycle, e.g. Sela a/b/c)', () => {
     expect(walkFrameIndex(2, 330)).toBe(1);
   });
 
-  it('loop mode runs a full cycle straight through (Nia 7, Fenwick 8, Bram 10)', () => {
-    for (const n of [7, 8, 10]) {
+  it('loop mode runs a full cycle straight through (Sela 4, Nia 7, Fenwick 8, Bram 10)', () => {
+    for (const n of [4, 7, 8, 10]) {
       for (let step = 0; step < 24; step++) {
         expect(walkFrameIndex(n, step * 110, 'loop')).toBe(step % n);
       }

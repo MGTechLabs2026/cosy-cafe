@@ -100,8 +100,8 @@ const GAIT_AT_REST: WalkGait = { moving: false, bobPx: 0, leanRad: 0 };
  * One frame advance per WALK_STEP_HALF_PERIOD_MS.
  *
  * - `pingpong` (default): 0,1,…,N-1,…,1, 0,1,… — for N=3, a,b,c,b,a,b,c,b…
- *   Right for a short hand-made set that has no mirrored second half (Sela).
- * - `loop`: 0,1,…,N-1, 0,1,… — a full cycle straight through (Fenwick's 8).
+ *   For a short hand-made set with no mirrored second half. Currently unused.
+ * - `loop`: 0,1,…,N-1, 0,1,… — a full cycle straight through (Sela 4, Fenwick 8).
  * - `loop-body`: 1,2,…,N-1, 1,2,… — frame 0 is a held IDLE, never in the
  *   moving cycle (Wren, whose sheet has a dedicated idle). Undefined for N<2.
  *

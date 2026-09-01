@@ -52,9 +52,11 @@ export interface WalkAnim {
   frames: HTMLImageElement[];
   /**
    * How the renderer steps `frames` while moving:
-   * - `pingpong`: bounce a short hand-made set (Sela a,b,c → a,b,c,b,a…);
+   * - `pingpong`: bounce a short hand-made set (a,b,c → a,b,c,b,a…). No cast
+   *   member uses this now — kept for a future 3-frame set with no mirrored half.
    * - `loop`: run every frame straight through, frames[0] included
-   *   (Fenwick/Bram/Nia — their frame 0 is a walk pose that also serves as rest);
+   *   (Sela/Fenwick/Bram/Nia — their frame 0 is a walk pose that also serves
+   *   as rest);
    * - `loop-body`: hold frames[0] only at rest and cycle frames[1…] while
    *   moving (Wren — his sheet has a dedicated IDLE separate from the stride).
    */
@@ -62,11 +64,11 @@ export interface WalkAnim {
 }
 
 /**
- * Walk-cycle animation for a cast member. Most have exactly one static frame —
- * for those the walk-in reads as motion purely through the bob/lean tween
- * (playtest fix #1), unchanged. Sela (Batch 7) has 3 hand-made poses the
- * renderer ping-pongs; Fenwick/Bram/Nia (Batch 8) loop full cycles; Wren
- * (Batch 8) loops its 6 stride frames over a held IDLE.
+ * Walk-cycle animation for a cast member. Wren and everyone unlisted has one
+ * static frame — motion there reads through the bob/lean tween alone (playtest
+ * fix #1). The re-arted regulars (Batches 7–8) each loop a real cycle: Sela 4
+ * (pushing her cart), Fenwick 8, Bram 10, Nia 7, Wren a 6-frame shuffle over
+ * a held IDLE.
  */
 /** `<id>_walk.png` (frame 0) then `<id>_walk_1.png` … `<id>_walk_<last>.png`. */
 function numberedWalkFrames(id: string, last: number): HTMLImageElement[] {
@@ -78,16 +80,7 @@ function numberedWalkFrames(id: string, last: number): HTMLImageElement[] {
 }
 
 export function characterWalkAnim(characterId: string): WalkAnim {
-  if (characterId === 'sela') {
-    return {
-      frames: [
-        loadImage(assetUrl('assets/sprites/sela_walk.png')),
-        loadImage(assetUrl('assets/sprites/sela_walk_b.png')),
-        loadImage(assetUrl('assets/sprites/sela_walk_c.png')),
-      ],
-      mode: 'pingpong',
-    };
-  }
+  if (characterId === 'sela') return { frames: numberedWalkFrames('sela', 3), mode: 'loop' };
   if (characterId === 'fenwick') return { frames: numberedWalkFrames('fenwick', 7), mode: 'loop' };
   if (characterId === 'bram') return { frames: numberedWalkFrames('bram', 9), mode: 'loop' };
   if (characterId === 'nia') return { frames: numberedWalkFrames('nia', 6), mode: 'loop' };
