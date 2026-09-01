@@ -6,7 +6,7 @@
 // (doc 05 §4). Hearts live ONLY here — never on the HUD bar (doc 05 §2).
 
 import { STRINGS, format } from '../data/strings.js';
-import { recipeToView } from '../data/recipes.js';
+import { recipeToView, ALL_RECIPES } from '../data/recipes.js';
 import { portraitSprite, loadDrinkIcon } from '../render/images.js';
 import { CHARACTERS, FAVORITES } from '../sim/customers.js';
 import type { RegularId } from '../sim/customers.js';
@@ -234,8 +234,15 @@ function renderRecipes(
   hints: JournalHints,
   highlightRecipeId: string | null = null,
 ): void {
-  for (const recipeId of hints.hintedRecipes) {
+  // The Recipes tab lists every recipe the player has actually met: found ones
+  // as brewable cards, plus still-hinted ones as riddle cards (doc 02 §6). A
+  // recipe that is neither discovered nor hinted (R001–R003 before the first
+  // serve, R008 before Wren's arc resolves) stays off the page so nothing is
+  // spoiled. Canonical R001…R008 order regardless of discovery sequence.
+  for (const recipe of ALL_RECIPES) {
+    const recipeId = recipe.id;
     const known = save.flags.discovered_recipes.includes(recipeId);
+    if (!known && !hints.hintedRecipes.includes(recipeId)) continue;
     const view = recipeToView(recipeId);
     if (!view) continue;
 

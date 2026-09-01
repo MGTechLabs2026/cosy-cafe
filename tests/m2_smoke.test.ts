@@ -540,6 +540,53 @@ describe('M2 smoke — PASS lines', () => {
     console.log('PASS: journal open/close');
   });
 
+  it('PASS: Recipes tab lists discovered recipes, not just the 4 hinted ones', () => {
+    const journalCards = (): FakeElement[] =>
+      (document.getElementById('journal-content') as unknown as FakeElement | null)
+        ?.querySelectorAll('.journal-recipe') ?? [];
+
+    const expectedCardCount = (): number =>
+      new Set([
+        ...(debugState() as { discovered: string[] }).discovered,
+        'R004',
+        'R005',
+        'R006',
+        'R007',
+      ]).size;
+
+    startNewGame();
+
+    // At boot the Recipes tab shows the union of discovered + hinted recipes.
+    debugOpenJournal();
+    expect(journalCards().length).toBe(expectedCardCount());
+    debugCloseJournal();
+
+    // Work day 1: serve the scheduled arrivals so their recipes get discovered.
+    openMorning();
+    const plan = (debugState() as {
+      schedule: { orderRecipeId: string | null }[];
+    }).schedule.slice();
+    for (let i = 0; i < plan.length; i++) {
+      debugSpawnNow();
+      tickGame(3.0, 0);
+      if (!(debugState() as { hasActive: boolean }).hasActive) continue;
+      debugBrew(recipeInputs[plan[i]!.orderRecipeId ?? 'R001']!);
+      tickGame(0.7, 100);
+    }
+
+    const discovered = (debugState() as { discovered: string[] }).discovered;
+    // A day of serving discovers non-hinted starter recipes (R001–R003) that
+    // the old loop (hintedRecipes only) never rendered.
+    expect(discovered.some((id) => !['R004', 'R005', 'R006', 'R007'].includes(id))).toBe(true);
+
+    debugOpenJournal();
+    const cards = journalCards().length;
+    expect(cards).toBe(expectedCardCount());
+    expect(cards).toBeGreaterThan(4);
+    debugCloseJournal();
+    console.log(`PASS: Recipes tab shows ${cards} cards (${discovered.length} discovered)`);
+  });
+
   it('PASS: per-day recap tallies reset at the next morning (not run-cumulative)', () => {
     startNewGame();
 
