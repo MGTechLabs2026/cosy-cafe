@@ -61,7 +61,7 @@ export interface WalkAnim {
  * Walk-cycle animation for a cast member. Most have exactly one static frame —
  * for those the walk-in reads as motion purely through the bob/lean tween
  * (playtest fix #1), unchanged. Sela (Batch 7) has 3 hand-made poses the
- * renderer ping-pongs; Fenwick + Bram (Batch 8) have full loop cycles.
+ * renderer ping-pongs; Fenwick, Bram + Nia (Batch 8) have full loop cycles.
  */
 /** `<id>_walk.png` (frame 0) then `<id>_walk_1.png` … `<id>_walk_<last>.png`. */
 function numberedWalkFrames(id: string, last: number): HTMLImageElement[] {
@@ -85,6 +85,7 @@ export function characterWalkAnim(characterId: string): WalkAnim {
   }
   if (characterId === 'fenwick') return { frames: numberedWalkFrames('fenwick', 7), mode: 'loop' };
   if (characterId === 'bram') return { frames: numberedWalkFrames('bram', 9), mode: 'loop' };
+  if (characterId === 'nia') return { frames: numberedWalkFrames('nia', 6), mode: 'loop' };
   const single = characterSprite(characterId);
   return { frames: single ? [single] : [], mode: 'loop' };
 }
@@ -213,4 +214,5 @@ export function preloadAllArt(recipeIcons?: string[]): void {
   characterWalkAnim('sela'); // warm Sela's b/c walk frames
   characterWalkAnim('fenwick'); // warm Fenwick's 8-frame walk cycle
   characterWalkAnim('bram'); // warm Bram's 10-frame walk cycle
+  characterWalkAnim('nia'); // warm Nia's 7-frame walk cycle
 }
