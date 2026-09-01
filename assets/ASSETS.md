@@ -50,7 +50,7 @@ Deviation from doc 04 §1.4 (24×36): PixelLab forces square canvases below 32px
 
 | File | Size | Job ID | QA |
 |------|------|--------|-----|
-| sprites/fenwick_walk_b.png (32×48) | walk frame B — mid-stride | cf2396f9-8fe2-40c8-bc3c-bc9087897f5e | ✅ pass, clear stride pose distinct from frame A. **Enables 2-frame gait animation for the walk-animation fix** |
+| sprites/fenwick_walk_b.png (32×48) | walk frame B — mid-stride | cf2396f9-8fe2-40c8-bc3c-bc9087897f5e | ⚠️ **deleted in Batch 8** — superseded by the 8-frame Fenwick walk cycle. |
 | furniture/window_bench.png (32×32) | window bench upgrade | e0e2e618-ae58-4cf5-ae09-471374640448 | ✅ pass (plaid faint / pillow merged — acceptable) |
 | furniture/record_player.png (32×32) | record player upgrade | 9a83d9b5-c890-4cf0-bd57-83674d254d13 | ✅ pass (best object clarity of batch) |
 | fx/heart_puff.png (16×16) | heart-gain feedback sprite | 03f23934-7cb3-4810-a84b-7630ab58723d | ✅ pass |
@@ -119,6 +119,36 @@ anchor from that character's *actual* rendered sprite height — and having
 both `drawBubble()` and `bubbleRectFor()` (drawing and hit-testing) call it,
 same shared-geometry pattern the bubble already used for its own size.
 Verified live: bubble now floats correctly clear of Sela's hood.
+
+## Batch 8 — 2026-09-02 (Fenwick re-art + 8-frame walk cycle, user-supplied)
+
+Source: a user-supplied sheet (`fenwick_meshes.png`, 1536×1024) — an 8-frame
+side-view walk cycle (top row) plus a standing pose (bottom-left). Deleted
+after cropping. Same higher-detail illustration style as Sela's Batch 7; the
+two re-arted regulars now share a look distinct from Bram/Nia/Wren.
+
+Harder to key than Sela's sheet: the background is a warm radial glow that
+hugs each figure, so a flat colour-distance key left a brown halo behind the
+head. Working method was **difference-from-background**: a 61×61 median of
+each figure's region estimates the smooth glow, then `|source − median| > 26`
+isolates the (non-smooth, pixel-art) figure. Then mirror east, crop to opaque
+bounds, Lanczos-fit to 44×50 within a shared 48×64 canvas.
+
+| File | Size | QA |
+|------|------|-----|
+| sprites/fenwick_walk.png … fenwick_walk_7.png | 48×64, opaque ~32×50 each | ✅ pass — 8-frame walk cycle. `fenwick_walk.png` is frame 0 and doubles as the at-rest/served pose (`characterSprite('fenwick')` already points here). All 8 the same opaque height (50) so the cycle doesn't bob vertically. On-screen ~64×100 at 2× — between the base cast (~88) and Sela (~116): a stout, not-tall dwarf. |
+| sprites/fenwick_stand.png | 48×64, opaque 33×50 | ✅ pass — staged idle pose, not wired. |
+| sprites/fenwick_walk_b.png | — | **deleted** — the old unused 2nd frame; the 8-frame cycle replaces the whole idea. |
+
+Wiring: `characterWalkAnim(id)` now returns `{ frames, mode }`.
+`walkFrameIndex(n, timeMs, mode)` gained a **`loop`** mode (0,1,…,n-1,0,…) for
+a full cycle, alongside Sela's `pingpong`. Fenwick loops his 8 at one frame
+per 110 ms (≈880 ms/cycle — cozy pace, doc 04 "nothing above 12 fps").
+
+Not verified live in-scene: the debug spawn hook skips the walk-in tween and
+won't advance past the active customer, so Fenwick's cycle was only checked
+via the extracted-frame contact sheet + the unit-tested index math (same
+limitation hit with Sela's walk-in).
 
 ## Consistency Notes
 

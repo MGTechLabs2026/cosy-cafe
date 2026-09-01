@@ -14,7 +14,7 @@ import { easeInOut } from './tween.js';
 import {
   cafeRoom,
   characterSprite,
-  characterWalkFrames,
+  characterWalkAnim,
   mopsSprite,
   mopsSpriteFor,
   opaqueBounds,
@@ -95,18 +95,29 @@ export interface WalkGait {
 const GAIT_AT_REST: WalkGait = { moving: false, bobPx: 0, leanRad: 0 };
 
 /**
- * Ping-pong a walk-cycle frame index off the SAME clock as the bob/lean
- * (`timeMs`), so a cast member with real walk art (currently Sela: a,b,c)
- * steps in time with its own footstep bob. Sequence for N frames is
- * 0,1,...,N-1,...,1,0,1,... — for N=3 that's a,b,c,b,a,b,c,b… For the common
- * single-frame case this always returns 0 (unchanged behavior). Pure →
- * unit-tested.
+ * Walk-cycle frame index off the SAME clock as the bob/lean (`timeMs`), so a
+ * cast member with real walk art steps in time with its own footstep bob.
+ * One frame advance per WALK_STEP_HALF_PERIOD_MS.
+ *
+ * - `pingpong` (default): 0,1,…,N-1,…,1, 0,1,… — for N=3, a,b,c,b,a,b,c,b…
+ *   Right for a short hand-made set that has no mirrored second half (Sela).
+ * - `loop`: 0,1,…,N-1, 0,1,… — a full cycle straight through (Fenwick's 8).
+ *
+ * Single-frame casts always return 0 (unchanged behavior). Pure → unit-tested.
  */
-export function walkFrameIndex(frameCount: number, timeMs: number): number {
+export function walkFrameIndex(
+  frameCount: number,
+  timeMs: number,
+  mode: 'pingpong' | 'loop' = 'pingpong',
+): number {
   if (frameCount <= 1) return 0;
+  const step = Math.floor(timeMs / WALK_STEP_HALF_PERIOD_MS);
+  if (mode === 'loop') {
+    return ((step % frameCount) + frameCount) % frameCount;
+  }
   const period = (frameCount - 1) * 2;
-  const step = Math.floor(timeMs / WALK_STEP_HALF_PERIOD_MS) % period;
-  return step < frameCount ? step : period - step;
+  const s = ((step % period) + period) % period;
+  return s < frameCount ? s : period - s;
 }
 
 /** Gait offsets for the current walk-in frame. Pure → unit-tested. */
@@ -189,8 +200,7 @@ const DEFAULT_SPRITE_DRAW_HEIGHT = 88;
  * pokes up into the bubble.
  */
 function spriteTopY(characterId: string, y: number): number {
-  const frames = characterWalkFrames(characterId);
-  const img = frames[0] ?? characterSprite(characterId);
+  const img = characterWalkAnim(characterId).frames[0] ?? characterSprite(characterId);
   if (img && img.complete && img.naturalWidth > 0) {
     const b = opaqueBounds(img);
     if (b) {
@@ -245,8 +255,8 @@ export function clearMopsHitRect(): void {
 
 /** Generic cast sprite draw: 2× integer scale, grounded by OPAQUE bounds.
  * `gait` carries the walk-in bob+lean (playtest fix #1); zero at rest. While
- * moving, ping-pongs through `characterWalkFrames()` in step with the bob
- * (a,b,c,b,a,… for a 3-frame cast member; unchanged for a 1-frame one). */
+ * moving, steps through `characterWalkAnim()` in time with the bob — Sela
+ * ping-pongs 3 poses, Fenwick loops 8, everyone else stays on one frame. */
 function drawCharacterSprite(
   c: CanvasRenderingContext2D,
   x: number,
@@ -256,9 +266,9 @@ function drawCharacterSprite(
   gait: WalkGait = { moving: false, bobPx: 0, leanRad: 0 },
   timeMs: number = 0,
 ): void {
-  const frames = characterWalkFrames(characterId);
-  const frameIdx = gait.moving ? walkFrameIndex(frames.length, timeMs) : 0;
-  const img = frames[frameIdx] ?? characterSprite(characterId);
+  const anim = characterWalkAnim(characterId);
+  const frameIdx = gait.moving ? walkFrameIndex(anim.frames.length, timeMs, anim.mode) : 0;
+  const img = anim.frames[frameIdx] ?? characterSprite(characterId);
   // Shadow stays GLUED to the floor: it must not bob with the body, or the
   // figure looks like it's hovering instead of stepping.
   ellipseShadow(c, x + CUSTOMER_W / 2, y + CUSTOMER_H - 1, 17, 5);

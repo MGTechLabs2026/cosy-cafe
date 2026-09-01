@@ -47,22 +47,42 @@ export function characterSprite(characterId: string): HTMLImageElement | null {
   }
 }
 
+export interface WalkAnim {
+  /** Ordered walk frames; frames[0] is also the at-rest / served pose. */
+  frames: HTMLImageElement[];
+  /**
+   * `pingpong` bounces a short hand-made set (Sela's a,b,c → a,b,c,b,a…);
+   * `loop` runs a full cycle straight through (Fenwick's 8 frames).
+   */
+  mode: 'pingpong' | 'loop';
+}
+
 /**
- * Ordered walk-cycle frames for a cast member. Everyone but Sela has exactly
- * one static frame — for those, the walk-in reads as motion purely through
- * the bob/lean tween (playtest fix #1), same as before. Sela has three real
- * walk poses (Batch 7), so the renderer ping-pongs through them while moving.
+ * Walk-cycle animation for a cast member. Most have exactly one static frame —
+ * for those the walk-in reads as motion purely through the bob/lean tween
+ * (playtest fix #1), unchanged. Sela (Batch 7) has 3 hand-made poses the
+ * renderer ping-pongs; Fenwick (Batch 8) has a full 8-frame cycle it loops.
  */
-export function characterWalkFrames(characterId: string): HTMLImageElement[] {
+export function characterWalkAnim(characterId: string): WalkAnim {
   if (characterId === 'sela') {
-    return [
-      loadImage(assetUrl('assets/sprites/sela_walk.png')),
-      loadImage(assetUrl('assets/sprites/sela_walk_b.png')),
-      loadImage(assetUrl('assets/sprites/sela_walk_c.png')),
-    ];
+    return {
+      frames: [
+        loadImage(assetUrl('assets/sprites/sela_walk.png')),
+        loadImage(assetUrl('assets/sprites/sela_walk_b.png')),
+        loadImage(assetUrl('assets/sprites/sela_walk_c.png')),
+      ],
+      mode: 'pingpong',
+    };
+  }
+  if (characterId === 'fenwick') {
+    const frames = [loadImage(assetUrl('assets/sprites/fenwick_walk.png'))];
+    for (let i = 1; i <= 7; i++) {
+      frames.push(loadImage(assetUrl(`assets/sprites/fenwick_walk_${i}.png`)));
+    }
+    return { frames, mode: 'loop' };
   }
   const single = characterSprite(characterId);
-  return single ? [single] : [];
+  return { frames: single ? [single] : [], mode: 'loop' };
 }
 
 /** 48×48 journal/portrait art by cast id. */
@@ -186,5 +206,6 @@ export function preloadAllArt(recipeIcons?: string[]): void {
   for (const id of ['sela', 'bram', 'nia', 'wren']) characterSprite(id);
   for (const id of ['fenwick', 'sela', 'bram', 'nia', 'wren']) portraitSprite(id);
   loadImage(assetUrl('assets/props/sela_cart.png')); // shop-overlay DOM <img>, not canvas-drawn
-  characterWalkFrames('sela'); // warm the b/c walk-cycle frames too
+  characterWalkAnim('sela'); // warm Sela's b/c walk frames
+  characterWalkAnim('fenwick'); // warm Fenwick's 8-frame walk cycle
 }

@@ -236,4 +236,17 @@ describe('walkFrameIndex (multi-frame walk cycle, e.g. Sela a/b/c)', () => {
     expect(walkFrameIndex(2, 220)).toBe(0);
     expect(walkFrameIndex(2, 330)).toBe(1);
   });
+
+  it("loop mode runs a full cycle straight through (Fenwick's 8 frames)", () => {
+    for (let step = 0; step < 20; step++) {
+      expect(walkFrameIndex(8, step * 110, 'loop')).toBe(step % 8);
+    }
+    // wraps cleanly: frame 7 → frame 0, never bounces back through 6
+    expect(walkFrameIndex(8, 7 * 110, 'loop')).toBe(7);
+    expect(walkFrameIndex(8, 8 * 110, 'loop')).toBe(0);
+  });
+
+  it('loop mode still pins a single-frame cast to 0', () => {
+    expect(walkFrameIndex(1, 500, 'loop')).toBe(0);
+  });
 });
