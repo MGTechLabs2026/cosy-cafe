@@ -1,4 +1,4 @@
-# Moonleaf Café
+# Moonleaf Cozy Café
 
 *Serve warm cups to cold travelers.*
 

@@ -1,4 +1,4 @@
-# 12 · itch.io HTML5 Release — Cosy Café (Moonleaf Café)
+# 12 · itch.io HTML5 Release — Cosy Café (Moonleaf Cozy Café)
 
 > Packaging-only release. No gameplay, recipe, economy, hearts, stars, narrative,
 > ending, progression, save-schema, or café-mechanic changes were made. The goal
@@ -61,8 +61,8 @@ iframe under a project subpath.
 | Reduced motion | PASS — media query honored |
 | Narrative (mailbox opens; mandatory Marigold beats deliver on Days 1 / 7 / 11; arc letters deliver) | PASS |
 | Day-14 ending (ending overlay "Your Two Weeks" presents; resolves; returns to title) | PASS |
-| No release-caused console errors | PASS (only 2 expected 404s, see limitations) |
-| No release-caused 404s other than pending art | PASS |
+| No release-caused console errors | PASS (at release: 2 expected drink-icon 404s — resolved 2026-09-03, see Known limitations) |
+| No release-caused 404s other than pending art | PASS (pending art since authored — see Known limitations) |
 | Fonts | PASS — system stack (`system-ui` / `Georgia`); no custom font files to load |
 | Images | PASS — all referenced sprites/backgrounds ship |
 | Security | PASS — no API keys / secrets / env vars in the build |
@@ -72,10 +72,13 @@ Typecheck: PASS. Tests: PASS (459 tests across 31 files). Production build: PASS
 
 ## Known limitations
 
-- **Two drink icons are not yet authored** (`drink_cloud_foam.png` for R005 "Cloud
-  Foam", `drink_honey_milk_wren.png` for R008 "Wren's Usual"). The order bubble falls
-  back to a calm placeholder icon, so this is a visual gap only — gameplay and serving
-  are unaffected. These are the only two 404s in the network log.
+- **~~Two drink icons are not yet authored~~ — RESOLVED 2026-09-03.** At release,
+  `drink_cloud_foam.png` (R005 "Cloud Foam") and `drink_honey_milk_wren.png` (R008
+  "Wren's Usual") were missing and the order bubble fell back to a calm placeholder
+  icon (the only two 404s in the network log). Both icons were authored and wired in
+  commit `cc419c5` ("swap in redrawn R001-R008 drink icons"); the full R001-R008 icon
+  set was redrawn in the same pass. No placeholder fallback is active for any current
+  runtime drink icon — see `13-asset-integration-verification.md`.
 - **`community` and `wanderer` endings are not reachable** through legitimate play
   under the frozen ending definitions (a content-design constraint, out of scope for
   packaging). `keeper` and `builder` endings are reachable; a calm/low-engagement run

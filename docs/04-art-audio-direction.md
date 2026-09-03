@@ -1,4 +1,4 @@
-# 04 · Moonleaf Café — Art & Audio Direction
+# 04 · Moonleaf Cozy Café — Art & Audio Direction
 
 > Doc 04 of 07 · Status: Draft v0.1 · 2026-08-25
 > Purpose: let any artist/composer (or future-you) produce assets that fit, without asking questions.

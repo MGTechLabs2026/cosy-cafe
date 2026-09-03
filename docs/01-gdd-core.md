@@ -1,10 +1,10 @@
-# 01 · Moonleaf Café — Core Game Design Document
+# 01 · Moonleaf Cozy Café — Core Game Design Document
 
 > Doc 01 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative System
 
 ## 1. High Concept
 
-**Working title:** Moonleaf Café
+**Working title:** Moonleaf Cozy Café
 **Tagline:** *Serve warm cups to cold travelers.*
 **Genre:** Cozy café management / light simulation
 **Platform:** Browser (HTML5) on itch.io · downloadable builds later

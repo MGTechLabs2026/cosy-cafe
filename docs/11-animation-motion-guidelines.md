@@ -1,4 +1,4 @@
-# 11 · Moonleaf Café — Animation & Motion Guidelines
+# 11 · Moonleaf Cozy Café — Animation & Motion Guidelines
 
 > Doc 11 of 09 · Status: Draft v0.1 · 2026-08-28 · Added by the animation/UX polish pass
 > Companion to doc 05 (UI & UX). Where the two disagree, this doc wins for

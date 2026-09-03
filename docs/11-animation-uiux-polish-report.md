@@ -1,4 +1,4 @@
-# 11 · Animation / UI-UX Polish QA Report — Moonleaf Café
+# 11 · Animation / UI-UX Polish QA Report — Moonleaf Cozy Café
 
 > Status: Final · 2026-08-28 · Polish pass (NO gameplay-system changes)
 > Scope: Every animation/tween/transition + UI/UX coziness. Gameplay rules,

@@ -1,4 +1,4 @@
-# Character Asset Prompts — Moonleaf Café
+# Character Asset Prompts — Moonleaf Cozy Café
 
 Verbatim PixelLab prompts for every character/creature asset in the shipped
 build. Recovered 2026-09-01 from the Hermes `glm52a` profile message store

@@ -1,4 +1,4 @@
-# 06 · Moonleaf Café — MVP Scope & Roadmap
+# 06 · Moonleaf Cozy Café — MVP Scope & Roadmap
 
 > Doc 06 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative Milestones
 > Scope is a fence, not a suggestion. Anything not listed here is post-MVP by default.

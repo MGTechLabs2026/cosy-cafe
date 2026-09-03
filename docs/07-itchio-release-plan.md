@@ -1,4 +1,4 @@
-# 07 · Moonleaf Café — itch.io Release Plan
+# 07 · Moonleaf Cozy Café — itch.io Release Plan
 
 > Doc 07 of 07 · Status: Draft v0.1 · 2026-08-25
 > The store page is part of the game's promise: it must feel as calm as the game.

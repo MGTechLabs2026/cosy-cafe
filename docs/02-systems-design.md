@@ -1,4 +1,4 @@
-# 02 · Moonleaf Café — Systems Design
+# 02 · Moonleaf Cozy Café — Systems Design
 
 > Doc 02 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative System hooks
 > Every numeric value here is a **starting value**, not gospel — tune through playtests, and record changes in the Changelog at the bottom.
@@ -256,7 +256,7 @@ Every validation gate happens **in memory**; the live localStorage save is touch
 
 | Case | Message |
 |------|---------|
-| Garbage / wrong prefix | "Hmm, that doesn't look like a Moonleaf Café save code." |
+| Garbage / wrong prefix | "Hmm, that doesn't look like a Moonleaf Cozy Café save code." |
 | Auth/decrypt failure | "This code seems damaged — maybe a character got lost when copying it?" |
 | Unknown key_id | "This save comes from a different version of the game." |
 | Newer schema `version` | "This save is from a newer update. Please update the game first." |

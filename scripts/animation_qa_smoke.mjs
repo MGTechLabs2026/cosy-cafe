@@ -1,4 +1,4 @@
-// Real-browser animation/UX smoke for the Moonleaf Café polish pass.
+// Real-browser animation/UX smoke for the Moonleaf Cozy Café polish pass.
 //
 // Drives the ACTUAL game in headless Chrome via the Chrome DevTools Protocol,
 // using only Node's built-in WebSocket (no Playwright/Puppeteer). Mirrors the

@@ -1,4 +1,4 @@
-# 03 · Moonleaf Café — World & Characters
+# 03 · Moonleaf Cozy Café — World & Characters
 
 > Doc 03 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative Arc Integration
 > Six characters, one room, one valley. Depth over breadth (P4).

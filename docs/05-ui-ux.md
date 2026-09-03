@@ -1,4 +1,4 @@
-# 05 · Moonleaf Café — UI & UX
+# 05 · Moonleaf Cozy Café — UI & UX
 
 > Doc 05 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative Letter System
 > One room, one screen, no menus unless asked. If the player ever wonders what to do next, the UI failed.

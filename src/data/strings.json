@@ -1,6 +1,6 @@
 {
   "title": {
-    "gameName": "Moonleaf Café",
+    "gameName": "Moonleaf Cozy Café",
     "pressAnyKey": "Press any key to begin",
     "continueLabel": "Continue — Day {day}",
     "newGameLabel": "New Game",
@@ -40,7 +40,7 @@
   "credits": {
     "madeWith": "Made with care — no engine, just TypeScript, Canvas2D and a kettle's worth of DOM.",
     "assetsLine": "All pixel art generated with PixelLab. Sounds synthesized in-house.",
-    "licenseNote": "Moonleaf Café © 2026. All rights reserved. Font: system stack.",
+    "licenseNote": "Moonleaf Cozy Café © 2026. All rights reserved. Font: system stack.",
     "thanks": "Thank you for playing."
   },
   "morning": {
@@ -426,7 +426,7 @@
     "copyButton": "Copy",
     "copied": "Copied",
     "howToUse": "How to use this",
-    "howToUseBody": "Paste this code into Moonleaf Café on any device to restore this save exactly as it is now.",
+    "howToUseBody": "Paste this code into Moonleaf Cozy Café on any device to restore this save exactly as it is now.",
     "importPlaceholder": "Paste your save code here…",
     "restoreButton": "Restore",
     "previewLine": "This save is Day {day} · ¤{coins} · {stars} — Replace your current save?",
@@ -434,7 +434,7 @@
     "cancel": "Cancel",
     "cryptoUnavailable": "Your browser can't create encrypted codes here, so export and import are off.",
     "importSuccess": "Save restored.",
-    "failureNotACode": "Hmm, that doesn't look like a Moonleaf Café save code.",
+    "failureNotACode": "Hmm, that doesn't look like a Moonleaf Cozy Café save code.",
     "failureDamaged": "This code seems damaged — maybe a character got lost when copying it?",
     "failureWrongVersion": "This save comes from a different version of the game.",
     "failureNewerVersion": "This save is from a newer update. Please update the game first.",

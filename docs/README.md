@@ -1,6 +1,6 @@
-# Moonleaf Café — Design Docs
+# Moonleaf Cozy Café — Design Docs
 
-**Working title:** *Moonleaf Café* — "Serve warm cups to cold travelers."
+**Working title:** *Moonleaf Cozy Café* — "Serve warm cups to cold travelers."
 A simple, cozy café-management game set in a gentle fantasy world. Built for itch.io, played in the browser.
 
 There is no way to lose. There is only tomorrow's opening.

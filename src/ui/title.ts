@@ -1,5 +1,5 @@
 // Title screen — doc 05 §1 (TITLE screen), doc 08 §3.4 audio gate
-// "Moonleaf Café" + Continue/New Game. The advancing gesture doubles as the
+// "Moonleaf Cozy Café" + Continue/New Game. The advancing gesture doubles as the
 // WebAudio unlock per autoplay policy.
 
 import { playClick, unlockAudio } from '../audio/howl.js';

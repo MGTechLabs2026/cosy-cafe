@@ -1,4 +1,4 @@
-# 09 · Moonleaf Café — Narrative System Design
+# 09 · Moonleaf Cozy Café — Narrative System Design
 
 > Doc 09 of 09 · Status: Draft v0.1 · 2026-08-27 · Phase 1: Design & Documentation Only
 > **This document is the authoritative narrative specification.**
@@ -11,7 +11,7 @@
 **THE PLAYER LIVES A STYLE OF PLAY.**
 **THE STORY RESPONDS TO THAT STYLE.**
 
-Narrative divergence in Moonleaf Café comes primarily from:
+Narrative divergence in Moonleaf Cozy Café comes primarily from:
 
 - customer relationships (hearts, chats, favorite serves)
 - service behavior (pacing, attentiveness, generosity)

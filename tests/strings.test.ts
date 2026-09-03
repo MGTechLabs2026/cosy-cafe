@@ -5,7 +5,7 @@ import { format } from '../src/data/strings';
 
 describe('strings.json contract (doc 05 §7: keys, never literals)', () => {
   it('title copy is present', () => {
-    expect(strings.title.gameName).toBe('Moonleaf Café');
+    expect(strings.title.gameName).toBe('Moonleaf Cozy Café');
     expect(strings.title.pressAnyKey.length).toBeGreaterThan(0);
   });
 

@@ -1,4 +1,4 @@
-"""Generate Moonleaf Café placeholder SFX (M0 smoke-test sounds).
+"""Generate Moonleaf Cozy Café placeholder SFX (M0 smoke-test sounds).
 
 Synthesizes tiny warm UI sounds as WAV; ffmpeg converts to OGG/MP3 after.
 Run: python3 tools/gen_sfx.py

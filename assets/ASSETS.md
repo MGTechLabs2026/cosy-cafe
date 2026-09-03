@@ -1,4 +1,4 @@
-# Moonleaf Café — Asset Manifest
+# Moonleaf Cozy Café — Asset Manifest
 
 Generated with PixelLab MCP (`create_image_pixen`, 1 generation each). All PNGs are RGBA with true transparent backgrounds. Native sizes as listed; scale with integer factors + `image-rendering: pixelated` only.
 

@@ -1,4 +1,4 @@
-# PixelLab Prompt Pack — Moonleaf Café
+# PixelLab Prompt Pack — Moonleaf Cozy Café
 
 Optimised for **pixellab.ai web app, free tier**. Reproduces the settings the
 shipped assets were generated with (`create_image_pixen` via MCP = **Pixflux**

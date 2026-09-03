@@ -1,4 +1,4 @@
-# 08 · Moonleaf Café — Tech Stack & Architecture
+# 08 · Moonleaf Cozy Café — Tech Stack & Architecture
 
 > Doc 08 of 09 · Status: Draft v0.1 · 2026-08-27 · Updated with Narrative Module Architecture
 > Stated priorities: **performance and size.** Everything else (dev speed, familiarity) is a tiebreaker, not a goal.

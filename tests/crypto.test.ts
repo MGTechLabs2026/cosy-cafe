@@ -226,7 +226,7 @@ describe('failure-copy table coverage (strings.json ↔ §7.2)', () => {
     }
     // Exact §7.2 table strings:
     expect(strings.saveio.failureNotACode).toBe(
-      'Hmm, that doesn\'t look like a Moonleaf Café save code.',
+      'Hmm, that doesn\'t look like a Moonleaf Cozy Café save code.',
     );
     expect(strings.saveio.failureDamaged).toBe(
       'This code seems damaged — maybe a character got lost when copying it?',

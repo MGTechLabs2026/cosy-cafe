@@ -1,4 +1,4 @@
-# 14 · Moonleaf Café — State-Driven Presence System
+# 14 · Moonleaf Cozy Café — State-Driven Presence System
 
 > Doc 14 of 09 · Status: Draft v0.1 · 2026-08-30
 > Companion to doc 05 (UI/UX) and doc 11 (Animation/Motion).

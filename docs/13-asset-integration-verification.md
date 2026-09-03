@@ -103,7 +103,7 @@ State selection uses `mopsSpriteFor(stateName)` in `render/scene.ts`. Default br
 
 ## Chrome
 
-- Fresh load from `dist/`: title screen loads as `🐴 Moonleaf Café`
+- Fresh load from `dist/`: title screen loads as `🐴 Moonleaf Cozy Café`
 - No asset 404s observed in verification script output
 - Subpath simulation: PASS
 
