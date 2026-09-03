@@ -16,7 +16,7 @@ export interface DayState {
 export const FINAL_DAY = 14;
 
 /** Which café backdrop to show. Time-of-day tracks the phase; winter overrides. */
-export const ROOM_VARIANTS = ['morning', 'day', 'evening', 'snow'] as const;
+export const ROOM_VARIANTS = ['morning', 'day', 'evening', 'snow', 'snow_night'] as const;
 export type RoomVariant = (typeof ROOM_VARIANTS)[number];
 
 /**
@@ -28,18 +28,23 @@ export const WINTER_FROM_DAY = 11;
 
 /**
  * Backdrop for the current day + phase. Winter (day ≥ WINTER_FROM_DAY) wins
- * over the time-of-day cycle; otherwise prep = morning, service = day,
- * recap = evening. `serviceWindingDown` (no arrivals left, nobody at the
- * counter) flips the service backdrop to evening early, so the light shifts
- * toward dusk as a "closing time" cue before the recap. The renderer
- * crossfades between whatever this returns frame to frame. Pure — unit-tested.
+ * over the time-of-day cycle but still tracks a day/night beat: prep and
+ * open service use `snow`, then the recap — and service once it is winding
+ * down — use `snow_night`. Before winter: prep = morning, service = day,
+ * recap = evening, with `serviceWindingDown` (no arrivals left, nobody at
+ * the counter) flipping the service backdrop toward dusk early as a
+ * "closing time" cue. The renderer crossfades between whatever this returns
+ * frame to frame. Pure — unit-tested.
  */
 export function roomVariantFor(
   day: number,
   phase: Phase,
   serviceWindingDown = false,
 ): RoomVariant {
-  if (day >= WINTER_FROM_DAY) return 'snow';
+  if (day >= WINTER_FROM_DAY) {
+    if (phase === 'recap') return 'snow_night';
+    return phase === 'service' && serviceWindingDown ? 'snow_night' : 'snow';
+  }
   if (phase === 'prep') return 'morning';
   if (phase === 'recap') return 'evening';
   return serviceWindingDown ? 'evening' : 'day';

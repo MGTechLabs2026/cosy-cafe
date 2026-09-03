@@ -31,7 +31,7 @@ export function loadDrinkIcon(file: string): HTMLImageElement {
   return loadImage(assetUrl(`assets/items/${file}`));
 }
 
-/** Character walk sprite by cast id (travelers draw procedurally instead). */
+/** Character walk sprite by cast id. */
 export function characterSprite(characterId: string): HTMLImageElement | null {
   switch (characterId) {
     case 'fenwick':
@@ -44,8 +44,15 @@ export function characterSprite(characterId: string): HTMLImageElement | null {
       return loadImage(assetUrl('assets/sprites/nia_walk.png'));
     case 'wren':
       return loadImage(assetUrl('assets/sprites/wren_walk.png'));
+    case 'traveler':
+      // Frame 0 of the 8-frame hooded-cloak walk sheet (see
+      // characterWalkAnim). Source faces east (walk-in direction), so
+      // 'traveler' is in MIRRORED_SOURCE_IDS and flips on exit.
+      // drawCharacterSprite() keeps the procedural silhouette as the
+      // pre-load fallback.
+      return loadImage(assetUrl('assets/sprites/traveler_walk.png'));
     default:
-      return null; // traveler: procedural silhouette (doc 06 §3 placeholder art)
+      return null; // unknown id: procedural silhouette (doc 06 §3 placeholder art)
   }
 }
 
@@ -87,6 +94,7 @@ export function characterWalkAnim(characterId: string): WalkAnim {
   if (characterId === 'bram') return { frames: numberedWalkFrames('bram', 9), mode: 'loop' };
   if (characterId === 'nia') return { frames: numberedWalkFrames('nia', 6), mode: 'loop' };
   if (characterId === 'wren') return { frames: numberedWalkFrames('wren', 6), mode: 'loop-body' };
+  if (characterId === 'traveler') return { frames: numberedWalkFrames('traveler', 7), mode: 'loop' };
   const single = characterSprite(characterId);
   return { frames: single ? [single] : [], mode: 'loop' };
 }
@@ -210,7 +218,7 @@ export function preloadAllArt(recipeIcons?: string[]): void {
   preloadGameArt(recipeIcons);
   // M2 cast: every walk sprite + portrait warms at boot so no arrival or
   // journal open ever waits on disk mid-frame.
-  for (const id of ['sela', 'bram', 'nia', 'wren']) characterSprite(id);
+  for (const id of ['sela', 'bram', 'nia', 'wren', 'traveler']) characterSprite(id);
   for (const id of ['fenwick', 'sela', 'bram', 'nia', 'wren']) portraitSprite(id);
   loadImage(assetUrl('assets/props/sela_cart.png')); // shop-overlay DOM <img>, not canvas-drawn
   characterWalkAnim('sela'); // warm Sela's b/c walk frames

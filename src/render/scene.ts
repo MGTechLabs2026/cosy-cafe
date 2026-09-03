@@ -260,13 +260,14 @@ export function clearMopsHitRect(): void {
 }
 
 /**
- * Character ids whose walk sheets were mirrored at the asset level to face the
- * counter (walk-in direction, screen-right). On the way out they move toward
- * the door (screen-left), so `drawCharacterSprite` mirrors those back with a
+ * Character ids whose walk sheets face the counter (walk-in direction,
+ * screen-right) at the asset level. On the way out they move toward the
+ * door (screen-left), so `drawCharacterSprite` mirrors those back with a
  * canvas flip. Nia (near front-facing) and Wren (kept facing the door) were
- * left un-mirrored and never flip.
+ * left un-mirrored and never flip. Travelers arrive from the door facing
+ * the counter like the mirrored regulars.
  */
-const MIRRORED_SOURCE_IDS = new Set(['sela', 'fenwick', 'bram']);
+const MIRRORED_SOURCE_IDS = new Set(['sela', 'fenwick', 'bram', 'traveler']);
 
 /** Generic cast sprite draw: 2× integer scale, grounded by OPAQUE bounds.
  * `gait` carries the walk-in bob+lean (playtest fix #1); zero at rest. While
